@@ -1,6 +1,7 @@
-use cookie_store::CookieStore;
+use cookie_store::{Cookie, CookieStore};
 use reqwest::Client;
 use reqwest_cookie_store::CookieStoreMutex;
+use thiserror::Error;
 
 use std::fs::{self, File};
 use std::io::BufReader;
@@ -19,10 +20,15 @@ pub struct Session {
     cookie_store: Arc<CookieStoreMutex>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum SessionError{
+    #[error("Cookie Error")]
     CookieError,
+    #[error("No Execution Value. BUT this is usually not an error, it means the cookie is still valid, causes redirects to a post-landing page, so you can't get the execution value")]
+    NoExecutionValue,
+    #[error("Request Error")]
     RequestError,
+    #[error("Login Error: {0}")]
     LoginError(String),
 }
 
@@ -63,7 +69,10 @@ impl Session {
     pub fn new_in_file(path: &str) -> Self {
         let path = PathBuf::from(path);
         let cookie_store = match File::open(&path) {
-            Ok(f) => CookieStore::load_json(BufReader::new(f)).unwrap(),
+            Ok(f) => CookieStore::load_all(
+                BufReader::new(f),
+                |s| serde_json::from_str::<Cookie>(s),
+            ).unwrap(),
             Err(_) => CookieStore::default(),
         };
 
@@ -106,9 +115,18 @@ impl Session {
             .unwrap();
         let execution = if res.status().is_success() {
             let html = res.text().await.unwrap();
-            match utils::get_value_by_lable(&html, "<input name=\"execution\" value=\"", "\"") {
+            match utils::get_value_by_lable(&html, "\"execution\" value=\"", "\"") {
                 Some(s) => s,
-                None => return Err(SessionError::CookieError)
+                // TODO 加入 Session 构造器后需要重构这部分
+                // 通常情况下这不是一个错误, 所以只有当使用 `new_in_memory` 时会触发这个错误
+                // 找不到 execution 值，说明登录请求自动重定向到登陆后的页面, 证明当前 Cookie 有效
+                // 当 Cookie 无效时会重定向到登录 URL, 此时可以刷新 Cookie
+                // 等到支持 Session 构造器时, 可以加入对客户端是否自动重定向的配置, 这时可以更好的检测问题
+                None => if self.cookie_path.is_none() {
+                    return Err(SessionError::NoExecutionValue)
+                } else {
+                    return Ok(())
+                }
             }
         } else {
             return Err(SessionError::RequestError);
@@ -154,7 +172,7 @@ impl Session {
             },
         };
         let store = self.cookie_store.lock().unwrap();
-        if let Err(e) = store.save_incl_expired_and_nonpersistent_json(&mut file) {
+        if let Err(e) = store.save_incl_expired_and_nonpersistent(&mut file, |s| serde_json::to_string(s)) {
             eprintln!("Failed to save cookie store: {}", e);
         }
     }

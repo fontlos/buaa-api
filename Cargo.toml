@@ -6,13 +6,17 @@ edition = "2021"
 readme = "Readme.md"
 
 [dependencies]
-boa_engine = { version = "0.19.1", optional = true}
-cookie_store = "0.21.0"
+base64 = "0.22.1"
+cookie_store = "0.21.1"
+hex = "0.4.3"
+hmac = "0.12.1"
+md-5 = "0.10.6"
 reqwest = { version = "0.12.5", features = ["json"] }
 reqwest_cookie_store = "0.8.0"
 serde = { version = "1.0.204", features = ["derive"] }
 serde_json = "1.0.122"
-thiserror = "2.0.0"
+sha1 = "0.10.6"
+thiserror = "2.0.1"
 tokio = { version = "1.39.2", features = ["macros"] }
 
 [target.'cfg(windows)'.dependencies]
@@ -22,7 +26,3 @@ features = [
     "Win32_Foundation",
     "Win32_NetworkManagement_WiFi",
 ]
-
-[features]
-default = ["js"]
-js = ["boa_engine"]
