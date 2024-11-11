@@ -12,7 +12,7 @@
 - [ ] Course selection
 - [ ] Boya Course
   - [x] login
-  - [ ] query
+  - [x] query
   - [ ] select
   - [ ] drop
 - [ ] Smart Classroom
