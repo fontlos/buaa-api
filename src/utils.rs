@@ -1,5 +1,9 @@
+mod get_wifi;
+pub use get_wifi::get_wifi;
+
 use std::collections::HashMap;
 use std::fs::File;
+use std::net::UdpSocket;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[allow(dead_code)]
@@ -30,5 +34,20 @@ pub fn get_value_by_lable(text: &str, right: &str, left: &str) -> Option<String>
         }
     } else {
         None
+    }
+}
+
+pub fn get_ip() -> Option<String> {
+    let socket = match UdpSocket::bind("0.0.0.0:0") {
+        Ok(s) => s,
+        Err(_) => return None
+    };
+    match socket.connect("8.8.8.8:80") {
+        Ok(()) => (),
+        Err(_) => return None
+    }
+    match socket.local_addr() {
+        Ok(a) => Some(a.ip().to_string()),
+        Err(_) => None
     }
 }
