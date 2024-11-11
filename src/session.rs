@@ -1,5 +1,5 @@
 use cookie_store::{Cookie, CookieStore};
-use reqwest::Client;
+use reqwest::{Client, header::{HeaderMap, HeaderName, HeaderValue}};
 use reqwest_cookie_store::CookieStoreMutex;
 use thiserror::Error;
 
@@ -43,8 +43,11 @@ impl Session {
     /// ```
     pub fn new_in_memory() -> Self {
         let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::default()));
+        let mut header = HeaderMap::new();
+        header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
 
         let client = Client::builder()
+            .default_headers(header)
             .cookie_provider(cookie_store.clone())
             .build()
             .unwrap();
@@ -75,8 +78,11 @@ impl Session {
         };
 
         let cookie_store = Arc::new(CookieStoreMutex::new(cookie_store));
+        let mut header = HeaderMap::new();
+        header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
 
         let client = Client::builder()
+            .default_headers(header)
             .cookie_provider(cookie_store.clone())
             .build()
             .unwrap();

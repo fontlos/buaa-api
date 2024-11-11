@@ -11,6 +11,10 @@
 - [ ] Spoc
 - [ ] Course selection
 - [ ] Boya Course
+  - [x] login
+  - [ ] query
+  - [ ] select
+  - [ ] drop
 - [ ] Smart Classroom
   - [x] login
   - [ ] checkin
