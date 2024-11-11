@@ -8,10 +8,12 @@
 
 - [x] SSO Login
 - [x] BUAA WiFi Login
-- [ ] Class Timetable inquiry
+- [ ] Spoc
 - [ ] Course selection
 - [ ] Boya Course
 - [ ] Smart Classroom
+  - [x] login
+  - [ ] checkin
 
 # Example
 
