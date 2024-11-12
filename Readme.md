@@ -1,23 +1,31 @@
+[中文](./ReadmeCN.md)
 # BUAA API
 
 > Make BUAA Great Again
 
-> Tip: The prefix of most API names is derived from the fourth-level domain name of the corresponding domain name
+# Tip
+
+The names of APIs might seem unusual because they are derived from their corresponding subdomains. For example, the naming convention for APIs under `gw.buaa.edu.cn` is `gw_*`
 
 ## Todo
 
-- [x] SSO Login
-- [x] BUAA WiFi Login
+- [x] SSO Login => `login`
+- [x] BUAA WiFi Login => `gw_login`
+- [x] User Center => `uc_*`
+  - [x] login
+  - [x] get state
 - [ ] Spoc
 - [ ] Course selection
-- [ ] Boya Course
+- [ ] Boya Course => `bykc_*`
   - [x] login
   - [x] query
   - [ ] select
   - [ ] drop
-- [ ] Smart Classroom
+- [ ] Smart Classroom => `iclass_*`
   - [x] login
   - [ ] checkin
+
+APIs not listed above might have been overlooked or deemed unimportant by me, but if you need them, feel free to open an issue or submit a pull request.
 
 # Example
 

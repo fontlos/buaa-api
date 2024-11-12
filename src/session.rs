@@ -24,8 +24,10 @@ pub enum SessionError{
     CookieError,
     #[error("No Execution Value. BUT this is usually not an error, it means the cookie is still valid, causes redirects to a post-landing page, so you can't get the execution value")]
     NoExecutionValue,
+    #[error("No token: {0}")]
+    NoToken(String),
     #[error("Request Error")]
-    RequestError,
+    RequestError(reqwest::Error),
     #[error("Login Error: {0}")]
     LoginError(String),
 }
@@ -129,5 +131,11 @@ impl Deref for Session {
 
     fn deref(&self) -> &Self::Target {
         &self.client
+    }
+}
+
+impl From<reqwest::Error> for SessionError {
+    fn from(e: reqwest::Error) -> Self {
+        SessionError::RequestError(e)
     }
 }

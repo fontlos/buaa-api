@@ -31,12 +31,11 @@ impl Session {
         // 接入点, 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
         let res = self.get("http://gw.buaa.edu.cn")
             .send()
-            .await
-            .unwrap();
+            .await?;
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(SessionError::RequestError)
+            None => return Err(SessionError::NoToken(String::from("ac_id"))),
         };
 
         // 获取 Challenge Token
@@ -50,16 +49,15 @@ impl Session {
         let res = self.get("https://gw.buaa.edu.cn/cgi-bin/get_challenge")
             .query(&params)
             .send()
-            .await
-            .unwrap();
+            .await?;
         let token = if res.status().is_success() {
             let html = res.text().await.unwrap();
             match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
                 Some(s) => s,
-                None => return Err(SessionError::RequestError)
+                None => return Err(SessionError::NoToken(String::from("gw_login"))),
             }
         } else {
-            return Err(SessionError::RequestError);
+            return Err(SessionError::NoToken(String::from("gw_login")));
         };
 
         // 计算登录信息
@@ -97,9 +95,8 @@ impl Session {
         let res = self.get("https://gw.buaa.edu.cn/cgi-bin/srun_portal")
             .query(&params)
             .send()
-            .await
-            .unwrap();
-        let res = res.text().await.unwrap();
+            .await?;
+        let res = res.text().await?;
         if res.contains("Login is successful"){
             return Ok(())
         } else {

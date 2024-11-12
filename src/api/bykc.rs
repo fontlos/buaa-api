@@ -38,8 +38,8 @@ struct Course {
     #[serde(rename = "courseCancelEndDate")]
     course_cancel_end_date: String,
     // 类型, 美育之类的
-    #[serde(rename = "courseNewKind2")]
-    course_new_kind2: CourseKind,
+    // #[serde(rename = "courseNewKind2")]
+    // course_new_kind2: CourseKind,
     #[serde(rename = "courseMaxCount")]
     course_max_count: i32,
     #[serde(rename = "courseCurrentCount")]
@@ -57,8 +57,8 @@ struct Course {
     // #[serde(rename = "courseGroup")]
     // course_group: String,
     // 课程作业, 至于课程作业的时间, 那没有显示的必要, 有必要直接再去查吧
-    #[serde(rename = "courseHomework")]
-    course_homework: String,
+    // #[serde(rename = "courseHomework")]
+    // course_homework: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -75,8 +75,7 @@ impl Session{
         let res = self
             .get("https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin")
             .send()
-            .await
-            .unwrap();
+            .await?;
         let url = res.url().as_str();
         let start = url.find("token=").unwrap() + "token=".len();
         let token = &url[start..];
@@ -112,9 +111,8 @@ impl Session{
             .headers(header)
             .json(&body)
             .send()
-            .await
-            .unwrap();
-        let res = res.text().await.unwrap();
+            .await?;
+        let res = res.text().await?;
         let res = res.trim_matches('"');
         let res = crypto::aes::aes_decrypt(&res, "SenQBA8xn6CQGNJs");
         Ok(res)
@@ -125,6 +123,8 @@ impl Session{
 
 #[tokio::test]
 async fn test_bykc_login_and_query() {
+    use std::time::Instant;
+
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
@@ -134,8 +134,11 @@ async fn test_bykc_login_and_query() {
 
     let token = session.bykc_login().await.unwrap();
     let res = session.bykc_query_all_course(&token).await.unwrap();
+
+    let start = Instant::now();
     let json = serde_json::from_str::<BoyaCourse>(&res).unwrap();
-    println!("{:?}", json);
+    println!("Time: {:?}", start.elapsed());
+    println!("{:?}", json.data.content[0]);
 
     session.save();
 }

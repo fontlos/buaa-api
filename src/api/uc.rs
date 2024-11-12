@@ -8,14 +8,12 @@ impl Session{
         // 获取 JSESSIONID
         self.get(format!("https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={}", time))
             .send()
-            .await
-            .unwrap();
+            .await?;
         // 验证  JSESSIONID
         // 会经历 4 次重定向
         self.get("https://uc.buaa.edu.cn/api/login?target=https://uc.buaa.edu.cn/#/user/login")
             .send()
-            .await
-            .unwrap();
+            .await?;
         Ok(())
     }
 
@@ -25,9 +23,8 @@ impl Session{
         // 获取登录状态
         let res = self.get(format!("https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={}", time))
             .send()
-            .await
-            .unwrap();
-        let state = res.text().await.unwrap();
+            .await?;
+        let state = res.text().await?;
         Ok(state)
     }
 }
