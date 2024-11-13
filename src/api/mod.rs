@@ -1,5 +1,5 @@
-mod bykc;
+pub(crate) mod bykc;
 mod gw;
-mod iclass;
+pub(crate) mod iclass;
 mod sso;
 mod uc;

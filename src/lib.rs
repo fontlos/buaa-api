@@ -4,6 +4,10 @@ mod api;
 mod crypto;
 mod session;
 mod tests;
-mod utils;
+pub mod utils;
 
+pub use api::{
+    bykc::BoyaCourse,
+    iclass::IClassCourse,
+};
 pub use session::{Session, SessionError};

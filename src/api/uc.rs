@@ -1,8 +1,8 @@
 use crate::{Session, SessionError, utils};
 
 impl Session{
-    /// UC Login </br>
-    /// This is the page you will be redirected to when you login to SSO
+    /// # User Center Login
+    /// - Need: [`sso_login`](#method.sso_login) <br>
     pub async fn uc_login(&self) -> Result<(), SessionError> {
         let time = utils::get_time();
         // 获取 JSESSIONID
@@ -17,7 +17,9 @@ impl Session{
         Ok(())
     }
 
-    /// Get UC state, return a json string, includes name and username, etc
+    /// # Get User Center state
+    /// - Need: [`uc_login`](#method.uc_login) <br>
+    /// - Output: `String`, JSON includes name and username, etc
     pub async fn uc_get_state(&self) -> Result<String, SessionError> {
         let time = utils::get_time();
         // 获取登录状态

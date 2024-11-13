@@ -1,75 +1,75 @@
 //! Boya Course API
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{Session, SessionError, crypto, utils};
 
-#[derive(Debug, Serialize, Deserialize)]
-struct BoyaCourse{
+#[derive(Deserialize)]
+struct BoyaCourses{
     data: BoyaData,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Deserialize)]
 struct BoyaData {
-    content: Vec<Course>
+    content: Vec<BoyaCourse>
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Course {
+#[derive(Debug, Deserialize)]
+pub struct BoyaCourse {
     // 课程 ID
-    id: i32,
+    pub id: i32,
     // 课程名
     #[serde(rename = "courseName")]
-    course_name: String,
+    pub name: String,
     // 地点
     #[serde(rename = "coursePosition")]
-    course_position: String,
+    pub position: String,
     // 开始结束和预选时间
     #[serde(rename = "courseStartDate")]
-    course_start_date: String,
+    pub course_start: String,
     #[serde(rename = "courseEndDate")]
-    course_end_date: String,
+    pub course_end: String,
     // #[serde(rename = "courseSelectType")]
-    // course_select_type: i32,
+    // select_type: i32,
     #[serde(rename = "courseSelectStartDate")]
-    course_select_start_date: String,
+    pub select_start: String,
     #[serde(rename = "courseSelectEndDate")]
-    course_select_end_date: String,
+    pub select_end: String,
     #[serde(rename = "courseCancelEndDate")]
-    course_cancel_end_date: String,
+    pub cancel_end: String,
     // 类型, 美育之类的
+    // #[serde(flatten)]
     // #[serde(rename = "courseNewKind2")]
-    // course_new_kind2: CourseKind,
+    // pub kind: CourseKind,
     #[serde(rename = "courseMaxCount")]
-    course_max_count: i32,
+    pub capacity: i32,
     #[serde(rename = "courseCurrentCount")]
-    course_current_count: i32,
-    // // 开设校区
-    // #[serde(rename = "courseCampus")]
-    // course_campus: String,
-    // // 开设学院
-    // #[serde(rename = "courseCollege")]
-    // course_college: String,
-    // // 开设年级
-    // #[serde(rename = "courseTerm")]
-    // course_term: String,
-    // // 开设人群
-    // #[serde(rename = "courseGroup")]
-    // course_group: String,
-    // 课程作业, 至于课程作业的时间, 那没有显示的必要, 有必要直接再去查吧
-    // #[serde(rename = "courseHomework")]
-    // course_homework: String,
+    pub current: i32,
+    // 开设校区
+    #[serde(rename = "courseCampusList")]
+    pub course_campus: Vec<String>,
+    // 开设学院
+    #[serde(rename = "courseCollegeList")]
+    pub course_college: Vec<String>,
+    // 开设年级
+    #[serde(rename = "courseTermList")]
+    pub course_term: Vec<String>,
+    // 开设人群
+    #[serde(rename = "courseGroupList")]
+    pub course_group: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct CourseKind {
+#[derive(Debug, Deserialize)]
+pub struct CourseKind {
     #[serde(rename = "kindName")]
+    #[allow(dead_code)]
     kind_name: String,
 }
 
 impl Session{
-    /// bykc Login</br>
-    /// return auth token
+    /// # Boya Course Login
+    /// - Need: [`sso_login`](#method.sso_login)
+    /// - Output: Token for Boya Course
     pub async fn bykc_login(&self) -> Result<String, SessionError> {
         // 获取 JSESSIONID
         let res = self
@@ -82,11 +82,13 @@ impl Session{
         Ok(token.to_string())
     }
 
-    // auth_token authtoken 为 bykc_login 获取的 token
-    pub async fn bykc_query_all_course(&self, token: &str) -> Result<String, SessionError> {
+    /// # Boya Course Query
+    /// - Need: [`bykc_login`](#method.bykc_login)
+    /// - Input: Token from [`bykc_login`](#method.bykc_login)
+    pub async fn bykc_query_course(&self, token: &str) -> Result<Vec<BoyaCourse>, SessionError> {
         // 首先初始化 RSA, 设置公钥
         // 这是查询参数, 然后被 sha1 处理
-        let query = "{\"pageNumber\":1,\"pageSize\":20}";
+        let query = "{\"pageNumber\":1,\"pageSize\":10}";
         // 因为查询参数不变, 值就固定 ae84e1f05f40b2e03f933450ca7a344efc0bcee6
         let sha1_query = crypto::hash::sha1(query);
         // sk参数, rsa sha1_query
@@ -114,8 +116,10 @@ impl Session{
             .await?;
         let res = res.text().await?;
         let res = res.trim_matches('"');
-        let res = crypto::aes::aes_decrypt(&res, "SenQBA8xn6CQGNJs");
-        Ok(res)
+        let res = crypto::aes::aes_decrypt(&res, &aes_key);
+        println!("{}", res);
+        let res = serde_json::from_str::<BoyaCourses>(&res).unwrap();
+        Ok(res.data.content)
     }
 
     // sscv/choseCourse
@@ -123,22 +127,16 @@ impl Session{
 
 #[tokio::test]
 async fn test_bykc_login_and_query() {
-    use std::time::Instant;
-
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
     let mut session = Session::new_in_file("cookie.json");
-    session.login(&username, &password).await.unwrap();
+    session.sso_login(&username, &password).await.unwrap();
 
     let token = session.bykc_login().await.unwrap();
-    let res = session.bykc_query_all_course(&token).await.unwrap();
-
-    let start = Instant::now();
-    let json = serde_json::from_str::<BoyaCourse>(&res).unwrap();
-    println!("Time: {:?}", start.elapsed());
-    println!("{:?}", json.data.content[0]);
+    let res = session.bykc_query_course(&token).await.unwrap();
+    println!("{:?}", res[0]);
 
     session.save();
 }

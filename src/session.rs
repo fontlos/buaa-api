@@ -9,7 +9,7 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-/// This is the core of this crate, it is used to store cookies and send requests </br>
+/// This is the core of this crate, it is used to store cookies and send requests <br>
 /// The prefix of most API names is derived from the fourth-level domain name of the corresponding domain name
 #[derive(Debug)]
 pub struct Session {

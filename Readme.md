@@ -21,9 +21,10 @@ The names of APIs might seem unusual because they are derived from their corresp
   - [x] query
   - [ ] select
   - [ ] drop
-- [ ] Smart Classroom => `iclass_*`
+- [x] Smart Classroom => `iclass_*`
   - [x] login
-  - [ ] checkin
+  - [x] checkin
+  - [x] query
 
 APIs not listed above might have been overlooked or deemed unimportant by me, but if you need them, feel free to open an issue or submit a pull request.
 
@@ -36,7 +37,7 @@ use buaa::Session;
 async fn main() {
     let mut session = Session::new_in_file("cookie.json");
 
-    session.login("username", "password").await.unwrap();
+    session.sso_login("username", "password").await.unwrap();
 
     session.uc_login().await.unwrap();
     let state = session.uc_get_state().await.unwrap();

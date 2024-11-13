@@ -5,7 +5,8 @@ use crate::crypto::{x_encode, hash};
 
 impl Session {
     /// # BUAA WiFi Login
-    /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password </br>
+    /// - Input: Username, Password
+    /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
     /// ```rust
     /// use buaa::Session;
     ///

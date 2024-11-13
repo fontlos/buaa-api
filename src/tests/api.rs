@@ -13,7 +13,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let mut session = Session::new_in_file("cookie.json");
-        session.login(&username, &password).await.unwrap();
+        session.sso_login(&username, &password).await.unwrap();
 
         session.save();
     }
@@ -25,7 +25,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let mut session = Session::new_in_file("cookie.json");
-        session.login(&username, &password).await.unwrap();
+        session.sso_login(&username, &password).await.unwrap();
 
         session.uc_login().await.unwrap();
         let state = session.uc_get_state().await.unwrap();

@@ -4,8 +4,8 @@ use crate::utils;
 
 impl Session {
     /// # SSO Login
-    /// This is the most important method and should be called first, so it named `login` directly </br>
-    /// This method is used to login to the SSO system, and the login information will be saved in the cookie </br>
+    /// This is the most important method and should be called first <br>
+    /// This method is used to login to the SSO system, and the login information will be saved in the cookie <br>
     /// If your login information expires, you should also re-call this function to refresh the cookie
     /// ```rust
     /// use buaa::Session;
@@ -14,14 +14,14 @@ impl Session {
     /// async fn main() {
     ///     let mut session = Session::new_in_file("cookie.json");
     ///
-    ///     session.login("username", "password").await.unwrap();
+    ///     session.sso_login("username", "password").await.unwrap();
     ///
     ///     // do something
     ///
     ///     session.save();
     /// }
     /// ```
-    pub async fn login(&self, un:&str, pw: &str) -> Result<(), SessionError> {
+    pub async fn sso_login(&self, un:&str, pw: &str) -> Result<(), SessionError> {
         // 获取登录页 execution 值
         let res = self.get("https://sso.buaa.edu.cn")
             .send()
