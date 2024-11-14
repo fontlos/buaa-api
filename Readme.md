@@ -16,11 +16,12 @@ The names of APIs might seem unusual because they are derived from their corresp
   - [x] get state
 - [ ] Spoc
 - [ ] Course selection
-- [ ] Boya Course => `bykc_*`
+- [x] Boya Course => `bykc_*`
   - [x] login
   - [x] query
-  - [ ] select
-  - [ ] drop
+  - [x] select
+  - [x] drop
+  - [x] A universal request API for extensions
 - [x] Smart Classroom => `iclass_*`
   - [x] login
   - [x] checkin
@@ -43,7 +44,6 @@ async fn main() {
     let state = session.uc_get_state().await.unwrap();
     println!("{}", state);
 
-    session.gw_login("username", "password").await.unwrap();
     session.save();
 }
 ```

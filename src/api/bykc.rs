@@ -82,14 +82,60 @@ impl Session{
         Ok(token.to_string())
     }
 
-    /// # Boya Course Query
+    /// # Boya Universal Request API
     /// - Need: [`bykc_login`](#method.bykc_login)
-    /// - Input: Token from [`bykc_login`](#method.bykc_login)
-    pub async fn bykc_query_course(&self, token: &str) -> Result<Vec<BoyaCourse>, SessionError> {
+    /// - Input:
+    ///     - Query: JSON String for request
+    ///     - URL: API URL
+    ///     - Token from [`bykc_login`](#method.bykc_login)
+    ///
+    /// Other Boyaa APIs don't need to be implemented, if you need to, you can extend it with this generic request API, you can find JS code like the following by intercepting all XHR requests in the browser, via stack calls <br>
+    /// Locate the following sections in the `app.js` with breakpoint debugging
+    ///
+    /// # JS Code
+    ///  ```js
+    /// var y = new h.default;
+    /// y.setPublicKey(b);
+    /// var x = c || {}
+    ///   , w = JSON.stringify(x)
+    ///   , k = (0,
+    /// o.default)(w).toString()
+    ///   , A = y.encrypt(k)
+    ///   , _ = s.getRandomStr(16)
+    ///   , S = y.encrypt(_)
+    ///   , D = d.default.parse(_)
+    ///   , E = l.default.encrypt(d.default.parse(w), D, {
+    ///     iv: D,
+    ///     mode: u.default,
+    ///     padding: f.default
+    /// }).toString()
+    ///   , I = (new Date).getTime() + "";
+    /// g.sk = A,
+    /// g.ak = S,
+    /// g.ts = I;
+    /// var C = function(e) {
+    ///     var t = d.default.parse(_)
+    ///       , n = l.default.decrypt(e.data, t, {
+    ///         iv: t,
+    ///         mode: u.default,
+    ///         padding: f.default
+    ///     })
+    ///       , i = d.default.stringify(n);
+    ///     return i && (e.data = JSON.parse(i)),
+    ///     e
+    /// }
+    /// ```
+    ///
+    /// You can find `Query` in `w = JSON.stringify(x)`
+    ///
+    /// # Example
+    ///
+    /// `getUserProfile` API
+    /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
+    /// - Query: `{}`
+    pub async fn bykc_universal_request(&self, query: &str, url: &str, token: &str) -> Result<String, SessionError> {
         // 首先初始化 RSA, 设置公钥
         // 这是查询参数, 然后被 sha1 处理
-        let query = "{\"pageNumber\":1,\"pageSize\":10}";
-        // 因为查询参数不变, 值就固定 ae84e1f05f40b2e03f933450ca7a344efc0bcee6
         let sha1_query = crypto::hash::sha1(query);
         // sk参数, rsa sha1_query
         let sk = crypto::rsa(&sha1_query);
@@ -109,7 +155,7 @@ impl Session{
         header.insert(HeaderName::from_bytes(b"Ts").unwrap(), HeaderValue::from_str(&time.to_string()).unwrap());
 
         // 获取 JSESSIONID
-        let res = self.post("https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage")
+        let res = self.post(url)
             .headers(header)
             .json(&body)
             .send()
@@ -117,12 +163,45 @@ impl Session{
         let res = res.text().await?;
         let res = res.trim_matches('"');
         let res = crypto::aes::aes_decrypt(&res, &aes_key);
-        println!("{}", res);
+        Ok(res)
+    }
+
+    /// # Boya Course Query
+    /// - Need: [`bykc_login`](#method.bykc_login)
+    /// - Input: Token from [`bykc_login`](#method.bykc_login)
+    pub async fn bykc_course_query(&self, token: &str) -> Result<Vec<BoyaCourse>, SessionError> {
+        let query = "{\"pageNumber\":1,\"pageSize\":10}";
+        let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
+        let res = self.bykc_universal_request(query, url, token).await?;
         let res = serde_json::from_str::<BoyaCourses>(&res).unwrap();
         Ok(res.data.content)
     }
 
-    // sscv/choseCourse
+    /// # Boya Select Course
+    /// - Need: [`bykc_login`](#method.bykc_login)
+    /// - Input:
+    ///     - Course ID from [`bykc_course_query`](#method.bykc_course_query)
+    ///     - Token from [`bykc_login`](#method.bykc_login)
+    /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
+    pub async fn bykc_course_select(&self, id: &str, token: &str) -> Result<String, SessionError> {
+        let query = format!("{{\"courseId\":{}}}", id);
+        let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
+        let res = self.bykc_universal_request(&query, url, token).await?;
+        Ok(res)
+    }
+
+    /// # Boya Drop Course
+    /// - Need: [`bykc_login`](#method.bykc_login)
+    /// - Input:
+    ///     - Course ID from [`bykc_course_query`](#method.bykc_course_query)
+    ///     - Token from [`bykc_login`](#method.bykc_login)
+    /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
+    pub async fn bykc_course_drop(&self, id: &str, token: &str) -> Result<String, SessionError> {
+        let query = format!("{{\"id\":{}}}", id);
+        let url = "https://bykc.buaa.edu.cn/sscv/delChosenCourse";
+        let res = self.bykc_universal_request(&query, url, token).await?;
+        Ok(res)
+    }
 }
 
 #[tokio::test]
@@ -135,8 +214,40 @@ async fn test_bykc_login_and_query() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.bykc_login().await.unwrap();
-    let res = session.bykc_query_course(&token).await.unwrap();
+    let res = session.bykc_course_query(&token).await.unwrap();
     println!("{:?}", res[0]);
+
+    session.save();
+}
+
+#[tokio::test]
+async fn test_bykc_select() {
+    let env = crate::utils::env();
+    let username = env.get("USERNAME").unwrap();
+    let password = env.get("PASSWORD").unwrap();
+
+    let mut session = Session::new_in_file("cookie.json");
+    session.sso_login(&username, &password).await.unwrap();
+
+    let token = session.bykc_login().await.unwrap();
+    let res = session.bykc_course_select("6637", &token).await.unwrap();
+    println!("{}", res);
+
+    session.save();
+}
+
+#[tokio::test]
+async fn test_bykc_drop() {
+    let env = crate::utils::env();
+    let username = env.get("USERNAME").unwrap();
+    let password = env.get("PASSWORD").unwrap();
+
+    let mut session = Session::new_in_file("cookie.json");
+    session.sso_login(&username, &password).await.unwrap();
+
+    let token = session.bykc_login().await.unwrap();
+    let res = session.bykc_course_drop("6637", &token).await.unwrap();
+    println!("{}", res);
 
     session.save();
 }
