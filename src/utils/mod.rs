@@ -51,3 +51,12 @@ pub fn get_ip() -> Option<String> {
         Err(_) => None
     }
 }
+
+#[cfg(feature = "table")]
+use tabled::{settings::Style, Table, Tabled};
+#[cfg(feature = "table")]
+pub fn table<T: Tabled>(tabled: Vec<T>) -> String {
+    Table::new(&tabled)
+        .with(Style::modern_rounded())
+        .to_string()
+}

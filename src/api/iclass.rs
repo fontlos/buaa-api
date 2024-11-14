@@ -20,6 +20,7 @@ struct IClassCourses {
     result: Vec<IClassCourse>,
 }
 
+#[cfg_attr(feature = "table", derive(tabled::Tabled))]
 #[derive(Debug, Deserialize)]
 pub struct IClassCourse {
     #[serde(rename = "course_id")]
@@ -33,6 +34,7 @@ struct IClassSchedules {
     result: Vec<IClassSchedule>,
 }
 
+#[cfg_attr(feature = "table", derive(tabled::Tabled))]
 #[derive(Debug, Deserialize)]
 pub struct IClassSchedule {
     #[serde(rename = "courseSchedId")]
@@ -172,7 +174,7 @@ async fn test_iclass_login() {
 }
 
 #[tokio::test]
-async fn test_iclass_query() {
+async fn test_iclass_query_course() {
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
@@ -188,6 +190,22 @@ async fn test_iclass_query() {
 }
 
 #[tokio::test]
+async fn test_iclass_query_schedule() {
+    let env = crate::utils::env();
+    let username = env.get("USERNAME").unwrap();
+    let password = env.get("PASSWORD").unwrap();
+
+    let mut session = Session::new_in_file("cookie.json");
+    session.sso_login(&username, &password).await.unwrap();
+    let user_id = session.iclass_login().await.unwrap();
+
+    let res = session.iclass_query_schedule("65495", &user_id).await.unwrap();
+    println!("{:#?}", res);
+
+    session.save();
+}
+
+#[tokio::test]
 async fn test_iclass_checkin() {
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
@@ -197,7 +215,7 @@ async fn test_iclass_checkin() {
     session.sso_login(&username, &password).await.unwrap();
     let user_id = session.iclass_login().await.unwrap();
 
-    let res = session.iclass_checkin_schedule("2088500", &user_id).await.unwrap();
+    let res = session.iclass_checkin_schedule("2089655", &user_id).await.unwrap();
     println!("{}", res.text().await.unwrap());
 
     session.save();
