@@ -77,7 +77,11 @@ impl Session{
             .send()
             .await?;
         let url = res.url().as_str();
-        let start = url.find("token=").unwrap() + "token=".len();
+        let lable = match url.find("token=") {
+            Some(s) => s,
+            None => return Err(SessionError::NoToken("From Boya Login".to_string())),
+        };
+        let start = lable + "token=".len();
         let token = &url[start..];
         Ok(token.to_string())
     }
@@ -173,7 +177,7 @@ impl Session{
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
         let res = self.bykc_universal_request(query, url, token).await?;
-        let res = serde_json::from_str::<BoyaCourses>(&res).unwrap();
+        let res = serde_json::from_str::<BoyaCourses>(&res)?;
         Ok(res.data.content)
     }
 

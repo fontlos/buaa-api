@@ -199,7 +199,7 @@ async fn test_iclass_query_schedule() {
     session.sso_login(&username, &password).await.unwrap();
     let user_id = session.iclass_login().await.unwrap();
 
-    let res = session.iclass_query_schedule("65495", &user_id).await.unwrap();
+    let res = session.iclass_query_schedule("64668", &user_id).await.unwrap();
     println!("{:#?}", res);
 
     session.save();
@@ -215,7 +215,7 @@ async fn test_iclass_checkin() {
     session.sso_login(&username, &password).await.unwrap();
     let user_id = session.iclass_login().await.unwrap();
 
-    let res = session.iclass_checkin_schedule("2089655", &user_id).await.unwrap();
+    let res = session.iclass_checkin_schedule("2090542", &user_id).await.unwrap();
     println!("{}", res.text().await.unwrap());
 
     session.save();

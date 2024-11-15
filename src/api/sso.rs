@@ -25,9 +25,8 @@ impl Session {
         // 获取登录页 execution 值
         let res = self.get("https://sso.buaa.edu.cn")
             .send()
-            .await
-            .unwrap();
-        let html = res.text().await.unwrap();
+            .await?;
+        let html = res.text().await?;
         let execution = match utils::get_value_by_lable(&html, "\"execution\" value=\"", "\"") {
             Some(s) => s,
             // TODO 加入 Session 构造器后需要重构这部分
@@ -52,8 +51,7 @@ impl Session {
         let res = self.post("https://sso.buaa.edu.cn/login")
             .form(&form)
             .send()
-            .await
-            .unwrap();
+            .await?;
         if res.status().as_u16() == 200 {
             Ok(())
         } else {
