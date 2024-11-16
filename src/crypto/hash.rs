@@ -1,6 +1,6 @@
 use hmac::{Hmac, Mac};
 use md5::Md5;
-use sha1::{Sha1, Digest};
+use sha1::{Digest, Sha1};
 
 pub fn md5_hmac(data: &str, key: &str) -> String {
     let mut hmac = Hmac::<Md5>::new_from_slice(key.as_bytes()).unwrap();

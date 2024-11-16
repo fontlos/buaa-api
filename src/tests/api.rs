@@ -3,8 +3,8 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::Session;
     use crate::utils::env;
+    use crate::Session;
 
     #[tokio::test]
     async fn test_login() {
@@ -42,7 +42,7 @@ mod tests {
         let session = Session::new_in_memory();
         match session.gw_login(&username, &password).await {
             Ok(_) => (),
-            Err(e) => eprintln!("{:?}", e)
+            Err(e) => eprintln!("{:?}", e),
         }
     }
 }

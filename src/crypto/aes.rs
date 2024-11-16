@@ -1,6 +1,6 @@
+use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
-use aes::cipher::{BlockEncrypt, BlockDecrypt, KeyInit, generic_array::GenericArray};
-use base64::{Engine as _, engine::general_purpose};
+use base64::{engine::general_purpose, Engine as _};
 
 pub fn aes_encrypt(data: &str, key: &str) -> String {
     // 将密钥转换为字节数组
@@ -54,7 +54,7 @@ pub fn aes_decrypt(data: &str, key: &str) -> String {
 
 #[test]
 fn test_aes_encrypt() {
-    let raw= "{\"pageNumber\":1,\"pageSize\":20}";
+    let raw = "{\"pageNumber\":1,\"pageSize\":20}";
     let key = "SenQBA8xn6CQGNJs";
     let decrypted = aes_encrypt(&raw, key);
     assert_eq!("RdzgYtkdw+V1Y5t4ieLoqjLJDIll1yDnqV4R1I+E/yM=", decrypted);
@@ -62,8 +62,8 @@ fn test_aes_encrypt() {
 
 #[test]
 fn test_aes_decrypt() {
-    let env =  crate::utils::env();
-    let raw= env.get("AES_RAW").unwrap();
+    let env = crate::utils::env();
+    let raw = env.get("AES_RAW").unwrap();
     let key = "B55Ya5Y7FRa4CJm3";
     let decrypted = aes_decrypt(&raw, key);
     println!("{}", decrypted);

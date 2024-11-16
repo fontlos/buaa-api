@@ -2,12 +2,14 @@
 
 mod api;
 mod crypto;
+mod error;
 mod session;
 mod tests;
 pub mod utils;
 
 pub use api::{
     bykc::BoyaCourse,
-    iclass::IClassCourse,
+    iclass::{IClassCourse, IClassSchedule},
 };
-pub use session::{Session, SessionError};
+pub use error::SessionError;
+pub use session::Session;

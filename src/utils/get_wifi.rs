@@ -8,17 +8,22 @@ pub fn get_wifi() -> &str {
 #[cfg(target_os = "windows")]
 pub fn get_wifi() -> windows::core::Result<String> {
     use windows::{
+        Win32::Foundation::{ERROR_SUCCESS, HANDLE},
         Win32::NetworkManagement::WiFi::{
-            WlanOpenHandle, WlanEnumInterfaces, WlanQueryInterface, WlanCloseHandle, WlanFreeMemory,
-            WLAN_OPCODE_VALUE_TYPE, WLAN_INTERFACE_INFO_LIST, WLAN_CONNECTION_ATTRIBUTES,
-            wlan_intf_opcode_current_connection
+            wlan_intf_opcode_current_connection, WlanCloseHandle, WlanEnumInterfaces,
+            WlanFreeMemory, WlanOpenHandle, WlanQueryInterface, WLAN_CONNECTION_ATTRIBUTES,
+            WLAN_INTERFACE_INFO_LIST, WLAN_OPCODE_VALUE_TYPE,
         },
-        Win32::Foundation::{HANDLE, ERROR_SUCCESS}
     };
     unsafe {
         let mut client_handle: HANDLE = HANDLE::default();
         let mut negotiated_version: u32 = 0;
-        let result = WlanOpenHandle(2, Some(std::ptr::null()), &mut negotiated_version, &mut client_handle);
+        let result = WlanOpenHandle(
+            2,
+            Some(std::ptr::null()),
+            &mut negotiated_version,
+            &mut client_handle,
+        );
         if result != ERROR_SUCCESS.0 {
             return Ok(format!("WlanOpenHandle failed with error: {}", result));
         }
@@ -51,7 +56,11 @@ pub fn get_wifi() -> windows::core::Result<String> {
 
             if result == ERROR_SUCCESS.0 && !p_conn_attr.is_null() {
                 let conn_attr = &*p_conn_attr;
-                ssid = String::from_utf8_lossy(&conn_attr.wlanAssociationAttributes.dot11Ssid.ucSSID[..conn_attr.wlanAssociationAttributes.dot11Ssid.uSSIDLength as usize]).to_string();
+                ssid = String::from_utf8_lossy(
+                    &conn_attr.wlanAssociationAttributes.dot11Ssid.ucSSID
+                        [..conn_attr.wlanAssociationAttributes.dot11Ssid.uSSIDLength as usize],
+                )
+                .to_string();
                 WlanFreeMemory(p_conn_attr as *mut _);
                 break;
             }
@@ -59,12 +68,12 @@ pub fn get_wifi() -> windows::core::Result<String> {
 
         WlanFreeMemory(p_if_list as *mut _);
         WlanCloseHandle(client_handle, Some(std::ptr::null()));
-        return Ok(ssid)
+        return Ok(ssid);
     }
 }
 
 #[test]
 fn test_get_wifi() {
     let s = get_wifi().unwrap();
-    println!("{}",s)
+    println!("{}", s)
 }

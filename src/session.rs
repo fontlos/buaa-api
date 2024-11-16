@@ -1,7 +1,9 @@
 use cookie_store::{Cookie, CookieStore};
-use reqwest::{Client, header::{HeaderMap, HeaderName, HeaderValue}};
+use reqwest::{
+    header::{HeaderMap, HeaderName, HeaderValue},
+    Client,
+};
 use reqwest_cookie_store::CookieStoreMutex;
-use thiserror::Error;
 
 use std::fs::{self, File};
 use std::io::BufReader;
@@ -16,22 +18,6 @@ pub struct Session {
     client: Client,
     cookie_path: Option<PathBuf>,
     cookie_store: Arc<CookieStoreMutex>,
-}
-
-#[derive(Debug, Error)]
-pub enum SessionError{
-    #[error("Cookie Error")]
-    CookieError,
-    #[error("Failed parse JSON: {0}")]
-    JsonParseError(#[from] serde_json::Error),
-    #[error("No Execution Value. BUT this is usually not an error, it means the cookie is still valid, causes redirects to a post-landing page, so you can't get the execution value")]
-    NoExecutionValue,
-    #[error("No token: {0}")]
-    NoToken(String),
-    #[error("Request Error")]
-    RequestError(#[from] reqwest::Error),
-    #[error("Login Error: {0}")]
-    LoginError(String),
 }
 
 impl Session {
@@ -74,10 +60,10 @@ impl Session {
     pub fn new_in_file(path: &str) -> Self {
         let path = PathBuf::from(path);
         let cookie_store = match File::open(&path) {
-            Ok(f) => CookieStore::load_all(
-                BufReader::new(f),
-                |s| serde_json::from_str::<Cookie>(s),
-            ).unwrap(),
+            Ok(f) => {
+                CookieStore::load_all(BufReader::new(f), |s| serde_json::from_str::<Cookie>(s))
+                    .unwrap()
+            }
             Err(_) => CookieStore::default(),
         };
 
@@ -101,9 +87,7 @@ impl Session {
     pub fn save(&mut self) {
         let path = match &self.cookie_path {
             Some(p) => p.to_str().unwrap(),
-            None => {
-                "cookies.json"
-            },
+            None => "cookies.json",
         };
         let mut file = match fs::OpenOptions::new()
             .write(true)
@@ -114,11 +98,13 @@ impl Session {
             Ok(f) => f,
             Err(e) => {
                 eprintln!("Failed to open cookie file: {:?}", e);
-                return
-            },
+                return;
+            }
         };
         let store = self.cookie_store.lock().unwrap();
-        if let Err(e) = store.save_incl_expired_and_nonpersistent(&mut file, |s| serde_json::to_string(s)) {
+        if let Err(e) =
+            store.save_incl_expired_and_nonpersistent(&mut file, |s| serde_json::to_string(s))
+        {
             eprintln!("Failed to save cookie store: {}", e);
         }
     }

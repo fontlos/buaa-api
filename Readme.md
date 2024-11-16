@@ -9,7 +9,7 @@ The names of APIs might seem unusual because they are derived from their corresp
 
 ## Todo
 
-- [x] SSO Login => `login`
+- [x] SSO Login => `sso_login`
 - [x] BUAA WiFi Login => `gw_login`
 - [x] User Center => `uc_*`
   - [x] login

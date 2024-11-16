@@ -1,7 +1,6 @@
+use des::cipher::{generic_array::GenericArray, BlockEncrypt, KeyInit};
 use des::Des;
-use des::cipher::{BlockEncrypt, KeyInit, generic_array::GenericArray};
 use hex::ToHex;
-
 
 /// DES encrypt for iclass api, use ECB mode
 pub fn des_encrypt(data: &str) -> String {
