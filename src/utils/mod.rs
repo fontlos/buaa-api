@@ -53,10 +53,15 @@ pub fn get_ip() -> Option<String> {
 }
 
 #[cfg(feature = "table")]
-use tabled::{settings::Style, Table, Tabled};
+use tabled::{
+    settings::{Alignment, Style},
+    Table, Tabled,
+};
 #[cfg(feature = "table")]
 pub fn table<T: Tabled>(tabled: Vec<T>) -> String {
     Table::new(&tabled)
         .with(Style::modern_rounded())
+        .with(Alignment::center())
+        .with(Alignment::center_vertical())
         .to_string()
 }
