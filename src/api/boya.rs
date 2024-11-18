@@ -343,7 +343,7 @@ impl Session {
     ///     - Course ID from [`bykc_query_course`](#method.bykc_query_course)
     ///     - Token from [`bykc_login`](#method.bykc_login)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn bykc_select_course(&self, id: &str, token: &str) -> Result<String, SessionError> {
+    pub async fn bykc_select_course(&self, id: u32, token: &str) -> Result<String, SessionError> {
         let query = format!("{{\"courseId\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
         let res = self.bykc_universal_request(&query, url, token).await?;
@@ -356,7 +356,7 @@ impl Session {
     ///     - Course ID from [`bykc_query_course`](#method.bykc_query_course)
     ///     - Token from [`bykc_login`](#method.bykc_login)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn bykc_drop_course(&self, id: &str, token: &str) -> Result<String, SessionError> {
+    pub async fn bykc_drop_course(&self, id: u32, token: &str) -> Result<String, SessionError> {
         let query = format!("{{\"id\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/delChosenCourse";
         let res = self.bykc_universal_request(&query, url, token).await?;
@@ -423,7 +423,7 @@ async fn test_bykc_select() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.bykc_login().await.unwrap();
-    let res = session.bykc_select_course("6637", &token).await.unwrap();
+    let res = session.bykc_select_course(6637, &token).await.unwrap();
     println!("{}", res);
 
     session.save();
@@ -439,7 +439,7 @@ async fn test_bykc_drop() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.bykc_login().await.unwrap();
-    let res = session.bykc_drop_course("6637", &token).await.unwrap();
+    let res = session.bykc_drop_course(6637, &token).await.unwrap();
     println!("{}", res);
 
     session.save();
