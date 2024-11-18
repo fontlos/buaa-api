@@ -20,6 +20,21 @@ pub fn get_time() -> u128 {
         .as_millis()
 }
 
+pub fn get_primitive_time(){
+    // 获取当前的 UTC 时间
+    let now_utc = time::OffsetDateTime::now_utc();
+
+    // 获取本地时区偏移量
+    let local_offset = time::UtcOffset::from_hms(8, 0, 0).unwrap();
+
+    // 将 UTC 时间转换为本地时间
+    let now_local = now_utc.to_offset(local_offset);
+
+    // 将 OffsetDateTime 转换为 PrimitiveDateTime
+    let now = time::PrimitiveDateTime::new(now_local.date(), now_local.time());
+    println!("{}", now);
+}
+
 pub fn get_value_by_lable(text: &str, right: &str, left: &str) -> Option<String> {
     if let Some(start) = text.find(right) {
         // 计算开始位置

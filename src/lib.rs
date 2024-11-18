@@ -8,7 +8,7 @@ mod tests;
 pub mod utils;
 
 pub use api::{
-    bykc::BoyaCourse,
+    boya::BoyaCourse,
     iclass::{IClassCourse, IClassSchedule},
 };
 pub use error::SessionError;

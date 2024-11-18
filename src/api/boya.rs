@@ -187,9 +187,9 @@ fn tabled_boya_campus(capacity: &BoyaCampus) -> String {
 }
 
 impl Session {
-    /// # Boya Course Login
+    /// # Boya Login
     /// - Need: [`sso_login`](#method.sso_login)
-    /// - Output: Token for Boya Course
+    /// - Output: Token for Boya API
     pub async fn bykc_login(&self) -> Result<String, SessionError> {
         // 获取 JSESSIONID
         let res = self
@@ -306,10 +306,10 @@ impl Session {
         Ok(res)
     }
 
-    /// # Boya Course Query
+    /// # Query Course
     /// - Need: [`bykc_login`](#method.bykc_login)
     /// - Input: Token from [`bykc_login`](#method.bykc_login)
-    pub async fn bykc_course_query(&self, token: &str) -> Result<Vec<BoyaCourse>, SessionError> {
+    pub async fn bykc_query_course(&self, token: &str) -> Result<Vec<BoyaCourse>, SessionError> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
         let res = self.bykc_universal_request(query, url, token).await?;
@@ -317,26 +317,46 @@ impl Session {
         Ok(res.data.content)
     }
 
-    /// # Boya Select Course
+    /// # Query Selected Course
+    /// - Need: [`bykc_login`](#method.bykc_login)
+    /// - Input: Token from [`bykc_login`](#method.bykc_login)
+    pub async fn bykc_query_selected(&self, token: &str) -> Result<String, SessionError> {
+        let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
+        let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
+        let res = self.bykc_universal_request(query, url, token).await?;
+        Ok(res)
+    }
+
+    /// # Query Statistic
+    /// - Need: [`bykc_login`](#method.bykc_login)
+    /// - Input: Token from [`bykc_login`](#method.bykc_login)
+    pub async fn bykc_query_statistic(&self, token: &str) -> Result<String, SessionError> {
+        let query = "{}";
+        let url = "https://bykc.buaa.edu.cn/sscv/queryStatisticByUserId";
+        let res = self.bykc_universal_request(query, url, token).await?;
+        Ok(res)
+    }
+
+    /// # Select Course
     /// - Need: [`bykc_login`](#method.bykc_login)
     /// - Input:
-    ///     - Course ID from [`bykc_course_query`](#method.bykc_course_query)
+    ///     - Course ID from [`bykc_query_course`](#method.bykc_query_course)
     ///     - Token from [`bykc_login`](#method.bykc_login)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn bykc_course_select(&self, id: &str, token: &str) -> Result<String, SessionError> {
+    pub async fn bykc_select_course(&self, id: &str, token: &str) -> Result<String, SessionError> {
         let query = format!("{{\"courseId\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
         let res = self.bykc_universal_request(&query, url, token).await?;
         Ok(res)
     }
 
-    /// # Boya Drop Course
+    /// # Drop Course
     /// - Need: [`bykc_login`](#method.bykc_login)
     /// - Input:
-    ///     - Course ID from [`bykc_course_query`](#method.bykc_course_query)
+    ///     - Course ID from [`bykc_query_course`](#method.bykc_query_course)
     ///     - Token from [`bykc_login`](#method.bykc_login)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn bykc_course_drop(&self, id: &str, token: &str) -> Result<String, SessionError> {
+    pub async fn bykc_drop_course(&self, id: &str, token: &str) -> Result<String, SessionError> {
         let query = format!("{{\"id\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/delChosenCourse";
         let res = self.bykc_universal_request(&query, url, token).await?;
@@ -354,27 +374,43 @@ async fn test_bykc_login_and_query() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.bykc_login().await.unwrap();
-    let res = session.bykc_course_query(&token).await.unwrap();
+    let res = session.bykc_query_course(&token).await.unwrap();
     println!("{:?}", res);
     // println!("{}", utils::table(res));
 
     session.save();
 }
 
-#[test]
-fn test_time() {
-    // 获取当前的 UTC 时间
-    let now_utc = time::OffsetDateTime::now_utc();
+#[tokio::test]
+async fn test_bykc_query_selected() {
+    let env = crate::utils::env();
+    let username = env.get("USERNAME").unwrap();
+    let password = env.get("PASSWORD").unwrap();
 
-    // 获取本地时区偏移量
-    let local_offset = time::UtcOffset::from_hms(8, 0, 0).unwrap();
+    let mut session = Session::new_in_file("cookie.json");
+    session.sso_login(&username, &password).await.unwrap();
 
-    // 将 UTC 时间转换为本地时间
-    let now_local = now_utc.to_offset(local_offset);
+    let token = session.bykc_login().await.unwrap();
+    let res = session.bykc_query_selected(&token).await.unwrap();
+    println!("{}", res);
 
-    // 将 OffsetDateTime 转换为 PrimitiveDateTime
-    let now = PrimitiveDateTime::new(now_local.date(), now_local.time());
-    println!("{}", now);
+    session.save();
+}
+
+#[tokio::test]
+async fn test_bykc_query_statistic() {
+    let env = crate::utils::env();
+    let username = env.get("USERNAME").unwrap();
+    let password = env.get("PASSWORD").unwrap();
+
+    let mut session = Session::new_in_file("cookie.json");
+    session.sso_login(&username, &password).await.unwrap();
+
+    let token = session.bykc_login().await.unwrap();
+    let res = session.bykc_query_statistic(&token).await.unwrap();
+    println!("{}", res);
+
+    session.save();
 }
 
 #[tokio::test]
@@ -387,7 +423,7 @@ async fn test_bykc_select() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.bykc_login().await.unwrap();
-    let res = session.bykc_course_select("6637", &token).await.unwrap();
+    let res = session.bykc_select_course("6637", &token).await.unwrap();
     println!("{}", res);
 
     session.save();
@@ -403,42 +439,8 @@ async fn test_bykc_drop() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.bykc_login().await.unwrap();
-    let res = session.bykc_course_drop("6637", &token).await.unwrap();
+    let res = session.bykc_drop_course("6637", &token).await.unwrap();
     println!("{}", res);
 
     session.save();
-}
-
-#[test]
-fn serde_datetime() {
-    #[derive(Deserialize, Debug)]
-    struct MyStruct {
-        #[serde(deserialize_with = "deserialize_datetime")]
-        date: PrimitiveDateTime,
-    }
-
-    // 自定义反序列化函数
-    fn deserialize_datetime<'de, D>(deserializer: D) -> Result<PrimitiveDateTime, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // 定义自定义格式字符串
-        let format_string =
-            format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
-
-        let s: String = Deserialize::deserialize(deserializer)?;
-        println!("Deserializing date string: {}", s); // 添加调试信息
-
-        PrimitiveDateTime::parse(&s, &format_string).map_err(|e| {
-            println!("Error parsing date string: {}", e); // 添加调试信息
-            serde::de::Error::custom(e)
-        })
-    }
-
-    let json_data = r#"{"date": "2024-11-30 14:30:00"}"#;
-
-    match serde_json::from_str::<MyStruct>(json_data) {
-        Ok(my_struct) => println!("Deserialized date: {:?}", my_struct.date),
-        Err(e) => println!("Error deserializing JSON: {}", e),
-    }
 }
