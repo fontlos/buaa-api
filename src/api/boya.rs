@@ -121,7 +121,7 @@ where
     let value: Value = Deserialize::deserialize(deserializer)?;
     match value.get("kindName").and_then(Value::as_str) {
         Some(kind_name) => match kind_name {
-            "安全教育" => Ok(BoyaKind::AnQuan),
+            "安全健康" => Ok(BoyaKind::AnQuan),
             "德育" => Ok(BoyaKind::DeYu),
             "劳动教育" => Ok(BoyaKind::LaoDong),
             "美育" => Ok(BoyaKind::MeiYu),
@@ -134,7 +134,7 @@ where
 #[cfg(feature = "table")]
 fn tabled_boya_kind(capacity: &BoyaKind) -> String {
     match capacity {
-        BoyaKind::AnQuan => "安全教育".to_string(),
+        BoyaKind::AnQuan => "安全健康".to_string(),
         BoyaKind::DeYu => "德育".to_string(),
         BoyaKind::LaoDong => "劳动教育".to_string(),
         BoyaKind::MeiYu => "美育".to_string(),
