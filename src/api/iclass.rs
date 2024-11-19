@@ -5,6 +5,8 @@ use serde::Deserialize;
 
 use crate::{crypto, utils, Session, SessionError};
 
+use super::boya::deserialize_time;
+
 #[derive(Deserialize)]
 struct IClassLogin {
     result: IClassLoginResult,
@@ -39,8 +41,9 @@ struct IClassSchedules {
 pub struct IClassSchedule {
     #[serde(rename = "courseSchedId")]
     pub id: String,
-    #[serde(rename = "teachTime")]
-    pub time: String,
+    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(rename = "classBeginTime")]
+    pub time: time::PrimitiveDateTime,
     #[serde(rename = "signStatus")]
     pub state: String,
 }

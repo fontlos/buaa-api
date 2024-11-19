@@ -61,24 +61,25 @@ fn tabled_boya_position(s: &str) -> String {
 
 #[derive(Debug, Deserialize)]
 pub struct BoyaTime {
-    #[serde(deserialize_with = "deserialize_boya_time")]
+    #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "courseStartDate")]
     pub course_start: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_boya_time")]
+    #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "courseEndDate")]
     pub course_end: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_boya_time")]
+    #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "courseSelectStartDate")]
     pub select_start: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_boya_time")]
+    #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "courseSelectEndDate")]
     pub select_end: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_boya_time")]
+    #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "courseCancelEndDate")]
     pub cancel_end: PrimitiveDateTime,
 }
 
-fn deserialize_boya_time<'de, D>(deserializer: D) -> Result<PrimitiveDateTime, D::Error>
+// 和 iclass 共用的
+pub(super) fn deserialize_time<'de, D>(deserializer: D) -> Result<PrimitiveDateTime, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -91,7 +92,7 @@ where
 }
 
 #[cfg(feature = "table")]
-fn tabled_boya_time(time: &BoyaTime) -> String {
+pub(super) fn tabled_boya_time(time: &BoyaTime) -> String {
     let format_string = format_description::parse("[year].[month].[day] [hour]:[minute]").unwrap();
 
     let formatted_course_start = time.course_start.format(&format_string).unwrap();
