@@ -1,7 +1,7 @@
 //! Smart Classroom System (iclass) API
 
 use reqwest::Response;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{crypto, utils, Session, SessionError};
 
@@ -23,7 +23,7 @@ struct IClassCourses {
 }
 
 #[cfg_attr(feature = "table", derive(tabled::Tabled))]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct IClassCourse {
     #[serde(rename = "course_id")]
     pub id: String,
