@@ -57,6 +57,7 @@ impl Session {
     ///     session.save();
     /// }
     /// ```
+    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn new_in_file(path: &str) -> Self {
         let path = PathBuf::from(path);
         let cookie_store = match File::open(&path) {
@@ -84,6 +85,7 @@ impl Session {
         }
     }
     /// save cookies manually
+    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn save(&mut self) {
         let path = match &self.cookie_path {
             Some(p) => p.to_str().unwrap(),
@@ -109,6 +111,7 @@ impl Session {
         }
     }
 
+    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn have_cookie_path(&self) -> bool {
         self.cookie_path.is_some()
     }

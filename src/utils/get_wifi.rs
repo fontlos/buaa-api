@@ -1,79 +1,81 @@
-// TODO 其他平台暂时按成功处理
-#[cfg(not(target_os = "windows"))]
-pub fn get_wifi() -> &str {
-    "BUAA-WiFi"
-}
-
-// 因为没有其他测试平台所以只做了Windows
 #[cfg(target_os = "windows")]
-pub fn get_wifi() -> windows::core::Result<String> {
-    use windows::{
-        Win32::Foundation::{ERROR_SUCCESS, HANDLE},
-        Win32::NetworkManagement::WiFi::{
-            wlan_intf_opcode_current_connection, WlanCloseHandle, WlanEnumInterfaces,
-            WlanFreeMemory, WlanOpenHandle, WlanQueryInterface, WLAN_CONNECTION_ATTRIBUTES,
-            WLAN_INTERFACE_INFO_LIST, WLAN_OPCODE_VALUE_TYPE,
-        },
-    };
-    unsafe {
-        let mut client_handle: HANDLE = HANDLE::default();
-        let mut negotiated_version: u32 = 0;
-        let result = WlanOpenHandle(
-            2,
-            Some(std::ptr::null()),
-            &mut negotiated_version,
-            &mut client_handle,
-        );
-        if result != ERROR_SUCCESS.0 {
-            return Ok(format!("WlanOpenHandle failed with error: {}", result));
-        }
+pub fn get_wifi_ssid() -> Option<String> {
+    use std::process::Command;
 
-        let mut p_if_list: *mut WLAN_INTERFACE_INFO_LIST = std::ptr::null_mut();
-        let result = WlanEnumInterfaces(client_handle, Some(std::ptr::null()), &mut p_if_list);
-        if result != ERROR_SUCCESS.0 {
-            WlanCloseHandle(client_handle, Some(std::ptr::null()));
-            return Ok(format!("WlanEnumInterfaces failed with error: {}", result));
-        }
+    let output = Command::new("netsh")
+        .args(&["wlan", "show", "interfaces"])
+        .output()
+        .ok()?;
 
-        let if_list = &*p_if_list;
-        let mut ssid = String::from("Unknown Error");
-
-        for i in 0..if_list.dwNumberOfItems {
-            let p_if_info = &if_list.InterfaceInfo[i as usize];
-            let mut p_conn_attr: *mut WLAN_CONNECTION_ATTRIBUTES = std::ptr::null_mut();
-            let mut conn_attr_size: u32 = 0;
-            let mut op_code: WLAN_OPCODE_VALUE_TYPE = WLAN_OPCODE_VALUE_TYPE(0);
-
-            let result = WlanQueryInterface(
-                client_handle,
-                &p_if_info.InterfaceGuid,
-                wlan_intf_opcode_current_connection,
-                Some(std::ptr::null()),
-                &mut conn_attr_size,
-                &mut p_conn_attr as *mut _ as *mut _,
-                Some(&mut op_code),
-            );
-
-            if result == ERROR_SUCCESS.0 && !p_conn_attr.is_null() {
-                let conn_attr = &*p_conn_attr;
-                ssid = String::from_utf8_lossy(
-                    &conn_attr.wlanAssociationAttributes.dot11Ssid.ucSSID
-                        [..conn_attr.wlanAssociationAttributes.dot11Ssid.uSSIDLength as usize],
-                )
-                .to_string();
-                WlanFreeMemory(p_conn_attr as *mut _);
-                break;
-            }
-        }
-
-        WlanFreeMemory(p_if_list as *mut _);
-        WlanCloseHandle(client_handle, Some(std::ptr::null()));
-        return Ok(ssid);
+    if output.status.success() {
+        let output_str = String::from_utf8_lossy(&output.stdout);
+        let ssid = output_str
+            .lines()
+            .find(|line| line.contains("SSID"))?
+            .split(":")
+            .nth(1)?
+            .trim()
+            .to_string();
+        Some(ssid)
+    } else {
+        None
     }
 }
 
+#[cfg(target_os = "macos")]
+fn get_wifi_ssid() -> Option<String> {
+    use std::process::Command;
+
+    let output = Command::new("networksetup")
+        .args(&["-getairportnetwork", "en0"])
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let ssid = String::from_utf8_lossy(&output.stdout)
+            .trim()
+            .split(": ")
+            .nth(1)?
+            .to_string();
+        Some(ssid)
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn get_wifi_ssid() -> Option<String> {
+    use std::process::Command;
+
+    let output = Command::new("iwgetid")
+        .arg("-r")
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let ssid = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        Some(ssid)
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "android")]
+fn get_wifi_ssid() -> Option<String> {
+    // 使用 JNI 调用 Java 代码来获取 SSID
+    // 这里需要编写相应的 Java 代码并通过 JNI 调用
+    None
+}
+
+#[cfg(target_os = "ios")]
+fn get_wifi_ssid() -> Option<String> {
+    // 使用 FFI 调用 Objective-C 代码来获取 SSID
+    // 这里需要编写相应的 Objective-C 代码并通过 FFI 调用
+    None
+}
+
 #[test]
-fn test_get_wifi() {
-    let s = get_wifi().unwrap();
-    println!("{}", s)
+fn test_get_wifi_ssid() {
+    let s = get_wifi_ssid().unwrap();
+    assert_eq!("BUAA-WiFi", s)
 }

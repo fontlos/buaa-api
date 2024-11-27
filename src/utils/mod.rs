@@ -1,5 +1,7 @@
+#[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
 mod get_wifi;
-pub use get_wifi::get_wifi;
+#[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
+pub use get_wifi::get_wifi_ssid;
 
 use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
 

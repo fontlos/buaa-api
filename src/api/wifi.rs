@@ -18,9 +18,11 @@ impl Session {
     /// ```
     pub async fn wifi_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
-        // 目前只对 Windows 进行检测, 其他平台无论如何都会尝试连接
-        if &utils::get_wifi().unwrap() != "BUAA-WiFi" {
-            return Ok(());
+        // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
+        if let Some(s) = utils::get_wifi_ssid() {
+            if s != "BUAA-WiFi" {
+                return Ok(());
+            }
         }
 
         // 获取本机 IP

@@ -26,14 +26,6 @@ thiserror = "2.0.3"
 time = "0.3.36"
 tokio = { version = "1.39.2", features = ["macros"] }
 
-[target.'cfg(windows)'.dependencies]
-[dependencies.windows]
-version = "0.58.0"
-features = [
-    "Win32_Foundation",
-    "Win32_NetworkManagement_WiFi",
-]
-
 [features]
 default = []
 table = ["tabled", "textwrap"]
