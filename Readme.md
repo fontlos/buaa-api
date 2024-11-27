@@ -10,7 +10,9 @@
 - [x] User Center => `user_*`
   - [x] login
   - [x] get state
-- [ ] Spoc
+- [ ] Spoc => `spoc_*`
+  - [x] login
+  - [x] query class table
 - [ ] Course selection
 - [x] Boya Course => `boya_*`
   - [x] login
@@ -22,6 +24,9 @@
   - [x] login
   - [x] checkin
   - [x] query
+- [ ] BUAA App => `app_*`
+  - [x] login
+  - [x] query class table
 
 APIs not listed above might have been overlooked or deemed unimportant by me, but if you need them, feel free to open an issue or submit a pull request.
 

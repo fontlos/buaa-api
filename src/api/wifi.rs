@@ -17,7 +17,8 @@ impl Session {
     /// }
     /// ```
     pub async fn wifi_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
-        // 在 Windows 平台上先检测 WiFi 名称, 不符合就直接返回
+        // 先检测 WiFi 名称, 不符合就直接返回以节省时间
+        // 目前只对 Windows 进行检测, 其他平台无论如何都会尝试连接
         if &utils::get_wifi().unwrap() != "BUAA-WiFi" {
             return Ok(());
         }

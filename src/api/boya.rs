@@ -9,6 +9,7 @@ use crate::{crypto, utils, Session, SessionError};
 #[derive(Deserialize)]
 struct BoyaStatus {
     status: String,
+    errmsg: String,
 }
 
 #[derive(Deserialize)]
@@ -197,19 +198,27 @@ impl Session {
     /// - Need: [`sso_login`](#method.sso_login)
     /// - Output: Token for Boya API
     pub async fn boya_login(&self) -> Result<String, SessionError> {
+        let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
         // 获取 JSESSIONID
         let res = self
-            .get("https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin")
+            .get(url)
             .send()
             .await?;
-        let url = res.url().as_str();
-        let lable = match url.find("token=") {
-            Some(s) => s,
+        println!("{}", res.url().as_str());
+        // 未转跳就证明登录过期
+        if res.url().as_str() == url {
+            return Err(SessionError::LoginExpired("SSO Expired".to_string()));
+        }
+        let mut query = res.url().query_pairs();
+        let token = match query.next() {
+            Some(t) => t,
             None => return Err(SessionError::LoginError("No Token".to_string())),
         };
-        let start = lable + "token=".len();
-        let token = &url[start..];
-        Ok(token.to_string())
+        if token.0 == "token" {
+            return Ok(token.1.to_string());
+        } else {
+            return Err(SessionError::LoginError("No Token".to_string()));
+        }
     }
 
     /// # Boya Universal Request API
@@ -279,7 +288,7 @@ impl Session {
         // ak参数, rsa aes_key
         let ak = crypto::rsa(aes_key);
         // 这是请求的负载, 是使用 aes 加密的查询参数
-        let body = crypto::aes::aes_encrypt(query, aes_key);
+        let body = crypto::aes::aes_encrypt_ecb(query, aes_key);
         let time = utils::get_time();
 
         let mut header = HeaderMap::new();
@@ -309,6 +318,14 @@ impl Session {
         let res = res.text().await?;
         let res = res.trim_matches('"');
         let res = crypto::aes::aes_decrypt(&res, &aes_key);
+
+        let status = serde_json::from_str::<BoyaStatus>(&res)?;
+        if status.status == "98005399" {
+            return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
+        }
+        if status.status != "0" {
+            return Err(SessionError::APIError(status.errmsg));
+        }
         Ok(res)
     }
 
@@ -319,13 +336,6 @@ impl Session {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
         let res = self.boya_universal_request(query, url, token).await?;
-
-        // {"status": "98005399","errmsg": "您的会话已失效,请重新登录后再试,谢谢!"}
-        let status = serde_json::from_str::<BoyaStatus>(&res)?;
-        if status.status != "0" {
-            return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
-        }
-
         let res = serde_json::from_str::<BoyaCourses>(&res)?;
         Ok(res.data.content)
     }
@@ -337,12 +347,6 @@ impl Session {
         let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
         let res = self.boya_universal_request(query, url, token).await?;
-
-        let status = serde_json::from_str::<BoyaStatus>(&res)?;
-        if status.status != "0" {
-            return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
-        }
-
         Ok(res)
     }
 
@@ -353,50 +357,32 @@ impl Session {
         let query = "{}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStatisticByUserId";
         let res = self.boya_universal_request(query, url, token).await?;
-
-        let status = serde_json::from_str::<BoyaStatus>(&res)?;
-        if status.status != "0" {
-            return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
-        }
-
         Ok(res)
     }
 
     /// # Select Course
     /// - Need: [`boya_login`](#method.boya_login)
     /// - Input:
-    ///     - Course ID from [`boya_query_course`](#method.boya_query_course)
     ///     - Token from [`boya_login`](#method.boya_login)
+    ///     - Course ID from [`boya_query_course`](#method.boya_query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn bykc_select_course(&self, id: u32, token: &str) -> Result<String, SessionError> {
+    pub async fn bykc_select_course(&self, token: &str, id: u32) -> Result<String, SessionError> {
         let query = format!("{{\"courseId\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
         let res = self.boya_universal_request(&query, url, token).await?;
-
-        let status = serde_json::from_str::<BoyaStatus>(&res)?;
-        if status.status != "0" {
-            return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
-        }
-
         Ok(res)
     }
 
     /// # Drop Course
     /// - Need: [`boya_login`](#method.boya_login)
     /// - Input:
-    ///     - Course ID from [`boya_query_course`](#method.boya_query_course)
     ///     - Token from [`boya_login`](#method.boya_login)
+    ///     - Course ID from [`boya_query_course`](#method.boya_query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn boya_drop_course(&self, id: u32, token: &str) -> Result<String, SessionError> {
+    pub async fn boya_drop_course(&self, token: &str, id: u32) -> Result<String, SessionError> {
         let query = format!("{{\"id\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/delChosenCourse";
         let res = self.boya_universal_request(&query, url, token).await?;
-
-        let status = serde_json::from_str::<BoyaStatus>(&res)?;
-        if status.status != "0" {
-            return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
-        }
-
         Ok(res)
     }
 }
@@ -409,7 +395,6 @@ async fn test_boya_query_course() {
 
     let mut session = Session::new_in_file("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
-
     let token = session.boya_login().await.unwrap();
     let res = match session.boya_query_course(&token).await {
         Ok(s) => s,
@@ -466,7 +451,7 @@ async fn test_boya_select() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.boya_login().await.unwrap();
-    let res = session.bykc_select_course(6637, &token).await.unwrap();
+    let res = session.bykc_select_course(&token, 6637).await.unwrap();
     println!("{}", res);
 
     session.save();
@@ -482,7 +467,7 @@ async fn test_boya_drop() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.boya_login().await.unwrap();
-    let res = session.boya_drop_course(6637, &token).await.unwrap();
+    let res = session.boya_drop_course(&token, 6637).await.unwrap();
     println!("{}", res);
 
     session.save();

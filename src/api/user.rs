@@ -1,3 +1,5 @@
+//! User Center API
+
 use crate::{utils, Session, SessionError};
 
 impl Session {
