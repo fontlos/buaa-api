@@ -3,26 +3,22 @@
 
 > Make BUAA Great Again
 
-# Tip
-
-The names of APIs might seem unusual because they are derived from their corresponding subdomains. For example, the naming convention for APIs under `gw.buaa.edu.cn` is `gw_*`
-
 ## Todo
 
 - [x] SSO Login => `sso_login`
-- [x] BUAA WiFi Login => `gw_login`
-- [x] User Center => `uc_*`
+- [x] BUAA WiFi Login => `wifi_login`
+- [x] User Center => `user_*`
   - [x] login
   - [x] get state
 - [ ] Spoc
 - [ ] Course selection
-- [x] Boya Course => `bykc_*`
+- [x] Boya Course => `boya_*`
   - [x] login
   - [x] query
   - [x] select
   - [x] drop
   - [x] A universal request API for extensions
-- [x] Smart Classroom => `iclass_*`
+- [x] Smart Classroom => `class_*`
   - [x] login
   - [x] checkin
   - [x] query

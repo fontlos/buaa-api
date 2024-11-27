@@ -13,10 +13,10 @@ impl Session {
     /// #[tokio::main]
     /// async fn main() {
     ///     let session = Session::new_in_memory();
-    ///     session.gw_login("username", "password").await.unwrap();
+    ///     session.wifi_login("username", "password").await.unwrap();
     /// }
     /// ```
-    pub async fn gw_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
+    pub async fn wifi_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
         // 在 Windows 平台上先检测 WiFi 名称, 不符合就直接返回
         if &utils::get_wifi().unwrap() != "BUAA-WiFi" {
             return Ok(());
@@ -38,7 +38,7 @@ impl Session {
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(SessionError::NoToken(String::from("ac_id"))),
+            None => return Err(SessionError::LoginError("No AC ID".to_string())),
         };
 
         // 获取 Challenge Token
@@ -58,10 +58,10 @@ impl Session {
             let html = res.text().await.unwrap();
             match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
                 Some(s) => s,
-                None => return Err(SessionError::NoToken(String::from("gw_login"))),
+                None => return Err(SessionError::LoginError("No Challenge Value".to_string())),
             }
         } else {
-            return Err(SessionError::NoToken(String::from("gw_login")));
+            return Err(SessionError::LoginError("Request Failed. Maybe wrong username and password".to_string()));
         };
 
         // 计算登录信息

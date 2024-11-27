@@ -9,7 +9,7 @@ pub mod utils;
 
 pub use api::{
     boya::BoyaCourse,
-    iclass::{IClassCourse, IClassSchedule},
+    class::{ClassCourse, ClassSchedule},
 };
 pub use error::SessionError;
 pub use session::Session;

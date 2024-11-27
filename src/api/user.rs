@@ -3,7 +3,7 @@ use crate::{utils, Session, SessionError};
 impl Session {
     /// # User Center Login
     /// - Need: [`sso_login`](#method.sso_login) <br>
-    pub async fn uc_login(&self) -> Result<(), SessionError> {
+    pub async fn user_login(&self) -> Result<(), SessionError> {
         let time = utils::get_time();
         // 获取 JSESSIONID
         self.get(format!(
@@ -21,9 +21,9 @@ impl Session {
     }
 
     /// # Get User Center state
-    /// - Need: [`uc_login`](#method.uc_login) <br>
+    /// - Need: [`user_login`](#method.user_login) <br>
     /// - Output: `String`, JSON includes name and username, etc
-    pub async fn uc_get_state(&self) -> Result<String, SessionError> {
+    pub async fn user_get_state(&self) -> Result<String, SessionError> {
         let time = utils::get_time();
         // 获取登录状态
         let res = self

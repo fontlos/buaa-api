@@ -8,23 +8,23 @@ use crate::{crypto, utils, Session, SessionError};
 use super::boya::deserialize_time;
 
 #[derive(Deserialize)]
-struct IClassLogin {
-    result: IClassLoginResult,
+struct ClassLogin {
+    result: ClassLoginResult,
 }
 
 #[derive(Deserialize)]
-struct IClassLoginResult {
+struct ClassLoginResult {
     id: String,
 }
 
 #[derive(Deserialize)]
-struct IClassCourses {
-    result: Vec<IClassCourse>,
+struct ClassCourses {
+    result: Vec<ClassCourse>,
 }
 
 #[cfg_attr(feature = "table", derive(tabled::Tabled))]
 #[derive(Debug, Deserialize, Serialize)]
-pub struct IClassCourse {
+pub struct ClassCourse {
     #[serde(rename = "course_id")]
     pub id: String,
     #[serde(rename = "course_name")]
@@ -32,13 +32,13 @@ pub struct IClassCourse {
 }
 
 #[derive(Deserialize)]
-struct IClassSchedules {
-    result: Vec<IClassSchedule>,
+struct ClassSchedules {
+    result: Vec<ClassSchedule>,
 }
 
 #[cfg_attr(feature = "table", derive(tabled::Tabled))]
 #[derive(Debug, Deserialize)]
-pub struct IClassSchedule {
+pub struct ClassSchedule {
     #[serde(rename = "courseSchedId")]
     pub id: String,
     #[serde(deserialize_with = "deserialize_time")]
@@ -52,7 +52,7 @@ impl Session {
     /// # Smart Classroom Login
     /// - Need: [`sso_login`](#method.sso_login)
     /// - Output: User ID
-    pub async fn iclass_login(&self) -> Result<String, SessionError> {
+    pub async fn class_login(&self) -> Result<String, SessionError> {
         // 获取 JSESSIONID
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
 
@@ -61,7 +61,7 @@ impl Session {
         // TODO 如果获取失败, 说明登录已过期, 则重新登录
         let login_name = match utils::get_value_by_lable(url, "loginName=", "#/") {
             Some(v) => v,
-            None => return Err(SessionError::LoginExpired),
+            None => return Err(SessionError::LoginExpired("SSO Login Expired".to_string())),
         };
         let url = &url[..url.len() - 2];
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
@@ -85,7 +85,7 @@ impl Session {
             .send()
             .await?;
         let res = res.text().await?;
-        match serde_json::from_str::<IClassLogin>(&res) {
+        match serde_json::from_str::<ClassLogin>(&res) {
             Ok(res) => Ok(res.result.id),
             Err(_) => Err(SessionError::LoginError(format!(
                 "Smart Classroom Login Failed: {}",
@@ -95,16 +95,16 @@ impl Session {
     }
 
     /// # Smart Classroom query all course of a term
-    /// - Need: [`iclass_login`](#method.iclass_login)
+    /// - Need: [`class_login`](#method.class_login)
     /// - Input:
     ///     - Term ID
     ///         - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
-    ///     - User ID from [`iclass_login`](#method.iclass_login)
-    pub async fn iclass_query_course(
+    ///     - User ID from [`class_login`](#method.class_login)
+    pub async fn class_query_course(
         &self,
         term_id: &str,
         user_id: &str,
-    ) -> Result<Vec<IClassCourse>, SessionError> {
+    ) -> Result<Vec<ClassCourse>, SessionError> {
         let res = self.post(
             format!(
                     "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={}&xq_code={}",
@@ -115,22 +115,22 @@ impl Session {
             .send()
             .await?;
         let res = res.text().await?;
-        let res = serde_json::from_str::<IClassCourses>(&res).unwrap();
+        let res = serde_json::from_str::<ClassCourses>(&res).unwrap();
         Ok(res.result)
     }
 
     /// # Smart Classroom query one course's all schedule
     /// - Need:
-    ///     - [`iclass_login`](#method.iclass_login)
-    ///     - [`iclass_query_course`](#method.iclass_query_course)
+    ///     - [`class_login`](#method.class_login)
+    ///     - [`class_query_course`](#method.class_query_course)
     /// - Input:
     ///     - Course ID, from [IClassCourse]
-    ///     - User ID from [`iclass_login`](#method.iclass_login)
-    pub async fn iclass_query_schedule(
+    ///     - User ID from [`class_login`](#method.class_login)
+    pub async fn class_query_schedule(
         &self,
         course_id: &str,
         user_id: &str,
-    ) -> Result<Vec<IClassSchedule>, SessionError> {
+    ) -> Result<Vec<ClassSchedule>, SessionError> {
         let res = self.post(
             format!(
                     "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={}&courseId={}",
@@ -141,18 +141,18 @@ impl Session {
             .send()
             .await?;
         let res = res.text().await?;
-        let res = serde_json::from_str::<IClassSchedules>(&res).unwrap();
+        let res = serde_json::from_str::<ClassSchedules>(&res).unwrap();
         Ok(res.result)
     }
 
     /// # Smart Classroom checkin schedule
     /// - Need:
-    ///     - [`iclass_login`](#method.iclass_login)
-    ///     - [`iclass_query_schedule`](#method.iclass_query_schedule)
+    ///     - [`class_login`](#method.class_login)
+    ///     - [`iclass_query_schedule`](#method.class_query_schedule)
     /// - Input:
     ///     - Schedule ID, from [IClassSchedule]
-    ///     - User ID from [`iclass_login`](#method.iclass_login)
-    pub async fn iclass_checkin_schedule(
+    ///     - User ID from [`class_login`](#method.class_login)
+    pub async fn class_checkin(
         &self,
         sche_id: &str,
         user_id: &str,
@@ -173,7 +173,7 @@ impl Session {
 }
 
 #[tokio::test]
-async fn test_iclass_login() {
+async fn test_class_login() {
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
@@ -181,24 +181,24 @@ async fn test_iclass_login() {
     let mut session = Session::new_in_file("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
 
-    let user_id = session.iclass_login().await.unwrap();
+    let user_id = session.class_login().await.unwrap();
     println!("User id: {}", user_id);
 
     session.save();
 }
 
 #[tokio::test]
-async fn test_iclass_query_course() {
+async fn test_class_query_course() {
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
     let mut session = Session::new_in_file("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
-    let user_id = session.iclass_login().await.unwrap();
+    let user_id = session.class_login().await.unwrap();
 
     let res = session
-        .iclass_query_course("202420251", &user_id)
+        .class_query_course("202420251", &user_id)
         .await
         .unwrap();
     println!("{:#?}", res);
@@ -207,17 +207,17 @@ async fn test_iclass_query_course() {
 }
 
 #[tokio::test]
-async fn test_iclass_query_schedule() {
+async fn test_class_query_schedule() {
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
     let mut session = Session::new_in_file("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
-    let user_id = session.iclass_login().await.unwrap();
+    let user_id = session.class_login().await.unwrap();
 
     let res = session
-        .iclass_query_schedule("64668", &user_id)
+        .class_query_schedule("64668", &user_id)
         .await
         .unwrap();
     println!("{:#?}", res);
@@ -226,17 +226,17 @@ async fn test_iclass_query_schedule() {
 }
 
 #[tokio::test]
-async fn test_iclass_checkin() {
+async fn test_class_checkin() {
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
     let mut session = Session::new_in_file("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
-    let user_id = session.iclass_login().await.unwrap();
+    let user_id = session.class_login().await.unwrap();
 
     let res = session
-        .iclass_checkin_schedule("2090542", &user_id)
+        .class_checkin("2090542", &user_id)
         .await
         .unwrap();
     println!("{}", res.text().await.unwrap());

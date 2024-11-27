@@ -27,8 +27,8 @@ mod tests {
         let mut session = Session::new_in_file("cookie.json");
         session.sso_login(&username, &password).await.unwrap();
 
-        session.uc_login().await.unwrap();
-        let state = session.uc_get_state().await.unwrap();
+        session.user_login().await.unwrap();
+        let state = session.user_get_state().await.unwrap();
         println!("{}", state);
 
         session.save();
@@ -40,7 +40,7 @@ mod tests {
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
         let session = Session::new_in_memory();
-        match session.gw_login(&username, &password).await {
+        match session.wifi_login(&username, &password).await {
             Ok(_) => (),
             Err(e) => eprintln!("{:?}", e),
         }

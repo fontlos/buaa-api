@@ -3,26 +3,22 @@
 
 > Make BUAA Great Again
 
-## Tip
-
-API 的名字可能很奇怪, 因为它们是由对应的四级域名派生而来的, 比如 `gw.buaa.edu.cn` 下的 API 名称命名就是 `gw_*`
-
 ## TodoList
 
 - [x] 统一身份认证 => `sso_login`
-- [x] BUAA WiFi 登录 => `gw_login`
-- [x] 用户中心 => `uc_*`
+- [x] BUAA WiFi 登录 => `wifi_login`
+- [x] 用户中心 => `user_*`
   - [x] 登录
   - [x] 获取状态
 - [ ] Spoc 平台
 - [ ] 本研选课
-- [x] 博雅课程 => `bykc_*`
+- [x] 博雅课程 => `boya_*`
   - [x] 登录
   - [x] 查询课程
   - [x] 选课
   - [x] 退课
   - [x] 一个用于扩展的通用请求 API
-- [x] 智慧教室 => `iclass_*`
+- [x] 智慧教室 => `class_*`
   - [x] 登录
   - [x] 签到
   - [x] 查询
