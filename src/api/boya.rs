@@ -204,7 +204,6 @@ impl Session {
             .get(url)
             .send()
             .await?;
-        println!("{}", res.url().as_str());
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
             return Err(SessionError::LoginExpired("SSO Expired".to_string()));
