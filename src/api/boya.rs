@@ -366,7 +366,7 @@ impl Session {
     ///     - Token from [`boya_login`](#method.boya_login)
     ///     - Course ID from [`boya_query_course`](#method.boya_query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn bykc_select_course(&self, token: &str, id: u32) -> Result<String, SessionError> {
+    pub async fn boya_select_course(&self, token: &str, id: u32) -> Result<String, SessionError> {
         let query = format!("{{\"courseId\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
         let res = self.boya_universal_request(&query, url, token).await?;
@@ -451,7 +451,7 @@ async fn test_boya_select() {
     session.sso_login(&username, &password).await.unwrap();
 
     let token = session.boya_login().await.unwrap();
-    let res = session.bykc_select_course(&token, 6637).await.unwrap();
+    let res = session.boya_select_course(&token, 6637).await.unwrap();
     println!("{}", res);
 
     session.save();
