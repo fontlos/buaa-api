@@ -2,6 +2,8 @@
 
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Deserializer};
+use serde_json::Value;
+use time::{format_description, PrimitiveDateTime};
 
 use crate::{crypto, Session, SessionError};
 
@@ -20,29 +22,9 @@ struct SpocRes1 {
 pub struct SpocWeek {
     #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "pjmrrq")]
-    pub time: (String, String),
+    time: (String, String),
     #[serde(rename = "mrxq")]
-    pub term: String,
-}
-
-#[derive(Deserialize)]
-struct SpocRes2 {
-    content: Vec<SpocSchedule>
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SpocSchedule {
-    pub weekday: String,
-    #[serde(rename = "skdd")]
-    pub position: String,
-    #[serde(rename = "jsxm")]
-    pub teacher: String,
-    #[serde(rename = "strkcsj")]
-    pub schedule: String,
-    #[serde(rename = "kcmc")]
-    pub name: String,
-    #[serde(rename = "kcsj")]
-    pub time: String,
+    term: String,
 }
 
 pub(super) fn deserialize_time<'de, D>(deserializer: D) -> Result<(String, String), D::Error>
@@ -53,6 +35,93 @@ where
     let mut s = s.split(",");
     s.next();
     Ok((s.next().unwrap().to_string(), s.next().unwrap().to_string()))
+}
+
+#[derive(Deserialize)]
+struct SpocRes2 {
+    content: Vec<SpocSchedule>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SpocSchedule {
+    #[serde(deserialize_with = "deserialize_spoc_day")]
+    pub weekday: WeekDay,
+    #[serde(rename = "skdd")]
+    pub position: String,
+    #[serde(rename = "jsxm")]
+    pub teacher: String,
+    #[serde(rename = "kcmc")]
+    pub name: String,
+    #[serde(deserialize_with = "deserialize_time_range")]
+    #[serde(rename = "kcsj")]
+    pub time: SpocTimeRange,
+}
+
+#[derive(Debug)]
+pub enum WeekDay {
+    Monday,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday,
+}
+
+fn deserialize_spoc_day<'de, D>(deserializer: D) -> Result<WeekDay, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: Value = Deserialize::deserialize(deserializer)?;
+    match value.as_str() {
+        Some("monday") => Ok(WeekDay::Monday),
+        Some("tuesday") => Ok(WeekDay::Tuesday),
+        Some("wednesday") => Ok(WeekDay::Wednesday),
+        Some("thursday") => Ok(WeekDay::Thursday),
+        Some("friday") => Ok(WeekDay::Friday),
+        Some("saturday") => Ok(WeekDay::Saturday),
+        Some("sunday") => Ok(WeekDay::Sunday),
+        _ => Err(serde::de::Error::custom("Unexpected value")),
+    }
+}
+
+#[derive(Debug)]
+pub struct SpocTimeRange {
+    pub start: PrimitiveDateTime,
+    pub end: PrimitiveDateTime,
+}
+
+pub(super) fn deserialize_time_range<'de, D>(deserializer: D) -> Result<SpocTimeRange, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let format_string = format_description::parse("[year]-[month]-[day] [hour]:[minute]").unwrap();
+
+    let s: String = Deserialize::deserialize(deserializer)?;
+
+    let parts: Vec<&str> = s.split(' ').collect();
+    if parts.len() != 2 {
+        return Err(serde::de::Error::custom("Invalid time range format"));
+    }
+
+    let date_part = parts[0];
+    let time_parts: Vec<&str> = parts[1].split('-').collect();
+    if time_parts.len() != 2 {
+        return Err(serde::de::Error::custom("Invalid time range format"));
+    }
+
+    let start_time = format!("{} {}", date_part, time_parts[0]);
+    let end_time = format!("{} {}", date_part, time_parts[1]);
+
+    let start = PrimitiveDateTime::parse(&start_time, &format_string).map_err(|e| serde::de::Error::custom(e))?;
+    let end = PrimitiveDateTime::parse(&end_time, &format_string).map_err(|e| serde::de::Error::custom(e))?;
+
+    Ok(
+        SpocTimeRange {
+            start,
+            end,
+        }
+    )
 }
 
 impl Session {

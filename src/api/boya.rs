@@ -317,10 +317,12 @@ impl Session {
         let res = res.text().await?;
         let res = res.trim_matches('"');
         let res = crypto::aes::aes_decrypt(&res, &aes_key);
-
         let status = serde_json::from_str::<BoyaStatus>(&res)?;
         if status.status == "98005399" {
             return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
+        }
+        if status.status == "1" {
+            return Err(SessionError::APIError(status.errmsg));
         }
         if status.status != "0" {
             return Err(SessionError::APIError(status.errmsg));

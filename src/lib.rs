@@ -10,7 +10,7 @@ pub mod utils;
 pub use api::{
     boya::BoyaCourse,
     class::{ClassCourse, ClassSchedule},
-    spoc::{SpocWeek, SpocSchedule},
+    spoc::{SpocWeek, SpocSchedule, SpocTimeRange},
 };
 pub use error::SessionError;
 pub use session::Session;
