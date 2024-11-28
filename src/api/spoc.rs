@@ -24,7 +24,7 @@ pub struct SpocWeek {
     #[serde(rename = "pjmrrq")]
     time: (String, String),
     #[serde(rename = "mrxq")]
-    term: String,
+    pub term: String,
 }
 
 pub(super) fn deserialize_time<'de, D>(deserializer: D) -> Result<(String, String), D::Error>
@@ -182,13 +182,13 @@ impl Session {
         Ok(res.content)
     }
 
-    pub async fn spoc_get_week_schedule(&self, token: &str, query: &SpocWeek) -> Result<Vec<SpocSchedule>, SessionError> {
+    pub async fn spoc_get_week_schedule(&self, token: &str, week: &SpocWeek) -> Result<Vec<SpocSchedule>, SessionError> {
         // 后面三个值分别是开始日期, 结束日期和学年学期
         let query = format!(
             "{{\"sqlid\":\"17138556333937a86d7c38783bc62811e7c6bb5ef955a\",\"zksrq\":\"{}\",\"zjsrq\":\"{}\",\"xnxq\":\"{}\"}}",
-            query.time.0,
-            query.time.1,
-            query.term
+            week.time.0,
+            week.time.1,
+            week.term
         );
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryList";
         let res = self.spoc_universal_request(&query, url, token).await?;
@@ -222,6 +222,7 @@ async fn test_spoc_universal_request() {
     let token = session.spoc_login().await.unwrap();
 
     let res = session.spoc_get_week(&token).await.unwrap();
+    println!("{:?}", res);
     let res = session.spoc_get_week_schedule(&token, &res).await.unwrap();
     println!("{:?}", res);
     session.save();

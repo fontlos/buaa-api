@@ -1,7 +1,8 @@
 //! Smart Classroom System (iclass) API
 
 use reqwest::Response;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use serde_json::Value;
 
 use crate::{crypto, utils, Session, SessionError};
 
@@ -19,6 +20,7 @@ struct ClassLoginResult {
 
 #[derive(Deserialize)]
 struct ClassCourses {
+    #[serde(deserialize_with = "deserialize_filtered_courses")]
     result: Vec<ClassCourse>,
 }
 
@@ -29,6 +31,26 @@ pub struct ClassCourse {
     pub id: String,
     #[serde(rename = "course_name")]
     pub name: String,
+    #[serde(rename = "teacher_name")]
+    pub teacher: String,
+}
+
+fn deserialize_filtered_courses<'de, D>(deserializer: D) -> Result<Vec<ClassCourse>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut courses: Vec<ClassCourse> = Vec::new();
+    let values: Vec<Value> = Deserialize::deserialize(deserializer)?;
+
+    for value in values {
+        if let Ok(course) = serde_json::from_value::<ClassCourse>(value.clone()) {
+            if !course.teacher.is_empty() {
+                courses.push(course);
+            }
+        }
+    }
+
+    Ok(courses)
 }
 
 #[derive(Deserialize)]
