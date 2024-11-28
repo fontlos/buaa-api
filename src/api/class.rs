@@ -73,7 +73,7 @@ pub struct ClassSchedule {
 impl Session {
     /// # Smart Classroom Login
     /// - Need: [`sso_login`](#method.sso_login)
-    /// - Output: User ID
+    /// - Output: User ID Token
     pub async fn class_login(&self) -> Result<String, SessionError> {
         // 获取 JSESSIONID
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
@@ -119,19 +119,19 @@ impl Session {
     /// # Smart Classroom query all course of a term
     /// - Need: [`class_login`](#method.class_login)
     /// - Input:
+    ///     - Token: User ID from [`class_login`](#method.class_login)
     ///     - Term ID
     ///         - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
-    ///     - User ID from [`class_login`](#method.class_login)
     pub async fn class_query_course(
         &self,
-        term_id: &str,
-        user_id: &str,
+        token: &str,
+        id: &str,
     ) -> Result<Vec<ClassCourse>, SessionError> {
         let res = self.post(
             format!(
                     "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={}&xq_code={}",
-                    user_id,
-                    term_id
+                    token,
+                    id
                 )
             )
             .send()
@@ -146,24 +146,24 @@ impl Session {
     ///     - [`class_login`](#method.class_login)
     ///     - [`class_query_course`](#method.class_query_course)
     /// - Input:
+    ///     - Token: User ID from [`class_login`](#method.class_login)
     ///     - Course ID, from [IClassCourse]
-    ///     - User ID from [`class_login`](#method.class_login)
     pub async fn class_query_schedule(
         &self,
-        course_id: &str,
-        user_id: &str,
+        token: &str,
+        id: &str,
     ) -> Result<Vec<ClassSchedule>, SessionError> {
         let res = self.post(
             format!(
                     "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={}&courseId={}",
-                    user_id,
-                    course_id
+                    token,
+                    id
                 )
             )
             .send()
             .await?;
         let res = res.text().await?;
-        let res = serde_json::from_str::<ClassSchedules>(&res).unwrap();
+        let res = serde_json::from_str::<ClassSchedules>(&res)?;
         Ok(res.result)
     }
 
@@ -172,20 +172,20 @@ impl Session {
     ///     - [`class_login`](#method.class_login)
     ///     - [`iclass_query_schedule`](#method.class_query_schedule)
     /// - Input:
+    ///     - Token: User ID from [`class_login`](#method.class_login)
     ///     - Schedule ID, from [IClassSchedule]
-    ///     - User ID from [`class_login`](#method.class_login)
     pub async fn class_checkin(
         &self,
-        sche_id: &str,
-        user_id: &str,
+        token: &str,
+        id: &str,
     ) -> Result<Response, SessionError> {
         let time = utils::get_time();
         let res = self.post(
             format!(
                     "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={}&timestamp={}&id={}",
-                    sche_id,
+                    id,
                     time,
-                    user_id
+                    token
                 )
             )
             .send()
@@ -220,7 +220,7 @@ async fn test_class_query_course() {
     let user_id = session.class_login().await.unwrap();
 
     let res = session
-        .class_query_course("202420251", &user_id)
+        .class_query_course(&user_id, "202420251")
         .await
         .unwrap();
     println!("{:#?}", res);
@@ -239,7 +239,7 @@ async fn test_class_query_schedule() {
     let user_id = session.class_login().await.unwrap();
 
     let res = session
-        .class_query_schedule("64668", &user_id)
+        .class_query_schedule(&user_id, "64668")
         .await
         .unwrap();
     println!("{:#?}", res);
@@ -258,7 +258,7 @@ async fn test_class_checkin() {
     let user_id = session.class_login().await.unwrap();
 
     let res = session
-        .class_checkin("2090542", &user_id)
+        .class_checkin(&user_id, "2090542")
         .await
         .unwrap();
     println!("{}", res.text().await.unwrap());
