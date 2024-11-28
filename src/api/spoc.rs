@@ -3,7 +3,7 @@
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use time::{format_description, PrimitiveDateTime};
+use time::{format_description, PrimitiveDateTime, Weekday};
 
 use crate::{crypto, Session, SessionError};
 
@@ -45,7 +45,7 @@ struct SpocRes2 {
 #[derive(Debug, Deserialize)]
 pub struct SpocSchedule {
     #[serde(deserialize_with = "deserialize_spoc_day")]
-    pub weekday: WeekDay,
+    pub weekday: Weekday,
     #[serde(rename = "skdd")]
     pub position: String,
     #[serde(rename = "jsxm")]
@@ -57,30 +57,19 @@ pub struct SpocSchedule {
     pub time: SpocTimeRange,
 }
 
-#[derive(Debug)]
-pub enum WeekDay {
-    Monday,
-    Tuesday,
-    Wednesday,
-    Thursday,
-    Friday,
-    Saturday,
-    Sunday,
-}
-
-fn deserialize_spoc_day<'de, D>(deserializer: D) -> Result<WeekDay, D::Error>
+fn deserialize_spoc_day<'de, D>(deserializer: D) -> Result<Weekday, D::Error>
 where
     D: Deserializer<'de>,
 {
     let value: Value = Deserialize::deserialize(deserializer)?;
     match value.as_str() {
-        Some("monday") => Ok(WeekDay::Monday),
-        Some("tuesday") => Ok(WeekDay::Tuesday),
-        Some("wednesday") => Ok(WeekDay::Wednesday),
-        Some("thursday") => Ok(WeekDay::Thursday),
-        Some("friday") => Ok(WeekDay::Friday),
-        Some("saturday") => Ok(WeekDay::Saturday),
-        Some("sunday") => Ok(WeekDay::Sunday),
+        Some("monday") => Ok(Weekday::Monday),
+        Some("tuesday") => Ok(Weekday::Tuesday),
+        Some("wednesday") => Ok(Weekday::Wednesday),
+        Some("thursday") => Ok(Weekday::Thursday),
+        Some("friday") => Ok(Weekday::Friday),
+        Some("saturday") => Ok(Weekday::Saturday),
+        Some("sunday") => Ok(Weekday::Sunday),
         _ => Err(serde::de::Error::custom("Unexpected value")),
     }
 }
