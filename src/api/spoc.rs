@@ -10,12 +10,12 @@ use crate::{crypto, Session, SessionError};
 #[derive(Deserialize)]
 struct SpocState {
     code: u32,
-    msg: Option<String>
+    msg: Option<String>,
 }
 
 #[derive(Deserialize)]
 struct SpocRes1 {
-    content: SpocWeek
+    content: SpocWeek,
 }
 
 #[derive(Debug, Deserialize)]
@@ -39,7 +39,7 @@ where
 
 #[derive(Deserialize)]
 struct SpocRes2 {
-    content: Vec<SpocSchedule>
+    content: Vec<SpocSchedule>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -102,20 +102,18 @@ where
     let start_time = format!("{} {}", date_part, time_parts[0]);
     let end_time = format!("{} {}", date_part, time_parts[1]);
 
-    let start = PrimitiveDateTime::parse(&start_time, &format_string).map_err(|e| serde::de::Error::custom(e))?;
-    let end = PrimitiveDateTime::parse(&end_time, &format_string).map_err(|e| serde::de::Error::custom(e))?;
+    let start = PrimitiveDateTime::parse(&start_time, &format_string)
+        .map_err(|e| serde::de::Error::custom(e))?;
+    let end = PrimitiveDateTime::parse(&end_time, &format_string)
+        .map_err(|e| serde::de::Error::custom(e))?;
 
-    Ok(
-        SpocTimeRange {
-            start,
-            end,
-        }
-    )
+    Ok(SpocTimeRange { start, end })
 }
 
 impl Session {
     pub async fn spoc_login(&self) -> Result<String, SessionError> {
-        let res = self.get("https://spoc.buaa.edu.cn/spocnewht/cas")
+        let res = self
+            .get("https://spoc.buaa.edu.cn/spocnewht/cas")
             .send()
             .await?;
         if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
@@ -168,7 +166,9 @@ impl Session {
         let res = res.text().await?;
         let status = serde_json::from_str::<SpocState>(&res)?;
         if status.code != 200 {
-            return Err(SessionError::APIError(status.msg.unwrap_or("Unknown Error".to_string())));
+            return Err(SessionError::APIError(
+                status.msg.unwrap_or("Unknown Error".to_string()),
+            ));
         }
         Ok(res)
     }
@@ -182,7 +182,11 @@ impl Session {
         Ok(res.content)
     }
 
-    pub async fn spoc_get_week_schedule(&self, token: &str, week: &SpocWeek) -> Result<Vec<SpocSchedule>, SessionError> {
+    pub async fn spoc_get_week_schedule(
+        &self,
+        token: &str,
+        week: &SpocWeek,
+    ) -> Result<Vec<SpocSchedule>, SessionError> {
         // 后面三个值分别是开始日期, 结束日期和学年学期
         let query = format!(
             "{{\"sqlid\":\"17138556333937a86d7c38783bc62811e7c6bb5ef955a\",\"zksrq\":\"{}\",\"zjsrq\":\"{}\",\"xnxq\":\"{}\"}}",

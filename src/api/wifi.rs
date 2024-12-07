@@ -64,7 +64,9 @@ impl Session {
                 None => return Err(SessionError::LoginError("No Challenge Value".to_string())),
             }
         } else {
-            return Err(SessionError::LoginError("Request Failed. Maybe wrong username and password".to_string()));
+            return Err(SessionError::LoginError(
+                "Request Failed. Maybe wrong username and password".to_string(),
+            ));
         };
 
         // 计算登录信息

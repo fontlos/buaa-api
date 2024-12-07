@@ -6,7 +6,7 @@ use serde_json::Value;
 
 use crate::{crypto, utils, Session, SessionError};
 
-use super::boya::deserialize_time;
+use super::boya::query_course::deserialize_time;
 
 #[derive(Deserialize)]
 struct ClassLogin {
@@ -174,11 +174,7 @@ impl Session {
     /// - Input:
     ///     - Token: User ID from [`class_login`](#method.class_login)
     ///     - Schedule ID, from [IClassSchedule]
-    pub async fn class_checkin(
-        &self,
-        token: &str,
-        id: &str,
-    ) -> Result<Response, SessionError> {
+    pub async fn class_checkin(&self, token: &str, id: &str) -> Result<Response, SessionError> {
         let time = utils::get_time();
         let res = self.post(
             format!(
@@ -257,10 +253,7 @@ async fn test_class_checkin() {
     session.sso_login(&username, &password).await.unwrap();
     let user_id = session.class_login().await.unwrap();
 
-    let res = session
-        .class_checkin(&user_id, "2090542")
-        .await
-        .unwrap();
+    let res = session.class_checkin(&user_id, "2090542").await.unwrap();
     println!("{}", res.text().await.unwrap());
 
     session.save();

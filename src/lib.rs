@@ -8,9 +8,12 @@ mod tests;
 pub mod utils;
 
 pub use api::{
-    boya::BoyaCourse,
+    boya::{
+        query_course::{BoyaCampus, BoyaCourse, BoyaKind, BoyaTime},
+        query_selected::BoyaSelected,
+    },
     class::{ClassCourse, ClassSchedule},
-    spoc::{SpocWeek, SpocSchedule, SpocTimeRange},
+    spoc::{SpocSchedule, SpocTimeRange, SpocWeek},
 };
 pub use error::SessionError;
 pub use session::Session;

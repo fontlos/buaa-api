@@ -47,10 +47,7 @@ pub fn get_wifi_ssid() -> Option<String> {
 pub fn get_wifi_ssid() -> Option<String> {
     use std::process::Command;
 
-    let output = Command::new("iwgetid")
-        .arg("-r")
-        .output()
-        .ok()?;
+    let output = Command::new("iwgetid").arg("-r").output().ok()?;
 
     if output.status.success() {
         let ssid = String::from_utf8_lossy(&output.stdout).trim().to_string();
