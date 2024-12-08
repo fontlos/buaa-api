@@ -69,7 +69,7 @@ use tabled::{
     Table, Tabled,
 };
 #[cfg(feature = "table")]
-pub(crate) fn table<T: Tabled>(tabled: &Vec<T>) -> String {
+pub fn table<T: Tabled>(tabled: &Vec<T>) -> String {
     Table::new(tabled)
         .with(Style::modern_rounded())
         .with(Alignment::center())
