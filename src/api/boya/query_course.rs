@@ -2,14 +2,42 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::{format_description, PrimitiveDateTime};
 
+use std::ops::Deref;
+
 use crate::{Session, SessionError};
 
-#[derive(Deserialize)]
-struct BoyaCourses {
+#[derive(Debug, Deserialize)]
+pub struct BoyaCourses {
     #[serde(deserialize_with = "deserialize_boya_courses")]
     data: Vec<BoyaCourse>,
 }
 
+// 自动解引用, 多数情况下无需访问 data 字段
+impl Deref for BoyaCourses {
+    type Target = Vec<BoyaCourse>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+// 开启 table feature 时实现 Display
+#[cfg(feature = "table")]
+impl std::fmt::Display for BoyaCourses {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let table = crate::utils::table(self);
+        writeln!(f, "{}", table)
+    }
+}
+
+// 如果真的需要访问 data 字段, 可以使用 data 方法
+impl BoyaCourses {
+    pub fn data(self) -> Vec<BoyaCourse> {
+        self.data
+    }
+}
+
+// 用于直接解析到 BoyaCourses 的函数
 fn deserialize_boya_courses<'de, D>(deserializer: D) -> Result<Vec<BoyaCourse>, D::Error>
 where
     D: Deserializer<'de>,
@@ -53,6 +81,7 @@ pub struct BoyaCourse {
     #[serde(rename = "courseCampus")]
     #[cfg_attr(feature = "table", tabled(display_with = "tabled_boya_campus"))]
     pub campus: BoyaCampus,
+    // 是否已选
     pub selected: bool,
 }
 
@@ -115,10 +144,15 @@ pub(crate) fn tabled_boya_time(time: &BoyaTime) -> String {
 
 #[derive(Debug, Deserialize)]
 pub enum BoyaKind {
-    AnQuan,
-    DeYu,
-    LaoDong,
-    MeiYu,
+    /// 美育
+    Arts,
+    /// 德育
+    Ethics,
+    /// 劳动教育
+    Labor,
+    /// 安全健康
+    Safety,
+    /// 其他
     Other,
 }
 
@@ -129,10 +163,10 @@ where
     let value: Value = Deserialize::deserialize(deserializer)?;
     match value.get("kindName").and_then(Value::as_str) {
         Some(kind_name) => match kind_name {
-            "安全健康" => Ok(BoyaKind::AnQuan),
-            "德育" => Ok(BoyaKind::DeYu),
-            "劳动教育" => Ok(BoyaKind::LaoDong),
-            "美育" => Ok(BoyaKind::MeiYu),
+            "美育" => Ok(BoyaKind::Arts),
+            "德育" => Ok(BoyaKind::Ethics),
+            "劳动教育" => Ok(BoyaKind::Labor),
+            "安全健康" => Ok(BoyaKind::Safety),
             _ => Ok(BoyaKind::Other),
         },
         None => Err(serde::de::Error::custom("missing field `kindName`")),
@@ -142,10 +176,10 @@ where
 #[cfg(feature = "table")]
 pub(crate) fn tabled_boya_kind(capacity: &BoyaKind) -> String {
     match capacity {
-        BoyaKind::AnQuan => "安全健康".to_string(),
-        BoyaKind::DeYu => "德育".to_string(),
-        BoyaKind::LaoDong => "劳动教育".to_string(),
-        BoyaKind::MeiYu => "美育".to_string(),
+        BoyaKind::Arts => "美育".to_string(),
+        BoyaKind::Ethics => "德育".to_string(),
+        BoyaKind::Labor => "劳动教育".to_string(),
+        BoyaKind::Safety => "安全健康".to_string(),
         BoyaKind::Other => "其他".to_string(),
     }
 }
@@ -198,12 +232,12 @@ impl Session {
     /// # Query Course
     /// - Need: [`boya_login`](#method.boya_login)
     /// - Input: Token from [`boya_login`](#method.boya_login)
-    pub async fn boya_query_course(&self, token: &str) -> Result<Vec<BoyaCourse>, SessionError> {
+    pub async fn boya_query_course(&self, token: &str) -> Result<BoyaCourses, SessionError> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
         let res = self.boya_universal_request(query, url, token).await?;
         let res = serde_json::from_str::<BoyaCourses>(&res)?;
-        Ok(res.data)
+        Ok(res)
     }
 }
 
@@ -224,7 +258,6 @@ async fn test_boya_query_course() {
         }
     };
     println!("{:?}", res);
-    // println!("{}", utils::table(res));
 
     session.save();
 }

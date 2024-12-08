@@ -9,8 +9,8 @@ pub mod utils;
 
 pub use api::{
     boya::{
-        query_course::{BoyaCampus, BoyaCourse, BoyaKind, BoyaTime},
-        query_selected::BoyaSelected,
+        query_course::{BoyaCampus, BoyaCourse, BoyaCourses, BoyaKind, BoyaTime},
+        query_selected::{BoyaSelected, BoyaSelecteds},
         query_statistic::{BoyaAssessment, BoyaStatistic},
     },
     class::{ClassCourse, ClassSchedule},

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Deserializer};
 
+use std::ops::Deref;
+
 use crate::{Session, SessionError};
 
 use super::query_course::{deserialize_boya_kind, BoyaKind, BoyaTime};
@@ -10,9 +12,34 @@ use super::query_course::{
 };
 
 #[derive(Debug, Deserialize)]
-struct BoyaSelecteds {
+pub struct BoyaSelecteds {
     #[serde(deserialize_with = "deserialize_boya_selecteds")]
     data: Vec<BoyaSelected>,
+}
+
+// 自动解引用, 多数情况下无需访问 data 字段
+impl Deref for BoyaSelecteds {
+    type Target = Vec<BoyaSelected>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
+// 开启 table feature 时实现 Display
+#[cfg(feature = "table")]
+impl std::fmt::Display for BoyaSelecteds {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let table = crate::utils::table(self);
+        writeln!(f, "{}", table)
+    }
+}
+
+// 如果真的需要访问 data 字段, 可以使用 data 方法
+impl BoyaSelecteds {
+    pub fn data(self) -> Vec<BoyaSelected> {
+        self.data
+    }
 }
 
 fn deserialize_boya_selecteds<'de, D>(deserializer: D) -> Result<Vec<BoyaSelected>, D::Error>
@@ -63,15 +90,12 @@ impl Session {
     /// # Query Selected Course
     /// - Need: [`boya_login`](#method.boya_login)
     /// - Input: Token from [`boya_login`](#method.boya_login)
-    pub async fn boya_query_selected(
-        &self,
-        token: &str,
-    ) -> Result<Vec<BoyaSelected>, SessionError> {
+    pub async fn boya_query_selected(&self, token: &str) -> Result<BoyaSelecteds, SessionError> {
         let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
         let res = self.boya_universal_request(query, url, token).await?;
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
-        Ok(res.data)
+        Ok(res)
     }
 }
 

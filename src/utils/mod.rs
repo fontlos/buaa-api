@@ -11,7 +11,7 @@ use std::net::UdpSocket;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[allow(dead_code)]
-pub fn env() -> HashMap<String, String> {
+pub(crate) fn env() -> HashMap<String, String> {
     let env_str = File::open(".env").unwrap();
     let env: HashMap<String, String> = serde_json::from_reader(env_str).unwrap();
     env
@@ -31,7 +31,7 @@ pub fn get_primitive_time() -> PrimitiveDateTime {
     PrimitiveDateTime::new(now_local.date(), now_local.time())
 }
 
-pub fn get_value_by_lable(text: &str, right: &str, left: &str) -> Option<String> {
+pub(crate) fn get_value_by_lable(text: &str, right: &str, left: &str) -> Option<String> {
     if let Some(start) = text.find(right) {
         // 计算开始位置
         let value_start = start + right.len();
@@ -69,7 +69,7 @@ use tabled::{
     Table, Tabled,
 };
 #[cfg(feature = "table")]
-pub fn table<T: Tabled>(tabled: &Vec<T>) -> String {
+pub(crate) fn table<T: Tabled>(tabled: &Vec<T>) -> String {
     Table::new(tabled)
         .with(Style::modern_rounded())
         .with(Alignment::center())
