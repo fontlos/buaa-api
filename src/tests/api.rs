@@ -12,7 +12,9 @@ mod tests {
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
 
-        let mut session = Session::new_in_file("cookie.json");
+        let mut session = Session::new();
+        session.with_cookies("cookie.json");
+
         session.sso_login(&username, &password).await.unwrap();
 
         session.save();
@@ -24,7 +26,9 @@ mod tests {
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
 
-        let mut session = Session::new_in_file("cookie.json");
+        let mut session = Session::new();
+        session.with_cookies("cookie.json");
+
         session.sso_login(&username, &password).await.unwrap();
 
         session.user_login().await.unwrap();
@@ -39,7 +43,7 @@ mod tests {
         let env = crate::utils::env();
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
-        let session = Session::new_in_memory();
+        let session = Session::new();
         match session.wifi_login(&username, &password).await {
             Ok(_) => (),
             Err(e) => eprintln!("{:?}", e),

@@ -9,15 +9,25 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::ops::Deref;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
 /// The prefix of most API names is derived from the fourth-level domain name of the corresponding domain name
 #[derive(Debug)]
 pub struct Session {
     client: Client,
-    cookie_path: Option<PathBuf>,
-    cookie_store: Arc<CookieStoreMutex>,
+    cookies: Arc<CookieStoreMutex>,
+    pub config: Arc<RwLock<Config>>,
+}
+
+#[derive(Debug)]
+pub struct Config {
+    pub cookie_path: Option<PathBuf>,
+    pub vpn: bool,
+    /// Token for Boya API
+    pub boya_token: Option<String>,
+    /// User ID for Class API
+    pub class_token: Option<String>,
 }
 
 impl Session {
@@ -26,12 +36,16 @@ impl Session {
     /// use buaa::Session;
     ///
     /// fn main() {
-    ///     let session = Session::new_in_memory();
+    ///     let mut session = Session::new();
     ///     // if you call `save` method, it will save cookies to `cookies.json` defaultly
+    ///     // session.save();
+    ///     // if you need load cookies from file, you can use `with_cookies` method
+    ///     // session.with_cookies("path_to_cookies.json");
+    ///     // and then you call `save` method will save cookies to the file you specified
     ///     // session.save();
     /// }
     /// ```
-    pub fn new_in_memory() -> Self {
+    pub fn new() -> Self {
         let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::default()));
         let mut header = HeaderMap::new();
         header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
@@ -42,23 +56,23 @@ impl Session {
             .build()
             .unwrap();
 
+        let config = Config {
+            cookie_path: None,
+            vpn: false,
+            boya_token: None,
+            class_token: None,
+        };
+
         Session {
             client,
-            cookie_path: None,
-            cookie_store,
+            cookies: cookie_store,
+            config: Arc::new(RwLock::new(config)),
         }
     }
-    /// Create a new session in file, if the file is not exist, it will create a new one, but It won't be saved until you call `save` method
-    /// ```rust
-    /// use buaa::Session;
-    ///
-    /// fn main() {
-    ///     let session = Session::new_in_file("path_to_cookies.json");
-    ///     session.save();
-    /// }
-    /// ```
+
+    /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn new_in_file(path: &str) -> Self {
+    pub fn with_cookies(&mut self, path: &str) {
         let path = PathBuf::from(path);
         let cookie_store = match File::open(&path) {
             Ok(f) => {
@@ -69,25 +83,18 @@ impl Session {
         };
 
         let cookie_store = Arc::new(CookieStoreMutex::new(cookie_store));
-        let mut header = HeaderMap::new();
-        header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
+        self.cookies = cookie_store;
 
-        let client = Client::builder()
-            .default_headers(header)
-            .cookie_provider(cookie_store.clone())
-            .build()
-            .unwrap();
-
-        Session {
-            client,
-            cookie_path: Some(path),
-            cookie_store,
-        }
+        let mut config = self.config.write().unwrap();
+        config.cookie_path = Some(path);
     }
+
     /// save cookies manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn save(&mut self) {
-        let path = match &self.cookie_path {
+        // TODO 记得处理锁失败的情况
+        let config = self.config.read().unwrap();
+        let path = match &config.cookie_path {
             Some(p) => p.to_str().unwrap(),
             None => "cookies.json",
         };
@@ -103,17 +110,12 @@ impl Session {
                 return;
             }
         };
-        let store = self.cookie_store.lock().unwrap();
+        let store = self.cookies.lock().unwrap();
         if let Err(e) =
             store.save_incl_expired_and_nonpersistent(&mut file, |s| serde_json::to_string(s))
         {
             eprintln!("Failed to save cookie store: {}", e);
         }
-    }
-
-    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn have_cookie_path(&self) -> bool {
-        self.cookie_path.is_some()
     }
 }
 

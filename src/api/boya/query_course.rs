@@ -231,11 +231,10 @@ fn tabled_boya_campus(capacity: &BoyaCampus) -> String {
 impl Session {
     /// # Query Course
     /// - Need: [`boya_login`](#method.boya_login)
-    /// - Input: Token from [`boya_login`](#method.boya_login)
-    pub async fn boya_query_course(&self, token: &str) -> Result<BoyaCourses, SessionError> {
+    pub async fn boya_query_course(&self) -> Result<BoyaCourses, SessionError> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
-        let res = self.boya_universal_request(query, url, token).await?;
+        let res = self.boya_universal_request(query, url).await?;
         let res = serde_json::from_str::<BoyaCourses>(&res)?;
         Ok(res)
     }
@@ -247,10 +246,12 @@ async fn test_boya_query_course() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
+
     session.sso_login(&username, &password).await.unwrap();
-    let token = session.boya_login().await.unwrap();
-    let res = match session.boya_query_course(&token).await {
+    session.boya_login().await.unwrap();
+    let res = match session.boya_query_course().await {
         Ok(s) => s,
         Err(e) => {
             println!("{}", e);

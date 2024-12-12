@@ -37,7 +37,8 @@ use buaa::Session;
 
 #[tokio::main]
 async fn main() {
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
 
     session.sso_login("username", "password").await.unwrap();
 

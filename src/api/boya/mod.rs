@@ -18,8 +18,7 @@ struct BoyaStatus {
 impl Session {
     /// # Boya Login
     /// - Need: [`sso_login`](#method.sso_login)
-    /// - Output: Token for Boya API
-    pub async fn boya_login(&self) -> Result<String, SessionError> {
+    pub async fn boya_login(&self) -> Result<(), SessionError> {
         let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
         // 获取 JSESSIONID
         let res = self.get(url).send().await?;
@@ -33,7 +32,10 @@ impl Session {
             None => return Err(SessionError::LoginError("No Token".to_string())),
         };
         if token.0 == "token" {
-            return Ok(token.1.to_string());
+            // TODO 记得处理异步锁
+            let mut config = self.config.write().unwrap();
+            config.boya_token = Some(token.1.to_string());
+            return Ok(());
         } else {
             return Err(SessionError::LoginError("No Token".to_string()));
         }
@@ -44,7 +46,6 @@ impl Session {
     /// - Input:
     ///     - Query: JSON String for request
     ///     - URL: API URL
-    ///     - Token from [`bykc_login`](#method.bykc_login)
     ///
     /// Other Boyaa APIs don't need to be implemented, if you need to, you can extend it with this generic request API, you can find JS code like the following by intercepting all XHR requests in the browser, via stack calls <br>
     /// Locate the following sections in the `app.js` with breakpoint debugging
@@ -94,8 +95,13 @@ impl Session {
         &self,
         query: &str,
         url: &str,
-        token: &str,
     ) -> Result<String, SessionError> {
+        // 获取 token
+        let config = self.config.read().unwrap();
+        let token = match &config.boya_token {
+            Some(t) => t,
+            None => return Err(SessionError::LoginError("No Boya Token".to_string())),
+        };
         // 首先初始化 RSA, 设置公钥
         // 这是查询参数, 然后被 sha1 处理
         let sha1_query = crypto::hash::sha1(query);
@@ -151,27 +157,23 @@ impl Session {
 
     /// # Select Course
     /// - Need: [`boya_login`](#method.boya_login)
-    /// - Input:
-    ///     - Token from [`boya_login`](#method.boya_login)
-    ///     - Course ID from [`boya_query_course`](#method.boya_query_course)
+    /// - Input: Course ID from [`boya_query_course`](#method.boya_query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn boya_select_course(&self, token: &str, id: u32) -> Result<String, SessionError> {
+    pub async fn boya_select_course(&self, id: u32) -> Result<String, SessionError> {
         let query = format!("{{\"courseId\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
-        let res = self.boya_universal_request(&query, url, token).await?;
+        let res = self.boya_universal_request(&query, url).await?;
         Ok(res)
     }
 
     /// # Drop Course
     /// - Need: [`boya_login`](#method.boya_login)
-    /// - Input:
-    ///     - Token from [`boya_login`](#method.boya_login)
-    ///     - Course ID from [`boya_query_course`](#method.boya_query_course)
+    /// - Input: Course ID from [`boya_query_course`](#method.boya_query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn boya_drop_course(&self, token: &str, id: u32) -> Result<String, SessionError> {
+    pub async fn boya_drop_course(&self, id: u32) -> Result<String, SessionError> {
         let query = format!("{{\"id\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/delChosenCourse";
-        let res = self.boya_universal_request(&query, url, token).await?;
+        let res = self.boya_universal_request(&query, url).await?;
         Ok(res)
     }
 }
@@ -182,11 +184,12 @@ async fn test_boya_select() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
 
-    let token = session.boya_login().await.unwrap();
-    let res = session.boya_select_course(&token, 6637).await.unwrap();
+    session.boya_login().await.unwrap();
+    let res = session.boya_select_course(6637).await.unwrap();
     println!("{}", res);
 
     session.save();
@@ -198,11 +201,12 @@ async fn test_boya_drop() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
 
-    let token = session.boya_login().await.unwrap();
-    let res = session.boya_drop_course(&token, 6637).await.unwrap();
+    session.boya_login().await.unwrap();
+    let res = session.boya_drop_course(6637).await.unwrap();
     println!("{}", res);
 
     session.save();

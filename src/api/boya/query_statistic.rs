@@ -118,11 +118,10 @@ pub struct BoyaAssessment {
 impl Session {
     /// # Query Statistic
     /// - Need: [`boya_login`](#method.boya_login)
-    /// - Input: Token from [`boya_login`](#method.boya_login)
-    pub async fn boya_query_statistic(&self, token: &str) -> Result<BoyaStatistic, SessionError> {
+    pub async fn boya_query_statistic(&self) -> Result<BoyaStatistic, SessionError> {
         let query = "{}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStatisticByUserId";
-        let res = self.boya_universal_request(query, url, token).await?;
+        let res = self.boya_universal_request(query, url).await?;
         let res = serde_json::from_str::<BoyaStatistics>(&res)?;
         Ok(res.data)
     }
@@ -134,11 +133,13 @@ async fn test_boya_query_statistic() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
+
     session.sso_login(&username, &password).await.unwrap();
 
-    let token = session.boya_login().await.unwrap();
-    let res = session.boya_query_statistic(&token).await.unwrap();
+    session.boya_login().await.unwrap();
+    let res = session.boya_query_statistic().await.unwrap();
 
     println!("{:?}", res);
 

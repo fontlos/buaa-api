@@ -89,11 +89,10 @@ pub struct BoyaSelected {
 impl Session {
     /// # Query Selected Course
     /// - Need: [`boya_login`](#method.boya_login)
-    /// - Input: Token from [`boya_login`](#method.boya_login)
-    pub async fn boya_query_selected(&self, token: &str) -> Result<BoyaSelecteds, SessionError> {
+    pub async fn boya_query_selected(&self) -> Result<BoyaSelecteds, SessionError> {
         let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
-        let res = self.boya_universal_request(query, url, token).await?;
+        let res = self.boya_universal_request(query, url).await?;
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
         Ok(res)
     }
@@ -105,11 +104,13 @@ async fn test_boya_query_selected() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
+
     session.sso_login(&username, &password).await.unwrap();
 
-    let token = session.boya_login().await.unwrap();
-    let res = session.boya_query_selected(&token).await.unwrap();
+    session.boya_login().await.unwrap();
+    let res = session.boya_query_selected().await.unwrap();
     println!("{:?}", res);
 
     session.save();

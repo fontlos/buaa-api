@@ -207,7 +207,9 @@ async fn test_spoc_login() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
+
     session.sso_login(&username, &password).await.unwrap();
     let token = session.spoc_login().await.unwrap();
 
@@ -221,7 +223,9 @@ async fn test_spoc_universal_request() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new_in_file("cookie.json");
+    let mut session = Session::new();
+    session.with_cookies("cookie.json");
+
     session.sso_login(&username, &password).await.unwrap();
     let token = session.spoc_login().await.unwrap();
 
