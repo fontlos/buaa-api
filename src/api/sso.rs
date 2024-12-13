@@ -22,10 +22,16 @@ impl Session {
     /// }
     /// ```
     pub async fn sso_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
+        let config = self.config.read().unwrap();
+        let (login_url,  verify_url) = if config.vpn {
+            ("https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue", "https://d.buaa.edu.cn/")
+        } else {
+            ("https://sso.buaa.edu.cn/login", "https://uc.buaa.edu.cn/#/user/login")
+        };
         // 获取登录页 execution 值
-        let res = self.get("https://sso.buaa.edu.cn/login").send().await?;
+        let res = self.get(login_url).send().await?;
         // 重定向到这里说明 Cookie 有效
-        if res.url().as_str() == "https://uc.buaa.edu.cn/#/user/login" {
+        if res.url().as_str() == verify_url {
             return Ok(());
         }
         let html = res.text().await?;
@@ -44,7 +50,7 @@ impl Session {
             ("_eventId", "submit"),
         ];
         let res = self
-            .post("https://sso.buaa.edu.cn/login")
+            .post(login_url)
             .form(&form)
             .send()
             .await?;

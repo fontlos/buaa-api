@@ -82,8 +82,9 @@ impl Session {
             Err(_) => CookieStore::default(),
         };
 
-        let cookie_store = Arc::new(CookieStoreMutex::new(cookie_store));
-        self.cookies = cookie_store;
+        // TODO 记得处理锁失败的情况
+        let mut cookie_lock = self.cookies.lock().unwrap();
+        *cookie_lock = cookie_store;
 
         let mut config = self.config.write().unwrap();
         config.cookie_path = Some(path);
