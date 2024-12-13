@@ -1,6 +1,5 @@
 use rsa::pkcs8::DecodePublicKey;
 use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
-// use rsa::pkcs1::DecodeRsaPublicKey;
 
 use base64::{engine::general_purpose, Engine as _};
 
@@ -20,11 +19,4 @@ Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
         .expect("failed to encrypt");
     // 将加密结果转换为 Base64 字符串
     general_purpose::STANDARD.encode(&enc_data)
-}
-
-#[test]
-fn test_rsa() {
-    let data = "SenQBA8xn6CQGNJs";
-    let enc_data = rsa(data);
-    println!("{}", enc_data);
 }

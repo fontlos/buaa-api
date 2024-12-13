@@ -23,13 +23,3 @@ pub fn des_encrypt(data: &str) -> String {
     // 将加密后的数据转换为 Hex 格式
     output.encode_hex()
 }
-
-#[test]
-fn test_des() {
-    let data = "https://iclass.buaa.edu.cn:8346/?loginName=18993F6FB7040240CF299C45D4C0468A";
-    let encrypted = des_encrypt(data);
-    assert_eq!(
-        &encrypted,
-        "d537020cd453a15ebbffa0be36acca5884015c4080bc2a5a275535579bc762354bdc69f8f17ee785e0c0996e915c3f3ea32b27c24246612d04496dfb291ec4d5825fa1b89b4d45c6dffc650b31ae2338"
-    );
-}

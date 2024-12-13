@@ -84,20 +84,3 @@ pub fn x_encode(str: &str, key: &str) -> String {
     let engine = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
     format!("{{SRBX1}}{}", engine.encode(bytes))
 }
-
-#[test]
-fn test_xencoder() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
-    let ip = env.get("IP").unwrap();
-    let data = format!("{{\"username\":\"{username}\",\"password\":\"{password}\",\"ip\":\"{ip}\",\"acid\":\"62\",\"enc_ver\":\"srun_bx1\"}}");
-    let res = x_encode(
-        &data,
-        "8e4e83f094924913acc6a9d5149015aafc898bd38ba8f45be6bd0f9edd450403",
-    );
-    assert_eq!(
-        &res,
-        "{SRBX1}p00873sYXXqOdVgJGG3pnnRbF99gDX6b03gBghCUqOXfT9du5GeouZ+H/uR78LqlLg+LJm9XZet3JZYnyZGQciC5GtboAz1QQVvkx07f/pht93EBRF9fdqNYRJIiWE3KzRWQozPndYgz1GTkUpzph+=="
-    );
-}

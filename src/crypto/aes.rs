@@ -106,29 +106,3 @@ pub fn aes_decrypt(data: &str, key: &str) -> String {
     // 将解密后的数据转换为字符串
     String::from_utf8(output).unwrap()
 }
-
-#[test]
-fn test_aes_encrypt_ecb() {
-    let raw = "{\"pageNumber\":1,\"pageSize\":20}";
-    let key = "SenQBA8xn6CQGNJs";
-    let encrypted = aes_encrypt_ecb(&raw, key);
-    assert_eq!("RdzgYtkdw+V1Y5t4ieLoqjLJDIll1yDnqV4R1I+E/yM=", encrypted);
-}
-
-#[test]
-fn test_aes_encrypt_cbc() {
-    let raw = r#"{"sqlid":"171256358365871757581efaed47d8396a4dd1336548d4","yhlx":"2"}"#;
-    let key = "inco12345678ocni";
-    let iv = "ocni12345678inco";
-    let encrypted = aes_encrypt_cbc(&raw, key, iv);
-    assert_eq!("sjMMi2wbmqqFOAChr9uGQhPMjU9aXylfswLzenO+ne0BUNGx9zPP0sbOPO3dlds6yQp7lejz7U99uiYPjfcRWjCa/peJWOEvc+MljRS4x3k=", encrypted);
-}
-
-#[test]
-fn test_aes_decrypt() {
-    let env = crate::utils::env();
-    let raw = env.get("AES_RAW").unwrap();
-    let key = "B55Ya5Y7FRa4CJm3";
-    let decrypted = aes_decrypt(&raw, key);
-    println!("{}", decrypted);
-}

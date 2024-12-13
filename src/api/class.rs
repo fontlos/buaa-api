@@ -79,7 +79,7 @@ impl Session {
 
         // 整个这一次请求的意义存疑, 但也许是为了验证 loginName 是否有效
         let url = res.url().as_str();
-        // TODO 如果获取失败, 说明登录已过期, 则重新登录
+        // 如果获取失败, 说明登录已过期, 则重新登录
         let login_name = match utils::get_value_by_lable(url, "loginName=", "#/") {
             Some(v) => v,
             None => return Err(SessionError::LoginExpired("SSO Login Expired".to_string())),
@@ -179,7 +179,7 @@ impl Session {
     /// # Smart Classroom checkin schedule
     /// - Need:
     ///     - [`class_login`](#method.class_login)
-    ///     - [`iclass_query_schedule`](#method.class_query_schedule)
+    ///     - [`class_query_schedule`](#method.class_query_schedule)
     /// - Input: Schedule ID, from [IClassSchedule]
     pub async fn class_checkin(&self, id: &str) -> Result<Response, SessionError> {
         let config = self.config.read().unwrap();

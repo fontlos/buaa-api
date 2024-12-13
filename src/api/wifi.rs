@@ -109,10 +109,66 @@ impl Session {
             .send()
             .await?;
         let res = res.text().await?;
-        if res.contains("Login is successful") {
+        // 注意没有考虑免费流量用尽或者全部流量用尽的情况
+        // "ploy_msg":"您的免费30G流量已用尽，当前正在使用套餐流量。"
+        if res.contains(r#""error":"ok""#) {
             return Ok(());
         } else {
             return Err(SessionError::LoginError(format!("Response: {res}")));
+        }
+    }
+
+    pub async fn wifi_logout(&self, un: &str) -> Result<(), SessionError> {
+        // 先检测 WiFi 名称, 不符合就直接返回以节省时间
+        // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
+        if let Some(s) = utils::get_wifi_ssid() {
+            if s != "BUAA-WiFi" {
+                return Ok(());
+            }
+        }
+
+        // 获取本机 IP
+        let ip = match utils::get_ip() {
+            Some(s) => s,
+            None => {
+                return Err(SessionError::LoginError(String::from(
+                    "Cannot get IP address",
+                )))
+            }
+        };
+
+        // 从重定向 URL 中获取 ACID
+        // 接入点, 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
+        let res = self.get("http://gw.buaa.edu.cn").send().await?;
+        let url = res.url().as_str();
+        let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
+            Some(s) => s,
+            None => return Err(SessionError::LoginError("No AC ID".to_string())),
+        };
+
+        let time = &utils::get_time().to_string()[..];
+
+        // 构造登出 URL 并登录
+        // 暂时不知道后面五个参数有无修改必要
+        let params = [
+            ("callback", time),
+            ("action", "logout"),
+            ("username", un),
+            ("ac_id", &ac_id),
+            ("ip", &ip)
+        ];
+
+        let res = self
+            .get("https://gw.buaa.edu.cn/cgi-bin/srun_portal")
+            .query(&params)
+            .send()
+            .await?;
+
+        let res = res.text().await?;
+        if res.contains(r#""error":"ok""#) {
+            Ok(())
+        } else {
+            Err(SessionError::APIError(format!("WiFi logout failed. Response: {res}")))
         }
     }
 }
