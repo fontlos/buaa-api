@@ -22,12 +22,18 @@ impl Session {
     /// }
     /// ```
     pub async fn sso_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
-        let config = self.config.read().unwrap();
-        let (login_url,  verify_url) = if config.vpn {
-            ("https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue", "https://d.buaa.edu.cn/")
-        } else {
-            ("https://sso.buaa.edu.cn/login", "https://uc.buaa.edu.cn/#/user/login")
-        };
+        let login_url = "https://sso.buaa.edu.cn/login";
+        let verify_url = "https://uc.buaa.edu.cn/#/user/login";
+        self.sso_login_internal(login_url, verify_url, un, pw).await
+    }
+
+    pub async fn sso_login_vpn(&self, un: &str, pw: &str) -> Result<(), SessionError> {
+        let login_url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
+        let verify_url = "https://d.buaa.edu.cn/";
+        self.sso_login_internal(login_url, verify_url, un, pw).await
+    }
+
+    async fn sso_login_internal(&self, login_url: &str, verify_url: &str, un: &str, pw: &str) -> Result<(), SessionError> {
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;
         // 重定向到这里说明 Cookie 有效

@@ -233,6 +233,7 @@ impl Session {
     /// - Need: [`boya_login`](#method.boya_login)
     pub async fn boya_query_course(&self) -> Result<BoyaCourses, SessionError> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
+        // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
         let res = self.boya_universal_request(query, url).await?;
         let res = serde_json::from_str::<BoyaCourses>(&res)?;
