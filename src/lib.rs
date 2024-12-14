@@ -17,4 +17,4 @@ pub use api::{
     spoc::{SpocSchedule, SpocTimeRange, SpocWeek},
 };
 pub use error::{Error, Result};
-pub use context::Context;
+pub use context::{SharedResources, Context};

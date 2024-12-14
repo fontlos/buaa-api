@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer};
 
 use std::ops::Deref;
 
-use crate::Context;
+use super::BoyaAPI;
 
 use super::query_course::{deserialize_boya_kind, BoyaKind, BoyaTime};
 
@@ -86,13 +86,13 @@ pub struct BoyaSelected {
     pub kind: BoyaKind,
 }
 
-impl Context {
+impl BoyaAPI {
     /// # Query Selected Course
     /// - Need: [`boya_login`](#method.boya_login)
-    pub async fn boya_query_selected(&self) -> crate::Result<BoyaSelecteds> {
+    pub async fn query_selected(&self) -> crate::Result<BoyaSelecteds> {
         let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
-        let res = self.boya_universal_request(query, url).await?;
+        let res = self.universal_request(query, url).await?;
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
         Ok(res)
     }
@@ -104,14 +104,16 @@ async fn test_boya_query_selected() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = Context::new();
-    session.with_cookies("cookie.json");
+    let context = crate::Context::new();
+    context.with_cookies("cookie.json");
 
-    session.sso_login(&username, &password).await.unwrap();
+    context.login(&username, &password).await.unwrap();
 
-    session.boya_login().await.unwrap();
-    let res = session.boya_query_selected().await.unwrap();
+    let boya = context.boya();
+
+    boya.login().await.unwrap();
+    let res = boya.query_selected().await.unwrap();
     println!("{:?}", res);
 
-    session.save();
+    context.save();
 }

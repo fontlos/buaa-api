@@ -1,9 +1,9 @@
 //! GW API, For BUAA WiFi Login
 
 use crate::crypto::{hash, x_encode};
-use crate::{utils, Context, Error};
+use crate::{utils, SharedResources, Error};
 
-impl Context {
+impl SharedResources {
     /// # BUAA WiFi Login
     /// - Input: Username, Password
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>

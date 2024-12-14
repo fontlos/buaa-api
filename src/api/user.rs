@@ -1,8 +1,8 @@
 //! User Center API
 
-use crate::{utils, Context};
+use crate::{utils, SharedResources};
 
-impl Context {
+impl SharedResources {
     /// # User Center Login
     /// - Need: [`sso_login`](#method.sso_login) <br>
     pub async fn user_login(&self) -> crate::Result<()> {

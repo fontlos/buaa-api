@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::{format_description, PrimitiveDateTime, Weekday};
 
-use crate::{crypto, Context, Error};
+use crate::{crypto, SharedResources, Error};
 
 #[derive(Deserialize)]
 struct SpocState {
@@ -110,7 +110,7 @@ where
     Ok(SpocTimeRange { start, end })
 }
 
-impl Context {
+impl SharedResources {
     pub async fn spoc_login(&self) -> crate::Result<String> {
         let res = self
             .get("https://spoc.buaa.edu.cn/spocnewht/cas")
@@ -207,7 +207,7 @@ async fn test_spoc_login() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = Context::new();
+    let session = SharedResources::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();
@@ -223,7 +223,7 @@ async fn test_spoc_universal_request() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = Context::new();
+    let session = SharedResources::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();

@@ -4,7 +4,7 @@ use reqwest::Response;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-use crate::{crypto, utils, Context, Error};
+use crate::{crypto, utils, SharedResources, Error};
 
 use super::boya::query_course::deserialize_time;
 
@@ -70,7 +70,7 @@ pub struct ClassSchedule {
     pub state: String,
 }
 
-impl Context {
+impl SharedResources {
     /// # Smart Classroom Login
     /// - Need: [`sso_login`](#method.sso_login)
     pub async fn class_login(&self) -> crate::Result<()> {
@@ -212,7 +212,7 @@ async fn test_class_query_course() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = Context::new();
+    let session = SharedResources::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();
@@ -230,7 +230,7 @@ async fn test_class_query_schedule() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = Context::new();
+    let session = SharedResources::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();
@@ -248,7 +248,7 @@ async fn test_class_checkin() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = Context::new();
+    let session = SharedResources::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();

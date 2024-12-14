@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::Context;
+    use crate::SharedResources;
 
     #[tokio::test]
     async fn test_user() {
@@ -11,7 +11,7 @@ mod tests {
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
 
-        let session = Context::new();
+        let session = SharedResources::new();
         session.with_cookies("cookie.json");
 
         session.sso_login(&username, &password).await.unwrap();
@@ -29,7 +29,7 @@ mod tests {
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
 
-        let session = Context::new();
+        let session = SharedResources::new();
         session.wifi_login(&username, &password).await.unwrap();
     }
 
@@ -38,7 +38,7 @@ mod tests {
         let env = crate::utils::env();
         let username = env.get("USERNAME").unwrap();
 
-        let session = Context::new();
+        let session = SharedResources::new();
         session.wifi_logout(&username).await.unwrap();
     }
 }

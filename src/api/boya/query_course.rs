@@ -4,7 +4,7 @@ use time::{format_description, PrimitiveDateTime};
 
 use std::ops::Deref;
 
-use crate::Context;
+use super::BoyaAPI;
 
 #[derive(Debug, Deserialize)]
 pub struct BoyaCourses {
@@ -228,14 +228,14 @@ fn tabled_boya_campus(capacity: &BoyaCampus) -> String {
     }
 }
 
-impl Context {
+impl BoyaAPI {
     /// # Query Course
     /// - Need: [`boya_login`](#method.boya_login)
-    pub async fn boya_query_course(&self) -> crate::Result<BoyaCourses> {
+    pub async fn query_course(&self) -> crate::Result<BoyaCourses> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
-        let res = self.boya_universal_request(query, url).await?;
+        let res = self.universal_request(query, url).await?;
         let res = serde_json::from_str::<BoyaCourses>(&res)?;
         Ok(res)
     }
@@ -247,12 +247,14 @@ async fn test_boya_query_course() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = Context::new();
-    session.with_cookies("cookie.json");
+    let context = crate::Context::new();
+    context.with_cookies("cookie.json");
 
-    session.sso_login(&username, &password).await.unwrap();
-    session.boya_login().await.unwrap();
-    let res = match session.boya_query_course().await {
+    context.login(&username, &password).await.unwrap();
+
+    let boya = context.boya();
+    boya.login().await.unwrap();
+    let res = match boya.query_course().await {
         Ok(s) => s,
         Err(e) => {
             println!("{}", e);
@@ -261,5 +263,5 @@ async fn test_boya_query_course() {
     };
     println!("{:?}", res);
 
-    session.save();
+    context.save();
 }
