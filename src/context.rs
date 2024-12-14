@@ -34,8 +34,8 @@ impl Context {
     }
 }
 
-impl Deref for Context {
-    type Target = Client;
+impl std::ops::Deref for Context {
+    type Target = reqwest::Client;
 
     fn deref(&self) -> &Self::Target {
         &self.shared.client

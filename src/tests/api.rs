@@ -29,8 +29,10 @@ mod tests {
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
 
-        let session = SharedResources::new();
-        session.wifi_login(&username, &password).await.unwrap();
+        let context = crate::Context::new();
+
+        let wifi = context.wifi();
+        wifi.wifi_login(&username, &password).await.unwrap();
     }
 
     #[tokio::test]
@@ -38,7 +40,9 @@ mod tests {
         let env = crate::utils::env();
         let username = env.get("USERNAME").unwrap();
 
-        let session = SharedResources::new();
-        session.wifi_logout(&username).await.unwrap();
+        let context = crate::Context::new();
+
+        let wifi = context.wifi();
+        wifi.wifi_logout(&username).await.unwrap();
     }
 }

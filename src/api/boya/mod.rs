@@ -14,7 +14,7 @@ use serde::Deserialize;
 use crate::{SharedResources, Context};
 
 pub struct BoyaAPI {
-    pub context: Arc<SharedResources>,
+    pub shared: Arc<SharedResources>,
 }
 
 #[derive(Deserialize)]
@@ -26,7 +26,7 @@ struct BoyaStatus {
 impl Context {
     pub fn boya(&self) -> BoyaAPI {
         BoyaAPI {
-            context: Arc::clone(&self.shared),
+            shared: Arc::clone(&self.shared),
         }
     }
 }
@@ -35,6 +35,6 @@ impl Deref for BoyaAPI {
     type Target = Client;
 
     fn deref(&self) -> &Self::Target {
-        &self.context.client
+        &self.shared.client
     }
 }

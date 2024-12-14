@@ -1,9 +1,31 @@
-//! GW API, For BUAA WiFi Login
+//! BUAA WiFi API
+
+use std::sync::Arc;
 
 use crate::crypto::{hash, x_encode};
-use crate::{utils, SharedResources, Error};
+use crate::{utils, SharedResources, Error, Context};
 
-impl SharedResources {
+impl Context {
+    pub fn wifi(&self) -> WiFiAPI {
+        WiFiAPI {
+            shared: Arc::clone(&self.shared),
+        }
+    }
+}
+
+impl std::ops::Deref for WiFiAPI {
+    type Target = reqwest::Client;
+
+    fn deref(&self) -> &Self::Target {
+        &self.shared.client
+    }
+}
+
+pub struct WiFiAPI {
+    shared: Arc<SharedResources>,
+}
+
+impl WiFiAPI {
     /// # BUAA WiFi Login
     /// - Input: Username, Password
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>

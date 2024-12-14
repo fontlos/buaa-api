@@ -22,7 +22,7 @@ impl BoyaAPI {
         };
         if token.0 == "token" {
             // TODO 记得处理异步锁
-            let mut config = self.context.config.write().unwrap();
+            let mut config = self.shared.config.write().unwrap();
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
@@ -45,7 +45,7 @@ impl BoyaAPI {
         };
         if token.0 == "token" {
             // TODO 记得处理异步锁
-            let mut config = self.context.config.write().unwrap();
+            let mut config = self.shared.config.write().unwrap();
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
@@ -108,7 +108,7 @@ impl BoyaAPI {
         url: &str,
     ) -> crate::Result<String> {
         // 获取 token
-        let config = self.context.config.read().unwrap();
+        let config = self.shared.config.read().unwrap();
         let token = match &config.boya_token {
             Some(t) => t,
             None => return Err(Error::LoginError("No Boya Token".to_string())),
