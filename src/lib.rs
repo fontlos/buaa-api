@@ -3,7 +3,7 @@
 mod api;
 mod crypto;
 mod error;
-mod session;
+mod context;
 mod tests;
 pub mod utils;
 
@@ -16,5 +16,5 @@ pub use api::{
     class::{ClassCourse, ClassSchedule},
     spoc::{SpocSchedule, SpocTimeRange, SpocWeek},
 };
-pub use error::SessionError;
-pub use session::Session;
+pub use error::{Error, Result};
+pub use context::Context;

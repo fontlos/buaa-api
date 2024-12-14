@@ -7,7 +7,7 @@ pub mod query_statistic;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{crypto, utils, Session, SessionError};
+use crate::{crypto, utils, Context, Error};
 
 #[derive(Deserialize)]
 struct BoyaStatus {
@@ -15,21 +15,21 @@ struct BoyaStatus {
     errmsg: String,
 }
 
-impl Session {
+impl Context {
     /// # Boya Login
     /// - Need: [`sso_login`](#method.sso_login)
-    pub async fn boya_login(&self) -> Result<(), SessionError> {
+    pub async fn boya_login(&self) -> crate::Result<()> {
         let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
         // 获取 JSESSIONID
         let res = self.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
-            return Err(SessionError::LoginExpired("SSO Expired".to_string()));
+            return Err(Error::LoginExpired("SSO Expired".to_string()));
         }
         let mut query = res.url().query_pairs();
         let token = match query.next() {
             Some(t) => t,
-            None => return Err(SessionError::LoginError("No Token".to_string())),
+            None => return Err(Error::LoginError("No Token".to_string())),
         };
         if token.0 == "token" {
             // TODO 记得处理异步锁
@@ -37,22 +37,22 @@ impl Session {
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
-            return Err(SessionError::LoginError("No Token".to_string()));
+            return Err(Error::LoginError("No Token".to_string()));
         }
     }
 
-    pub async fn boya_login_vpn(&self) -> Result<(), SessionError> {
+    pub async fn boya_login_vpn(&self) -> crate::Result<()> {
         let url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/cas/login";
         // 获取 JSESSIONID
         let res = self.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
-            return Err(SessionError::LoginExpired("SSO Expired".to_string()));
+            return Err(Error::LoginExpired("SSO Expired".to_string()));
         }
         let mut query = res.url().query_pairs();
         let token = match query.next() {
             Some(t) => t,
-            None => return Err(SessionError::LoginError("No Token".to_string())),
+            None => return Err(Error::LoginError("No Token".to_string())),
         };
         if token.0 == "token" {
             // TODO 记得处理异步锁
@@ -60,7 +60,7 @@ impl Session {
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
-            return Err(SessionError::LoginError("No Token".to_string()));
+            return Err(Error::LoginError("No Token".to_string()));
         }
     }
 
@@ -118,12 +118,12 @@ impl Session {
         &self,
         query: &str,
         url: &str,
-    ) -> Result<String, SessionError> {
+    ) -> crate::Result<String> {
         // 获取 token
         let config = self.config.read().unwrap();
         let token = match &config.boya_token {
             Some(t) => t,
-            None => return Err(SessionError::LoginError("No Boya Token".to_string())),
+            None => return Err(Error::LoginError("No Boya Token".to_string())),
         };
         // 首先初始化 RSA, 设置公钥
         // 这是查询参数, 然后被 sha1 处理
@@ -167,13 +167,13 @@ impl Session {
         let res = crypto::aes::aes_decrypt(&res, &aes_key);
         let status = serde_json::from_str::<BoyaStatus>(&res)?;
         if status.status == "98005399" {
-            return Err(SessionError::LoginExpired("Boya Login Expired".to_string()));
+            return Err(Error::LoginExpired("Boya Login Expired".to_string()));
         }
         if status.status == "1" {
-            return Err(SessionError::APIError(status.errmsg));
+            return Err(Error::APIError(status.errmsg));
         }
         if status.status != "0" {
-            return Err(SessionError::APIError(status.errmsg));
+            return Err(Error::APIError(status.errmsg));
         }
         Ok(res)
     }
@@ -182,7 +182,7 @@ impl Session {
     /// - Need: [`boya_login`](#method.boya_login)
     /// - Input: Course ID from [`boya_query_course`](#method.boya_query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn boya_select_course(&self, id: u32) -> Result<String, SessionError> {
+    pub async fn boya_select_course(&self, id: u32) -> crate::Result<String> {
         let query = format!("{{\"courseId\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
         let res = self.boya_universal_request(&query, url).await?;
@@ -193,7 +193,7 @@ impl Session {
     /// - Need: [`boya_login`](#method.boya_login)
     /// - Input: Course ID from [`boya_query_course`](#method.boya_query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn boya_drop_course(&self, id: u32) -> Result<String, SessionError> {
+    pub async fn boya_drop_course(&self, id: u32) -> crate::Result<String> {
         let query = format!("{{\"id\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/delChosenCourse";
         let res = self.boya_universal_request(&query, url).await?;
@@ -207,7 +207,7 @@ async fn test_boya_select() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
 
@@ -224,7 +224,7 @@ async fn test_boya_drop() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
     session.sso_login(&username, &password).await.unwrap();
 

@@ -1,14 +1,14 @@
 //! BUAA VPN API
 
-use crate::{Session, SessionError};
+use crate::Context;
 
-impl Session {
-    pub fn vpn_enable(&self) -> Result<(), SessionError> {
+impl Context {
+    pub fn vpn_enable(&self) -> crate::Result<()> {
         let mut config = self.config.write().unwrap();
         config.vpn = true;
         Ok(())
     }
-    pub fn vpn_disable(&self) -> Result<(), SessionError> {
+    pub fn vpn_disable(&self) -> crate::Result<()> {
         let mut config = self.config.write().unwrap();
         config.vpn = false;
         Ok(())

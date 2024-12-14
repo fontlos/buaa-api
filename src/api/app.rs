@@ -1,17 +1,17 @@
 //! BUAA App API
 //! APIs for various apps are mixed in here, including class schedules, etc
 
-use crate::{Session, SessionError};
+use crate::Context;
 
-impl Session {
-    pub async fn app_login(&self) -> Result<(), SessionError> {
+impl Context {
+    pub async fn app_login(&self) -> crate::Result<()> {
         self.get("https://app.buaa.edu.cn/uc/wap/login")
             .send()
             .await?;
         Ok(())
     }
 
-    pub async fn app_classtable_get_index(&self) -> Result<String, SessionError> {
+    pub async fn app_classtable_get_index(&self) -> crate::Result<String> {
         let res = self
             .get("https://app.buaa.edu.cn/timetable/wap/default/get-index")
             .send()
@@ -20,7 +20,7 @@ impl Session {
         Ok(text)
     }
 
-    pub async fn app_classtable_get_data(&self) -> Result<String, SessionError> {
+    pub async fn app_classtable_get_data(&self) -> crate::Result<String> {
         let form = [
             ("year", "2024-2025"),
             ("term", "1"),
@@ -43,7 +43,7 @@ async fn test_get_classtable() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();

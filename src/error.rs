@@ -1,7 +1,7 @@
-use thiserror::Error;
+pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
-pub enum SessionError {
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
     /// Server internal error. Usually, it is caused by an expired login
     #[error("Error From API: {0}")]
     APIError(String),

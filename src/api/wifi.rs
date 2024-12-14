@@ -1,9 +1,9 @@
 //! GW API, For BUAA WiFi Login
 
 use crate::crypto::{hash, x_encode};
-use crate::{utils, Session, SessionError};
+use crate::{utils, Context, Error};
 
-impl Session {
+impl Context {
     /// # BUAA WiFi Login
     /// - Input: Username, Password
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
@@ -16,7 +16,7 @@ impl Session {
     ///     session.wifi_login("username", "password").await.unwrap();
     /// }
     /// ```
-    pub async fn wifi_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
+    pub async fn wifi_login(&self, un: &str, pw: &str) -> crate::Result<()> {
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
         if let Some(s) = utils::get_wifi_ssid() {
@@ -29,7 +29,7 @@ impl Session {
         let ip = match utils::get_ip() {
             Some(s) => s,
             None => {
-                return Err(SessionError::LoginError(String::from(
+                return Err(Error::LoginError(String::from(
                     "Cannot get IP address",
                 )))
             }
@@ -41,7 +41,7 @@ impl Session {
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(SessionError::LoginError("No AC ID".to_string())),
+            None => return Err(Error::LoginError("No AC ID".to_string())),
         };
 
         // 获取 Challenge Token
@@ -61,10 +61,10 @@ impl Session {
             let html = res.text().await.unwrap();
             match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
                 Some(s) => s,
-                None => return Err(SessionError::LoginError("No Challenge Value".to_string())),
+                None => return Err(Error::LoginError("No Challenge Value".to_string())),
             }
         } else {
-            return Err(SessionError::LoginError(
+            return Err(Error::LoginError(
                 "Request Failed. Maybe wrong username and password".to_string(),
             ));
         };
@@ -114,11 +114,11 @@ impl Session {
         if res.contains(r#""error":"ok""#) {
             return Ok(());
         } else {
-            return Err(SessionError::LoginError(format!("Response: {res}")));
+            return Err(Error::LoginError(format!("Response: {res}")));
         }
     }
 
-    pub async fn wifi_logout(&self, un: &str) -> Result<(), SessionError> {
+    pub async fn wifi_logout(&self, un: &str) -> crate::Result<()> {
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
         if let Some(s) = utils::get_wifi_ssid() {
@@ -131,7 +131,7 @@ impl Session {
         let ip = match utils::get_ip() {
             Some(s) => s,
             None => {
-                return Err(SessionError::LoginError(String::from(
+                return Err(Error::LoginError(String::from(
                     "Cannot get IP address",
                 )))
             }
@@ -143,7 +143,7 @@ impl Session {
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(SessionError::LoginError("No AC ID".to_string())),
+            None => return Err(Error::LoginError("No AC ID".to_string())),
         };
 
         let time = &utils::get_time().to_string()[..];
@@ -168,7 +168,7 @@ impl Session {
         if res.contains(r#""error":"ok""#) {
             Ok(())
         } else {
-            Err(SessionError::APIError(format!("WiFi logout failed. Response: {res}")))
+            Err(Error::APIError(format!("WiFi logout failed. Response: {res}")))
         }
     }
 }

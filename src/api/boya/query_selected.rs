@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer};
 
 use std::ops::Deref;
 
-use crate::{Session, SessionError};
+use crate::Context;
 
 use super::query_course::{deserialize_boya_kind, BoyaKind, BoyaTime};
 
@@ -86,10 +86,10 @@ pub struct BoyaSelected {
     pub kind: BoyaKind,
 }
 
-impl Session {
+impl Context {
     /// # Query Selected Course
     /// - Need: [`boya_login`](#method.boya_login)
-    pub async fn boya_query_selected(&self) -> Result<BoyaSelecteds, SessionError> {
+    pub async fn boya_query_selected(&self) -> crate::Result<BoyaSelecteds> {
         let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
         let res = self.boya_universal_request(query, url).await?;
@@ -104,7 +104,7 @@ async fn test_boya_query_selected() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();

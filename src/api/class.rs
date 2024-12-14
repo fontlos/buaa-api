@@ -4,7 +4,7 @@ use reqwest::Response;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-use crate::{crypto, utils, Session, SessionError};
+use crate::{crypto, utils, Context, Error};
 
 use super::boya::query_course::deserialize_time;
 
@@ -70,10 +70,10 @@ pub struct ClassSchedule {
     pub state: String,
 }
 
-impl Session {
+impl Context {
     /// # Smart Classroom Login
     /// - Need: [`sso_login`](#method.sso_login)
-    pub async fn class_login(&self) -> Result<(), SessionError> {
+    pub async fn class_login(&self) -> crate::Result<()> {
         // 获取 JSESSIONID
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
 
@@ -82,7 +82,7 @@ impl Session {
         // 如果获取失败, 说明登录已过期, 则重新登录
         let login_name = match utils::get_value_by_lable(url, "loginName=", "#/") {
             Some(v) => v,
-            None => return Err(SessionError::LoginExpired("SSO Login Expired".to_string())),
+            None => return Err(Error::LoginExpired("SSO Login Expired".to_string())),
         };
         let url = &url[..url.len() - 2];
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
@@ -112,7 +112,7 @@ impl Session {
                 config.class_token = Some(res.result.id);
                 Ok(())
             }
-            Err(_) => Err(SessionError::LoginError(format!(
+            Err(_) => Err(Error::LoginError(format!(
                 "Smart Classroom Login Failed: {}",
                 res
             ))),
@@ -123,12 +123,12 @@ impl Session {
     /// - Need: [`class_login`](#method.class_login)
     /// - Input: Term ID
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
-    pub async fn class_query_course(&self, id: &str) -> Result<Vec<ClassCourse>, SessionError> {
+    pub async fn class_query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {
             Some(t) => t,
             None => {
-                return Err(SessionError::LoginError(
+                return Err(Error::LoginError(
                     "Smart Classroom Login Required".to_string(),
                 ))
             }
@@ -152,12 +152,12 @@ impl Session {
     ///     - [`class_login`](#method.class_login)
     ///     - [`class_query_course`](#method.class_query_course)
     /// - Input: Course ID, from [IClassCourse]
-    pub async fn class_query_schedule(&self, id: &str) -> Result<Vec<ClassSchedule>, SessionError> {
+    pub async fn class_query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {
             Some(t) => t,
             None => {
-                return Err(SessionError::LoginError(
+                return Err(Error::LoginError(
                     "Smart Classroom Login Required".to_string(),
                 ))
             }
@@ -181,12 +181,12 @@ impl Session {
     ///     - [`class_login`](#method.class_login)
     ///     - [`class_query_schedule`](#method.class_query_schedule)
     /// - Input: Schedule ID, from [IClassSchedule]
-    pub async fn class_checkin(&self, id: &str) -> Result<Response, SessionError> {
+    pub async fn class_checkin(&self, id: &str) -> crate::Result<Response> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {
             Some(t) => t,
             None => {
-                return Err(SessionError::LoginError(
+                return Err(Error::LoginError(
                     "Smart Classroom Login Required".to_string(),
                 ))
             }
@@ -212,7 +212,7 @@ async fn test_class_query_course() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();
@@ -230,7 +230,7 @@ async fn test_class_query_schedule() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();
@@ -248,7 +248,7 @@ async fn test_class_checkin() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();

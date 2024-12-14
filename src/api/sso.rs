@@ -1,8 +1,8 @@
-use crate::{Session, SessionError};
+use crate::{Context, Error};
 
 use crate::utils;
 
-impl Session {
+impl Context {
     /// # SSO Login
     /// This is the most important method and should be called first <br>
     /// This method is used to login to the SSO system, and the login information will be saved in the cookie <br>
@@ -21,19 +21,19 @@ impl Session {
     ///     session.save();
     /// }
     /// ```
-    pub async fn sso_login(&self, un: &str, pw: &str) -> Result<(), SessionError> {
+    pub async fn sso_login(&self, un: &str, pw: &str) -> crate::Result<()> {
         let login_url = "https://sso.buaa.edu.cn/login";
         let verify_url = "https://uc.buaa.edu.cn/#/user/login";
         self.sso_login_internal(login_url, verify_url, un, pw).await
     }
 
-    pub async fn sso_login_vpn(&self, un: &str, pw: &str) -> Result<(), SessionError> {
+    pub async fn sso_login_vpn(&self, un: &str, pw: &str) -> crate::Result<()> {
         let login_url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
         let verify_url = "https://d.buaa.edu.cn/";
         self.sso_login_internal(login_url, verify_url, un, pw).await
     }
 
-    async fn sso_login_internal(&self, login_url: &str, verify_url: &str, un: &str, pw: &str) -> Result<(), SessionError> {
+    async fn sso_login_internal(&self, login_url: &str, verify_url: &str, un: &str, pw: &str) -> crate::Result<()> {
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;
         // 重定向到这里说明 Cookie 有效
@@ -44,7 +44,7 @@ impl Session {
         let execution = match utils::get_value_by_lable(&html, "\"execution\" value=\"", "\"") {
             Some(s) => s,
             None => {
-                return Err(SessionError::LoginError("No Execution Value".to_string()));
+                return Err(Error::LoginError("No Execution Value".to_string()));
             }
         };
         let form = [
@@ -63,7 +63,7 @@ impl Session {
         if res.status().as_u16() == 200 {
             Ok(())
         } else {
-            Err(SessionError::LoginError(String::from(
+            Err(Error::LoginError(String::from(
                 "Maybe wrong username or password",
             )))
         }

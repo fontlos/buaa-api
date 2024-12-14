@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::{format_description, PrimitiveDateTime, Weekday};
 
-use crate::{crypto, Session, SessionError};
+use crate::{crypto, Context, Error};
 
 #[derive(Deserialize)]
 struct SpocState {
@@ -110,14 +110,14 @@ where
     Ok(SpocTimeRange { start, end })
 }
 
-impl Session {
-    pub async fn spoc_login(&self) -> Result<String, SessionError> {
+impl Context {
+    pub async fn spoc_login(&self) -> crate::Result<String> {
         let res = self
             .get("https://spoc.buaa.edu.cn/spocnewht/cas")
             .send()
             .await?;
         if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
-            return Err(SessionError::LoginExpired("SSO Expired".to_string()));
+            return Err(Error::LoginExpired("SSO Expired".to_string()));
         }
         let mut query = res.url().query_pairs();
         let token = match query.next() {
@@ -125,10 +125,10 @@ impl Session {
                 if key == "token" {
                     value
                 } else {
-                    return Err(SessionError::LoginError("No Token".to_string()));
+                    return Err(Error::LoginError("No Token".to_string()));
                 }
             }
-            None => return Err(SessionError::LoginError("No Token".to_string())),
+            None => return Err(Error::LoginError("No Token".to_string())),
         };
         // 暂时不知道有什么用, 看名字是用来刷新 token 的 token
         // let _refresh_token = match query.next() {
@@ -149,7 +149,7 @@ impl Session {
         query: &str,
         url: &str,
         token: &str,
-    ) -> Result<String, SessionError> {
+    ) -> crate::Result<String> {
         // 逆向出来的密钥和初始向量, 既然写死了为什么不用 ECB 模式啊
         let ase_key = "inco12345678ocni";
         let ase_iv = "ocni12345678inco";
@@ -166,14 +166,14 @@ impl Session {
         let res = res.text().await?;
         let status = serde_json::from_str::<SpocState>(&res)?;
         if status.code != 200 {
-            return Err(SessionError::APIError(
+            return Err(Error::APIError(
                 status.msg.unwrap_or("Unknown Error".to_string()),
             ));
         }
         Ok(res)
     }
 
-    pub async fn spoc_get_week(&self, token: &str) -> Result<SpocWeek, SessionError> {
+    pub async fn spoc_get_week(&self, token: &str) -> crate::Result<SpocWeek> {
         // SQL ID 似乎可以是固定值, 应该是用于鉴权的, 不知道是否会过期
         let query = r#"{"sqlid":"17275975753144ed8d6fe15425677f752c936d97de1bab76"}"#;
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryOne";
@@ -186,7 +186,7 @@ impl Session {
         &self,
         token: &str,
         week: &SpocWeek,
-    ) -> Result<Vec<SpocSchedule>, SessionError> {
+    ) -> crate::Result<Vec<SpocSchedule>> {
         // 后面三个值分别是开始日期, 结束日期和学年学期
         let query = format!(
             "{{\"sqlid\":\"17138556333937a86d7c38783bc62811e7c6bb5ef955a\",\"zksrq\":\"{}\",\"zjsrq\":\"{}\",\"xnxq\":\"{}\"}}",
@@ -207,7 +207,7 @@ async fn test_spoc_login() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();
@@ -223,7 +223,7 @@ async fn test_spoc_universal_request() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();

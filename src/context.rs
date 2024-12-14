@@ -14,7 +14,7 @@ use std::sync::{Arc, RwLock};
 /// This is the core of this crate, it is used to store cookies and send requests <br>
 /// The prefix of most API names is derived from the fourth-level domain name of the corresponding domain name
 #[derive(Debug)]
-pub struct Session {
+pub struct Context {
     client: Client,
     cookies: Arc<CookieStoreMutex>,
     pub config: Arc<RwLock<Config>>,
@@ -30,7 +30,7 @@ pub struct Config {
     pub class_token: Option<String>,
 }
 
-impl Session {
+impl Context {
     /// Create a new session in memory, if you call `save` method, it will save cookies to `cookies.json` defaultly
     /// ```rust
     /// use buaa::Session;
@@ -63,7 +63,7 @@ impl Session {
             class_token: None,
         };
 
-        Session {
+        Context {
             client,
             cookies: cookie_store,
             config: Arc::new(RwLock::new(config)),
@@ -72,7 +72,7 @@ impl Session {
 
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn with_cookies(&mut self, path: &str) {
+    pub fn with_cookies(&self, path: &str) {
         let path = PathBuf::from(path);
         let cookie_store = match File::open(&path) {
             Ok(f) => {
@@ -92,7 +92,7 @@ impl Session {
 
     /// save cookies manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn save(&mut self) {
+    pub fn save(&self) {
         // TODO 记得处理锁失败的情况
         let config = self.config.read().unwrap();
         let path = match &config.cookie_path {
@@ -120,7 +120,7 @@ impl Session {
     }
 }
 
-impl Deref for Session {
+impl Deref for Context {
     type Target = Client;
 
     fn deref(&self) -> &Self::Target {

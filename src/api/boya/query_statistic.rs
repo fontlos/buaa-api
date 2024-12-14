@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer};
 
-use crate::{Session, SessionError};
+use crate::Context;
 
 #[cfg(feature = "table")]
 use super::query_course::{tabled_boya_kind, BoyaKind};
@@ -115,10 +115,10 @@ pub struct BoyaAssessment {
     pub undone: u8,
 }
 
-impl Session {
+impl Context {
     /// # Query Statistic
     /// - Need: [`boya_login`](#method.boya_login)
-    pub async fn boya_query_statistic(&self) -> Result<BoyaStatistic, SessionError> {
+    pub async fn boya_query_statistic(&self) -> crate::Result<BoyaStatistic> {
         let query = "{}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStatisticByUserId";
         let res = self.boya_universal_request(query, url).await?;
@@ -133,7 +133,7 @@ async fn test_boya_query_statistic() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();

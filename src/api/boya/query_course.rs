@@ -4,7 +4,7 @@ use time::{format_description, PrimitiveDateTime};
 
 use std::ops::Deref;
 
-use crate::{Session, SessionError};
+use crate::Context;
 
 #[derive(Debug, Deserialize)]
 pub struct BoyaCourses {
@@ -228,10 +228,10 @@ fn tabled_boya_campus(capacity: &BoyaCampus) -> String {
     }
 }
 
-impl Session {
+impl Context {
     /// # Query Course
     /// - Need: [`boya_login`](#method.boya_login)
-    pub async fn boya_query_course(&self) -> Result<BoyaCourses, SessionError> {
+    pub async fn boya_query_course(&self) -> crate::Result<BoyaCourses> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
@@ -247,7 +247,7 @@ async fn test_boya_query_course() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let mut session = Session::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
     session.sso_login(&username, &password).await.unwrap();
