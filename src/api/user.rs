@@ -1,12 +1,16 @@
-//! User Center API
+//! BUAA User Center API
 
 use crate::utils;
 
-crate::wrap_api!(UserCenterAPI, user);
+crate::wrap_api!(
+    /// BUAA User Center API Wrapper <br>
+    /// Call `user()` on `Context` to get an instance of this struct and call corresponding API on this instance.
+    UserCenterAPI,
+    user
+);
 
 impl UserCenterAPI {
     /// # User Center Login
-    /// - Need: [`sso_login`](#method.sso_login) <br>
     pub async fn login(&self) -> crate::Result<()> {
         let time = utils::get_time();
         // 获取 JSESSIONID
@@ -25,7 +29,6 @@ impl UserCenterAPI {
     }
 
     /// # Get User Center state
-    /// - Need: [`user_login`](#method.user_login) <br>
     /// - Output: `String`, JSON includes name and username, etc
     pub async fn get_state(&self) -> crate::Result<String> {
         let time = utils::get_time();

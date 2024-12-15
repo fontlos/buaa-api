@@ -1,4 +1,6 @@
-//! Smart Classroom System (iclass) API
+//! BUAA Smart Classroom (智慧教室) API
+//!
+//! It is used for class sign-in and class attendance inquiry
 
 use reqwest::Response;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -8,7 +10,12 @@ use crate::{crypto, utils, Error};
 
 use super::boya::query_course::deserialize_time;
 
-crate::wrap_api!(SmartClassAPI, class);
+crate::wrap_api!(
+    /// BUAA Smart Classroom API Wrapper <br>
+    /// Call `class()` on `Context` to get an instance of this struct and call corresponding API on this instance.
+    ClassAPI,
+    class
+);
 
 #[derive(Deserialize)]
 struct ClassLogin {
@@ -72,9 +79,8 @@ pub struct ClassSchedule {
     pub state: String,
 }
 
-impl SmartClassAPI {
+impl ClassAPI {
     /// # Smart Classroom Login
-    /// - Need: [`sso_login`](#method.sso_login)
     pub async fn login(&self) -> crate::Result<()> {
         // 获取 JSESSIONID
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
@@ -122,7 +128,6 @@ impl SmartClassAPI {
     }
 
     /// # Smart Classroom query all course of a term
-    /// - Need: [`class_login`](#method.class_login)
     /// - Input: Term ID
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
@@ -150,10 +155,7 @@ impl SmartClassAPI {
     }
 
     /// # Smart Classroom query one course's all schedule
-    /// - Need:
-    ///     - [`class_login`](#method.class_login)
-    ///     - [`class_query_course`](#method.class_query_course)
-    /// - Input: Course ID, from [IClassCourse]
+    /// - Input: Course ID, from [ClassCourse]
     pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {
@@ -179,10 +181,7 @@ impl SmartClassAPI {
     }
 
     /// # Smart Classroom checkin schedule
-    /// - Need:
-    ///     - [`class_login`](#method.class_login)
-    ///     - [`class_query_schedule`](#method.class_query_schedule)
-    /// - Input: Schedule ID, from [IClassSchedule]
+    /// - Input: Schedule ID, from [ClassSchedule]
     pub async fn checkin(&self, id: &str) -> crate::Result<Response> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {

@@ -7,17 +7,18 @@ mod error;
 mod tests;
 pub mod utils;
 
-// #[macro_use]
-// pub(crate) use utils::wrap_api::wrap_api;
 
 pub use api::{
     boya::{
+        BoyaAPI,
         query_course::{BoyaCampus, BoyaCourse, BoyaCourses, BoyaKind, BoyaTime},
         query_selected::{BoyaSelected, BoyaSelecteds},
-        query_statistic::{BoyaAssessment, BoyaStatistic},
+        query_statistic::{BoyaAssessment, BoyaStatistic}
     },
-    class::{ClassCourse, ClassSchedule},
-    spoc::{SpocSchedule, SpocTimeRange, SpocWeek},
+    class::{ClassAPI, ClassCourse, ClassSchedule},
+    spoc::{SpocAPI, SpocSchedule, SpocTimeRange, SpocWeek},
+    user::UserCenterAPI,
+    wifi::WiFiAPI
 };
 pub use context::{Config, Context};
 pub use error::{Error, Result};

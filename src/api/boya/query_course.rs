@@ -230,7 +230,6 @@ fn tabled_boya_campus(capacity: &BoyaCampus) -> String {
 
 impl BoyaAPI {
     /// # Query Course
-    /// - Need: [`boya_login`](#method.boya_login)
     pub async fn query_course(&self) -> crate::Result<BoyaCourses> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
         // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage

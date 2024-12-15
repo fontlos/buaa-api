@@ -3,19 +3,24 @@
 use crate::crypto::{hash, x_encode};
 use crate::{utils, Error};
 
-crate::wrap_api!(WiFiAPI, wifi);
+crate::wrap_api!(
+    /// BUAA WiFi API Wrapper <br>
+    /// Call `wifi()` on `Context` to get an instance of this struct and call corresponding API on this instance.
+    WiFiAPI,
+    wifi
+);
 
 impl WiFiAPI {
     /// # BUAA WiFi Login
-    /// - Input: Username, Password
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
     /// ```rust
-    /// use buaa::Session;
+    /// use buaa::Context;
     ///
     /// #[tokio::main]
     /// async fn main() {
-    ///     let session = Session::new_in_memory();
-    ///     session.wifi_login("username", "password").await.unwrap();
+    ///     let context = Context::new();
+    ///     let wifi = context.wifi();
+    ///     wifi.login("username", "password").await.unwrap();
     /// }
     /// ```
     pub async fn login(&self, un: &str, pw: &str) -> crate::Result<()> {
@@ -116,6 +121,18 @@ impl WiFiAPI {
         }
     }
 
+    /// # BUAA WiFi Logout
+    /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username <br>
+    /// ```rust
+    /// use buaa::Context;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let context = Context::new();
+    ///     let wifi = context.wifi();
+    ///     wifi.logout("username").await.unwrap();
+    /// }
+    /// ```
     pub async fn logout(&self, un: &str) -> crate::Result<()> {
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接

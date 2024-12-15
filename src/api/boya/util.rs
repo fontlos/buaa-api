@@ -6,7 +6,6 @@ use super::{BoyaAPI, BoyaStatus};
 
 impl BoyaAPI {
     /// # Boya Login
-    /// - Need: [`sso_login`](#method.sso_login)
     pub async fn login(&self) -> crate::Result<()> {
         let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
         // 获取 JSESSIONID
@@ -30,7 +29,7 @@ impl BoyaAPI {
         }
     }
 
-    pub async fn boya_login_vpn(&self) -> crate::Result<()> {
+    pub async fn login_vpn(&self) -> crate::Result<()> {
         let url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/cas/login";
         // 获取 JSESSIONID
         let res = self.get(url).send().await?;
@@ -53,13 +52,13 @@ impl BoyaAPI {
         }
     }
     /// # Boya Universal Request API
-    /// - Need: [`bykc_login`](#method.bykc_login)
     /// - Input:
     ///     - Query: JSON String for request
     ///     - URL: API URL
     ///
-    /// Other Boyaa APIs don't need to be implemented, if you need to, you can extend it with this generic request API, you can find JS code like the following by intercepting all XHR requests in the browser, via stack calls <br>
-    /// Locate the following sections in the `app.js` with breakpoint debugging
+    /// Other Boya APIs don't need to be implemented, if you need to, you can extend it with this universal request API. <br>
+    /// You can find JS code like the following by intercepting all XHR requests in the browser, via stack calls. <br>
+    /// Locate the following sections in the `app.js` with breakpoint debugging.
     ///
     /// # JS Code
     ///  ```js
@@ -163,10 +162,9 @@ impl BoyaAPI {
     }
 
     /// # Select Course
-    /// - Need: [`boya_login`](#method.boya_login)
-    /// - Input: Course ID from [`boya_query_course`](#method.boya_query_course)
+    /// - Input: Course ID from [`query_course`](#method.query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn boya_select_course(&self, id: u32) -> crate::Result<String> {
+    pub async fn select_course(&self, id: u32) -> crate::Result<String> {
         let query = format!("{{\"courseId\":{}}}", id);
         let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
         let res = self.universal_request(&query, url).await?;
@@ -174,8 +172,7 @@ impl BoyaAPI {
     }
 
     /// # Drop Course
-    /// - Need: [`boya_login`](#method.boya_login)
-    /// - Input: Course ID from [`boya_query_course`](#method.boya_query_course)
+    /// - Input: Course ID from [`query_course`](#method.query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
     pub async fn drop_course(&self, id: u32) -> crate::Result<String> {
         let query = format!("{{\"id\":{}}}", id);
@@ -197,7 +194,7 @@ async fn test_boya_select() {
 
     let boya = context.boya();
     boya.login().await.unwrap();
-    let res = boya.boya_select_course(6637).await.unwrap();
+    let res = boya.select_course(6637).await.unwrap();
     println!("{}", res);
 
     context.save();

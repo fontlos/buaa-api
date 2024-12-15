@@ -117,7 +117,6 @@ pub struct BoyaAssessment {
 
 impl BoyaAPI {
     /// # Query Statistic
-    /// - Need: [`boya_login`](#method.boya_login)
     pub async fn query_statistic(&self) -> crate::Result<BoyaStatistic> {
         let query = "{}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryStatisticByUserId";

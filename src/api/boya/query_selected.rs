@@ -87,8 +87,7 @@ pub struct BoyaSelected {
 }
 
 impl BoyaAPI {
-    /// # Query Selected Course
-    /// - Need: [`boya_login`](#method.boya_login)
+    /// # Query Selected Courses
     pub async fn query_selected(&self) -> crate::Result<BoyaSelecteds> {
         let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";

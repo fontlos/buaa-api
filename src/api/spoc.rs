@@ -7,7 +7,12 @@ use time::{format_description, PrimitiveDateTime, Weekday};
 
 use crate::{crypto, Error};
 
-crate::wrap_api!(SpocAPI, spoc);
+crate::wrap_api!(
+    /// BUAA Spoc API Wrapper <br>
+    /// Call `spoc()` on `Context` to get an instance of this struct and call corresponding API on this instance.
+    SpocAPI,
+    spoc
+);
 
 #[derive(Deserialize)]
 struct SpocState {
@@ -113,6 +118,7 @@ where
 }
 
 impl SpocAPI {
+    /// # Spoc Login
     pub async fn login(&self) -> crate::Result<()> {
         let res = self
             .get("https://spoc.buaa.edu.cn/spocnewht/cas")

@@ -1,7 +1,8 @@
 #[macro_export(local_inner_macros)]
 macro_rules! wrap_api {
-    ($api_wrap:ident, $api_fn:ident) => {
+    ($(#[$meta:meta])* $api_wrap:ident, $api_fn:ident) => {
         #[allow(dead_code)]
+        $(#[$meta])*
         pub struct $api_wrap {
             client: reqwest::Client,
             cookies: std::sync::Arc<reqwest_cookie_store::CookieStoreMutex>,
@@ -17,6 +18,7 @@ macro_rules! wrap_api {
         }
 
         impl crate::Context {
+            $(#[$meta])*
             pub fn $api_fn(&self) -> $api_wrap {
                 $api_wrap {
                     client: self.client.clone(),
