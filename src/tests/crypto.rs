@@ -3,7 +3,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::crypto::{*, aes::*, des::*};
+    use crate::crypto::{aes::*, des::*, *};
 
     #[test]
     fn test_aes_encrypt_ecb() {

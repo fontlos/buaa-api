@@ -5,7 +5,9 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::{format_description, PrimitiveDateTime, Weekday};
 
-use crate::{crypto, SharedResources, Error};
+use crate::{crypto, Error};
+
+crate::wrap_api!(SpocAPI, spoc);
 
 #[derive(Deserialize)]
 struct SpocState {
@@ -110,8 +112,8 @@ where
     Ok(SpocTimeRange { start, end })
 }
 
-impl SharedResources {
-    pub async fn spoc_login(&self) -> crate::Result<String> {
+impl SpocAPI {
+    pub async fn login(&self) -> crate::Result<()> {
         let res = self
             .get("https://spoc.buaa.edu.cn/spocnewht/cas")
             .send()
@@ -141,15 +143,17 @@ impl SharedResources {
         //     }
         //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
         // };
-        Ok(token.into_owned())
+        let mut config = self.config.write().unwrap();
+        config.spoc_token = Some(token.into_owned());
+        Ok(())
     }
 
-    pub async fn spoc_universal_request(
-        &self,
-        query: &str,
-        url: &str,
-        token: &str,
-    ) -> crate::Result<String> {
+    pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
+        let config = self.config.read().unwrap();
+        let token = match &config.spoc_token {
+            Some(t) => t,
+            None => return Err(Error::APIError("No Token".to_string())),
+        };
         // 逆向出来的密钥和初始向量, 既然写死了为什么不用 ECB 模式啊
         let ase_key = "inco12345678ocni";
         let ase_iv = "ocni12345678inco";
@@ -173,20 +177,17 @@ impl SharedResources {
         Ok(res)
     }
 
-    pub async fn spoc_get_week(&self, token: &str) -> crate::Result<SpocWeek> {
+    /// Get current week
+    pub async fn get_week(&self) -> crate::Result<SpocWeek> {
         // SQL ID 似乎可以是固定值, 应该是用于鉴权的, 不知道是否会过期
         let query = r#"{"sqlid":"17275975753144ed8d6fe15425677f752c936d97de1bab76"}"#;
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryOne";
-        let res = self.spoc_universal_request(query, url, token).await?;
+        let res = self.universal_request(query, url).await?;
         let res = serde_json::from_str::<SpocRes1>(&res)?;
         Ok(res.content)
     }
 
-    pub async fn spoc_get_week_schedule(
-        &self,
-        token: &str,
-        week: &SpocWeek,
-    ) -> crate::Result<Vec<SpocSchedule>> {
+    pub async fn get_week_schedule(&self, week: &SpocWeek) -> crate::Result<Vec<SpocSchedule>> {
         // 后面三个值分别是开始日期, 结束日期和学年学期
         let query = format!(
             "{{\"sqlid\":\"17138556333937a86d7c38783bc62811e7c6bb5ef955a\",\"zksrq\":\"{}\",\"zjsrq\":\"{}\",\"xnxq\":\"{}\"}}",
@@ -195,43 +196,29 @@ impl SharedResources {
             week.term
         );
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryList";
-        let res = self.spoc_universal_request(&query, url, token).await?;
+        let res = self.universal_request(&query, url).await?;
         let res = serde_json::from_str::<SpocRes2>(&res)?;
         Ok(res.content)
     }
 }
 
 #[tokio::test]
-async fn test_spoc_login() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
-
-    let session = SharedResources::new();
-    session.with_cookies("cookie.json");
-
-    session.sso_login(&username, &password).await.unwrap();
-    let token = session.spoc_login().await.unwrap();
-
-    println!("{}", token);
-
-    session.save();
-}
-#[tokio::test]
 async fn test_spoc_universal_request() {
     let env = crate::utils::env();
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = SharedResources::new();
-    session.with_cookies("cookie.json");
+    let context = crate::Context::new();
+    context.with_cookies("cookie.json");
+    context.login(&username, &password).await.unwrap();
 
-    session.sso_login(&username, &password).await.unwrap();
-    let token = session.spoc_login().await.unwrap();
+    let spoc = context.spoc();
+    spoc.login().await.unwrap();
 
-    let res = session.spoc_get_week(&token).await.unwrap();
+    let res = spoc.get_week().await.unwrap();
     println!("{:?}", res);
-    let res = session.spoc_get_week_schedule(&token, &res).await.unwrap();
+    let res = spoc.get_week_schedule(&res).await.unwrap();
     println!("{:?}", res);
-    session.save();
+
+    context.save();
 }

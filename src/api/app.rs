@@ -1,9 +1,9 @@
 //! BUAA App API
 //! APIs for various apps are mixed in here, including class schedules, etc
 
-use crate::SharedResources;
+use crate::Context;
 
-impl SharedResources {
+impl Context {
     pub async fn app_login(&self) -> crate::Result<()> {
         self.get("https://app.buaa.edu.cn/uc/wap/login")
             .send()
@@ -43,10 +43,10 @@ async fn test_get_classtable() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = SharedResources::new();
+    let session = Context::new();
     session.with_cookies("cookie.json");
 
-    session.sso_login(&username, &password).await.unwrap();
+    session.login(&username, &password).await.unwrap();
     session.app_login().await.unwrap();
 
     let res = session.app_classtable_get_data().await.unwrap();

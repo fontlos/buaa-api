@@ -13,39 +13,39 @@ use std::sync::{Arc, RwLock};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
 /// The prefix of most API names is derived from the fourth-level domain name of the corresponding domain name
+// pub struct Context {
+//     pub(crate) shared: Arc<SharedResources>,
+// }
+
+// impl Context {
+//     /// Create a new context
+//     pub fn new() -> Self {
+//         Context {
+//             shared: Arc::new(SharedResources::new()),
+//         }
+//     }
+
+//     pub fn with_cookies(&self, path: &str) {
+//         self.shared.with_cookies(path);
+//     }
+
+//     pub fn save(&self) {
+//         self.shared.save();
+//     }
+// }
+
+// impl std::ops::Deref for Context {
+//     type Target = reqwest::Client;
+
+//     fn deref(&self) -> &Self::Target {
+//         &self.shared.client
+//     }
+// }
+
+#[derive(Debug, Clone)]
 pub struct Context {
-    pub(crate) shared: Arc<SharedResources>,
-}
-
-impl Context {
-    /// Create a new context
-    pub fn new() -> Self {
-        Context {
-            shared: Arc::new(SharedResources::new()),
-        }
-    }
-
-    pub fn with_cookies(&self, path: &str) {
-        self.shared.with_cookies(path);
-    }
-
-    pub fn save(&self) {
-        self.shared.save();
-    }
-}
-
-impl std::ops::Deref for Context {
-    type Target = reqwest::Client;
-
-    fn deref(&self) -> &Self::Target {
-        &self.shared.client
-    }
-}
-
-#[derive(Debug)]
-pub struct SharedResources {
     pub(crate) client: Client,
-    cookies: Arc<CookieStoreMutex>,
+    pub(crate) cookies: Arc<CookieStoreMutex>,
     pub config: Arc<RwLock<Config>>,
 }
 
@@ -55,11 +55,13 @@ pub struct Config {
     pub vpn: bool,
     /// Token for Boya API
     pub boya_token: Option<String>,
-    /// User ID for Class API
+    /// User ID for SmartClass API
     pub class_token: Option<String>,
+    /// User ID for Spoc API
+    pub spoc_token: Option<String>,
 }
 
-impl SharedResources {
+impl Context {
     /// Create a new session in memory, if you call `save` method, it will save cookies to `cookies.json` defaultly
     /// ```rust
     /// use buaa::Session;
@@ -90,9 +92,10 @@ impl SharedResources {
             vpn: false,
             boya_token: None,
             class_token: None,
+            spoc_token: None,
         };
 
-        SharedResources {
+        Context {
             client,
             cookies: cookie_store,
             config: Arc::new(RwLock::new(config)),
@@ -149,7 +152,7 @@ impl SharedResources {
     }
 }
 
-impl Deref for SharedResources {
+impl Deref for Context {
     type Target = Client;
 
     fn deref(&self) -> &Self::Target {

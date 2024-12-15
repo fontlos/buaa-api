@@ -4,9 +4,11 @@ use reqwest::Response;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-use crate::{crypto, utils, SharedResources, Error};
+use crate::{crypto, utils, Error};
 
 use super::boya::query_course::deserialize_time;
+
+crate::wrap_api!(SmartClassAPI, class);
 
 #[derive(Deserialize)]
 struct ClassLogin {
@@ -70,10 +72,10 @@ pub struct ClassSchedule {
     pub state: String,
 }
 
-impl SharedResources {
+impl SmartClassAPI {
     /// # Smart Classroom Login
     /// - Need: [`sso_login`](#method.sso_login)
-    pub async fn class_login(&self) -> crate::Result<()> {
+    pub async fn login(&self) -> crate::Result<()> {
         // 获取 JSESSIONID
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
 
@@ -123,7 +125,7 @@ impl SharedResources {
     /// - Need: [`class_login`](#method.class_login)
     /// - Input: Term ID
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
-    pub async fn class_query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
+    pub async fn query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {
             Some(t) => t,
@@ -152,7 +154,7 @@ impl SharedResources {
     ///     - [`class_login`](#method.class_login)
     ///     - [`class_query_course`](#method.class_query_course)
     /// - Input: Course ID, from [IClassCourse]
-    pub async fn class_query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
+    pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {
             Some(t) => t,
@@ -181,7 +183,7 @@ impl SharedResources {
     ///     - [`class_login`](#method.class_login)
     ///     - [`class_query_schedule`](#method.class_query_schedule)
     /// - Input: Schedule ID, from [IClassSchedule]
-    pub async fn class_checkin(&self, id: &str) -> crate::Result<Response> {
+    pub async fn checkin(&self, id: &str) -> crate::Result<Response> {
         let config = self.config.read().unwrap();
         let token = match &config.class_token {
             Some(t) => t,
@@ -212,16 +214,17 @@ async fn test_class_query_course() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = SharedResources::new();
-    session.with_cookies("cookie.json");
+    let context = crate::Context::new();
+    context.with_cookies("cookie.json");
+    context.login(&username, &password).await.unwrap();
 
-    session.sso_login(&username, &password).await.unwrap();
-    session.class_login().await.unwrap();
+    let class = context.class();
+    class.login().await.unwrap();
 
-    let res = session.class_query_course("202420251").await.unwrap();
+    let res = class.query_course("202420251").await.unwrap();
     println!("{:#?}", res);
 
-    session.save();
+    context.save();
 }
 
 #[tokio::test]
@@ -230,16 +233,17 @@ async fn test_class_query_schedule() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = SharedResources::new();
-    session.with_cookies("cookie.json");
+    let context = crate::Context::new();
+    context.with_cookies("cookie.json");
+    context.login(&username, &password).await.unwrap();
 
-    session.sso_login(&username, &password).await.unwrap();
-    session.class_login().await.unwrap();
+    let class = context.class();
+    class.login().await.unwrap();
 
-    let res = session.class_query_schedule("64668").await.unwrap();
+    let res = class.query_schedule("64668").await.unwrap();
     println!("{:#?}", res);
 
-    session.save();
+    context.save();
 }
 
 #[tokio::test]
@@ -248,14 +252,15 @@ async fn test_class_checkin() {
     let username = env.get("USERNAME").unwrap();
     let password = env.get("PASSWORD").unwrap();
 
-    let session = SharedResources::new();
-    session.with_cookies("cookie.json");
+    let context = crate::Context::new();
+    context.with_cookies("cookie.json");
+    context.login(&username, &password).await.unwrap();
 
-    session.sso_login(&username, &password).await.unwrap();
-    session.class_login().await.unwrap();
+    let class = context.class();
+    class.login().await.unwrap();
 
-    let res = session.class_checkin("2090542").await.unwrap();
+    let res = class.checkin("2090542").await.unwrap();
     println!("{}", res.text().await.unwrap());
 
-    session.save();
+    context.save();
 }

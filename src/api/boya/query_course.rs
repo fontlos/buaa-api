@@ -249,11 +249,11 @@ async fn test_boya_query_course() {
 
     let context = crate::Context::new();
     context.with_cookies("cookie.json");
-
     context.login(&username, &password).await.unwrap();
 
     let boya = context.boya();
     boya.login().await.unwrap();
+
     let res = match boya.query_course().await {
         Ok(s) => s,
         Err(e) => {

@@ -22,7 +22,7 @@ impl BoyaAPI {
         };
         if token.0 == "token" {
             // TODO 记得处理异步锁
-            let mut config = self.shared.config.write().unwrap();
+            let mut config = self.config.write().unwrap();
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
@@ -45,7 +45,7 @@ impl BoyaAPI {
         };
         if token.0 == "token" {
             // TODO 记得处理异步锁
-            let mut config = self.shared.config.write().unwrap();
+            let mut config = self.config.write().unwrap();
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
@@ -102,16 +102,12 @@ impl BoyaAPI {
     /// `getUserProfile` API
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
     /// - Query: `{}`
-    pub async fn universal_request(
-        &self,
-        query: &str,
-        url: &str,
-    ) -> crate::Result<String> {
+    pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
         // 获取 token
-        let config = self.shared.config.read().unwrap();
+        let config = self.config.read().unwrap();
         let token = match &config.boya_token {
             Some(t) => t,
-            None => return Err(Error::LoginError("No Boya Token".to_string())),
+            None => return Err(Error::APIError("No Boya Token".to_string())),
         };
         // 首先初始化 RSA, 设置公钥
         // 这是查询参数, 然后被 sha1 处理
@@ -200,7 +196,6 @@ async fn test_boya_select() {
     context.login(&username, &password).await.unwrap();
 
     let boya = context.boya();
-
     boya.login().await.unwrap();
     let res = boya.boya_select_course(6637).await.unwrap();
     println!("{}", res);
@@ -219,7 +214,6 @@ async fn test_boya_drop() {
     context.login(&username, &password).await.unwrap();
 
     let boya = context.boya();
-
     boya.login().await.unwrap();
     let res = boya.drop_course(6637).await.unwrap();
     println!("{}", res);

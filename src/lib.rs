@@ -1,11 +1,14 @@
 #![doc = include_str!("../Readme.md")]
 
 mod api;
+mod context;
 mod crypto;
 mod error;
-mod context;
 mod tests;
 pub mod utils;
+
+// #[macro_use]
+// pub(crate) use utils::wrap_api::wrap_api;
 
 pub use api::{
     boya::{
@@ -16,5 +19,5 @@ pub use api::{
     class::{ClassCourse, ClassSchedule},
     spoc::{SpocSchedule, SpocTimeRange, SpocWeek},
 };
+pub use context::{Config, Context};
 pub use error::{Error, Result};
-pub use context::{SharedResources, Context};

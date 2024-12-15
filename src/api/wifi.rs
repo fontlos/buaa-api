@@ -1,29 +1,9 @@
 //! BUAA WiFi API
 
-use std::sync::Arc;
-
 use crate::crypto::{hash, x_encode};
-use crate::{utils, SharedResources, Error, Context};
+use crate::{utils, Error};
 
-impl Context {
-    pub fn wifi(&self) -> WiFiAPI {
-        WiFiAPI {
-            shared: Arc::clone(&self.shared),
-        }
-    }
-}
-
-impl std::ops::Deref for WiFiAPI {
-    type Target = reqwest::Client;
-
-    fn deref(&self) -> &Self::Target {
-        &self.shared.client
-    }
-}
-
-pub struct WiFiAPI {
-    shared: Arc<SharedResources>,
-}
+crate::wrap_api!(WiFiAPI, wifi);
 
 impl WiFiAPI {
     /// # BUAA WiFi Login
@@ -38,7 +18,7 @@ impl WiFiAPI {
     ///     session.wifi_login("username", "password").await.unwrap();
     /// }
     /// ```
-    pub async fn wifi_login(&self, un: &str, pw: &str) -> crate::Result<()> {
+    pub async fn login(&self, un: &str, pw: &str) -> crate::Result<()> {
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
         if let Some(s) = utils::get_wifi_ssid() {
@@ -48,13 +28,9 @@ impl WiFiAPI {
         }
 
         // 获取本机 IP
-        let ip = match utils::get_ip() {
+        let ip = match utils::get_wifi_ip() {
             Some(s) => s,
-            None => {
-                return Err(Error::LoginError(String::from(
-                    "Cannot get IP address",
-                )))
-            }
+            None => return Err(Error::LoginError(String::from("Cannot get IP address"))),
         };
 
         // 从重定向 URL 中获取 ACID
@@ -140,7 +116,7 @@ impl WiFiAPI {
         }
     }
 
-    pub async fn wifi_logout(&self, un: &str) -> crate::Result<()> {
+    pub async fn logout(&self, un: &str) -> crate::Result<()> {
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
         if let Some(s) = utils::get_wifi_ssid() {
@@ -150,13 +126,9 @@ impl WiFiAPI {
         }
 
         // 获取本机 IP
-        let ip = match utils::get_ip() {
+        let ip = match utils::get_wifi_ip() {
             Some(s) => s,
-            None => {
-                return Err(Error::LoginError(String::from(
-                    "Cannot get IP address",
-                )))
-            }
+            None => return Err(Error::LoginError(String::from("Cannot get IP address"))),
         };
 
         // 从重定向 URL 中获取 ACID
@@ -177,7 +149,7 @@ impl WiFiAPI {
             ("action", "logout"),
             ("username", un),
             ("ac_id", &ac_id),
-            ("ip", &ip)
+            ("ip", &ip),
         ];
 
         let res = self
@@ -190,7 +162,9 @@ impl WiFiAPI {
         if res.contains(r#""error":"ok""#) {
             Ok(())
         } else {
-            Err(Error::APIError(format!("WiFi logout failed. Response: {res}")))
+            Err(Error::APIError(format!(
+                "WiFi logout failed. Response: {res}"
+            )))
         }
     }
 }
