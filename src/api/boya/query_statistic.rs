@@ -133,8 +133,9 @@ async fn test_boya_query_statistic() {
     let password = env.get("PASSWORD").unwrap();
 
     let context = crate::Context::new();
+    context.set_account(username, password);
     context.with_cookies("cookie.json");
-    context.login(&username, &password).await.unwrap();
+    context.login().await.unwrap();
 
     let boya = context.boya();
     boya.login().await.unwrap();

@@ -51,6 +51,8 @@ pub struct Context {
 
 #[derive(Debug)]
 pub struct Config {
+    pub username: Option<String>,
+    pub password: Option<String>,
     pub cookie_path: Option<PathBuf>,
     pub vpn: bool,
     /// Token for Boya API
@@ -88,6 +90,8 @@ impl Context {
             .unwrap();
 
         let config = Config {
+            username: None,
+            password: None,
             cookie_path: None,
             vpn: false,
             boya_token: None,
@@ -100,6 +104,17 @@ impl Context {
             cookies: cookie_store,
             config: Arc::new(RwLock::new(config)),
         }
+    }
+
+    pub fn set_config(&self, config: Config) {
+        let mut config_lock = self.config.write().unwrap();
+        *config_lock = config;
+    }
+
+    pub fn set_account(&self, username: &str, password: &str) {
+        let mut config = self.config.write().unwrap();
+        config.username = Some(username.to_string());
+        config.password = Some(password.to_string());
     }
 
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method

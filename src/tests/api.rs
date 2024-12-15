@@ -10,8 +10,9 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = crate::Context::new();
+        context.set_account(username, password);
         context.with_cookies("cookie.json");
-        context.login(&username, &password).await.unwrap();
+        context.login().await.unwrap();
 
         let user = context.user();
         user.login().await.unwrap();
@@ -29,19 +30,22 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = crate::Context::new();
+        context.set_account(username, password);
 
         let wifi = context.wifi();
-        wifi.login(&username, &password).await.unwrap();
+        wifi.login().await.unwrap();
     }
 
     #[tokio::test]
     async fn test_wifi_logout() {
         let env = crate::utils::env();
         let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
 
         let context = crate::Context::new();
+        context.set_account(username, password);
 
         let wifi = context.wifi();
-        wifi.logout(&username).await.unwrap();
+        wifi.logout().await.unwrap();
     }
 }

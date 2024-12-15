@@ -215,8 +215,9 @@ async fn test_spoc_universal_request() {
     let password = env.get("PASSWORD").unwrap();
 
     let context = crate::Context::new();
+    context.set_account(username, password);
     context.with_cookies("cookie.json");
-    context.login(&username, &password).await.unwrap();
+    context.login().await.unwrap();
 
     let spoc = context.spoc();
     spoc.login().await.unwrap();

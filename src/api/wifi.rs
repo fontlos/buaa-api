@@ -23,7 +23,16 @@ impl WiFiAPI {
     ///     wifi.login("username", "password").await.unwrap();
     /// }
     /// ```
-    pub async fn login(&self, un: &str, pw: &str) -> crate::Result<()> {
+    pub async fn login(&self) -> crate::Result<()> {
+        let config = self.config.read().unwrap();
+        let un = match config.username.as_ref() {
+            Some(s) => s,
+            None => return Err(Error::LoginError("No Username".to_string())),
+        };
+        let pw = match config.password.as_ref() {
+            Some(s) => s,
+            None => return Err(Error::LoginError("No Password".to_string())),
+        };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
         if let Some(s) = utils::get_wifi_ssid() {
@@ -133,7 +142,12 @@ impl WiFiAPI {
     ///     wifi.logout("username").await.unwrap();
     /// }
     /// ```
-    pub async fn logout(&self, un: &str) -> crate::Result<()> {
+    pub async fn logout(&self) -> crate::Result<()> {
+        let config = self.config.read().unwrap();
+        let un = match config.username.as_ref() {
+            Some(s) => s,
+            None => return Err(Error::LoginError("No Username".to_string())),
+        };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
         if let Some(s) = utils::get_wifi_ssid() {

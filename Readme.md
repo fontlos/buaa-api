@@ -33,6 +33,7 @@ APIs not listed above might have been overlooked or deemed unimportant by me, bu
 The basic process is:
 
 - Initialize the `Context`
+- Set cccount
 - (Optional) Specifies the file used to read and write cookies
 - Login to context
 - Get a subdomain instance
@@ -48,10 +49,12 @@ use buaa::Context;
 async fn main() {
     // Initialize the `Context`
     let context = Context::new();
+    // Set account
+    context.set_account("username", "password")
     // Specifies the file used to read and write cookies
     context.with_cookies("cookie.json");
     // Login to context
-    context.login("username", "password").await.unwrap();
+    context.login().await.unwrap();
 
     // Get a subdomain instance
     let user = context.user();
@@ -75,8 +78,9 @@ use buaa::Context;
 #[tokio::main]
 async fn main() {
     let context = Context::new();
+    context.set_account("username", "password")
     context.with_cookies("cookie.json");
-    context.login("username", "password").await.unwrap();
+    context.login().await.unwrap();
 
     let boya = context.boya();
     boya.login().await.unwrap();
@@ -100,6 +104,7 @@ use buaa::Context;
 #[tokio::main]
 async fn main() {
     let context = Context::new();
+    context.set_account("username", "password")
     let wifi = context.wifi();
     // Login to BUAA WiFi
     wifi.login().await.unwrap();
