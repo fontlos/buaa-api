@@ -4,44 +4,15 @@ use reqwest::{
     Client,
 };
 use reqwest_cookie_store::CookieStoreMutex;
+use serde::{Deserialize, Serialize};
 
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::BufReader;
 use std::ops::Deref;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 use std::sync::{Arc, RwLock};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
-/// The prefix of most API names is derived from the fourth-level domain name of the corresponding domain name
-// pub struct Context {
-//     pub(crate) shared: Arc<SharedResources>,
-// }
-
-// impl Context {
-//     /// Create a new context
-//     pub fn new() -> Self {
-//         Context {
-//             shared: Arc::new(SharedResources::new()),
-//         }
-//     }
-
-//     pub fn with_cookies(&self, path: &str) {
-//         self.shared.with_cookies(path);
-//     }
-
-//     pub fn save(&self) {
-//         self.shared.save();
-//     }
-// }
-
-// impl std::ops::Deref for Context {
-//     type Target = reqwest::Client;
-
-//     fn deref(&self) -> &Self::Target {
-//         &self.shared.client
-//     }
-// }
-
 #[derive(Debug, Clone)]
 pub struct Context {
     pub(crate) client: Client,
@@ -49,7 +20,7 @@ pub struct Context {
     pub config: Arc<RwLock<Config>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub username: Option<String>,
     pub password: Option<String>,
@@ -61,6 +32,20 @@ pub struct Config {
     pub class_token: Option<String>,
     /// User ID for Spoc API
     pub spoc_token: Option<String>,
+}
+
+impl Config {
+    pub fn new() -> Self {
+        Config {
+            username: None,
+            password: None,
+            cookie_path: None,
+            vpn: false,
+            boya_token: None,
+            class_token: None,
+            spoc_token: None,
+        }
+    }
 }
 
 impl Context {
@@ -89,15 +74,7 @@ impl Context {
             .build()
             .unwrap();
 
-        let config = Config {
-            username: None,
-            password: None,
-            cookie_path: None,
-            vpn: false,
-            boya_token: None,
-            class_token: None,
-            spoc_token: None,
-        };
+        let config = Config::new();
 
         Context {
             client,
@@ -117,10 +94,38 @@ impl Context {
         config.password = Some(password.to_string());
     }
 
+    pub fn set_username(&self, username: &str) {
+        let mut config = self.config.write().unwrap();
+        config.username = Some(username.to_string());
+    }
+
+    pub fn set_password(&self, password: &str) {
+        let mut config = self.config.write().unwrap();
+        config.password = Some(password.to_string());
+    }
+
+    /// Load config from path, if the path is not exist or parse failed, it will return a default one
+    pub fn with_config<P: AsRef<Path>>(&self, path: P) {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(path)
+            .unwrap();
+        let config = if let Ok(config) = serde_json::from_reader(file) {
+            config
+        } else {
+            Config::new()
+        };
+
+        let mut config_lock = self.config.write().unwrap();
+        *config_lock = config;
+    }
+
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn with_cookies(&self, path: &str) {
-        let path = PathBuf::from(path);
+    pub fn with_cookies<P: AsRef<Path>>(&self, path: P) {
+        let path = PathBuf::from(path.as_ref());
         let cookie_store = match File::open(&path) {
             Ok(f) => {
                 CookieStore::load_all(BufReader::new(f), |s| serde_json::from_str::<Cookie>(s))
@@ -164,6 +169,20 @@ impl Context {
         {
             eprintln!("Failed to save cookie store: {}", e);
         }
+    }
+
+    /// save config manually
+    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
+    pub fn save_config<P: AsRef<Path>>(&self, path: P) {
+        let config = self.config.read().unwrap();
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .unwrap();
+        serde_json::to_writer(file, &*config).unwrap();
     }
 }
 
