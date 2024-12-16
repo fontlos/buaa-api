@@ -1,4 +1,5 @@
 use serde::{Deserialize, Deserializer};
+use time::Date;
 
 use std::ops::Deref;
 
@@ -89,25 +90,26 @@ pub struct BoyaSelected {
 
 impl BoyaAPI {
     /// # Query Selected Courses
-    pub async fn query_selected(&self) -> crate::Result<BoyaSelecteds> {
-        let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
+    /// Date should like [year]-[month]-[day]
+    pub async fn query_selected(&self, start: Date, end: Date) -> crate::Result<BoyaSelecteds> {
+        let query = format!("{{\"startDate\":\"{start} 00:00:00\",\"endDate\":\"{end} 00:00:00\"}}");
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
-        let res = self.universal_request(query, url).await?;
+        let res = self.universal_request(&query, url).await?;
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
         Ok(res)
     }
 
-    pub async fn query_selected_vpn(&self) -> crate::Result<BoyaSelecteds> {
-        let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
+    pub async fn query_selected_vpn(&self, start: Date, end: Date) -> crate::Result<BoyaSelecteds> {
+        let query = format!("{{\"startDate\":\"{start} 00:00:00\",\"endDate\":\"{end} 00:00:00\"}}");
         let url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryChosenCourse";
-        let res = self.universal_request(query, url).await?;
+        let res = self.universal_request(&query, url).await?;
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
         Ok(res)
     }
 }
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
+    use crate::utils::{self, env};
     use crate::Context;
 
     #[ignore]
@@ -125,7 +127,10 @@ mod tests {
         let boya = context.boya();
         boya.login().await.unwrap();
 
-        let res = boya.query_selected().await.unwrap();
+        let start = utils::parse_date("2024-08-26");
+        let end = utils::parse_date("2024-12-29");
+
+        let res = boya.query_selected(start, end).await.unwrap();
         println!("{:?}", res);
 
         context.save();
