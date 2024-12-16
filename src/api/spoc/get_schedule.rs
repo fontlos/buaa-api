@@ -9,11 +9,12 @@ struct SpocRes1 {
     content: SpocWeek,
 }
 
+/// For `get_week_schedule`, you can get it through `get_week`, and manual builds are generally not recommended
 #[derive(Debug, Deserialize)]
 pub struct SpocWeek {
     #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "pjmrrq")]
-    time: (String, String),
+    pub time: (String, String),
     #[serde(rename = "mrxq")]
     pub term: String,
 }

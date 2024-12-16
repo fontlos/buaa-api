@@ -7,15 +7,10 @@ mod error;
 pub mod utils;
 
 pub use api::{
-    boya::{
-        query_course::{BoyaCampus, BoyaCourse, BoyaCourses, BoyaKind, BoyaTime},
-        query_selected::{BoyaSelected, BoyaSelecteds},
-        query_statistic::{BoyaAssessment, BoyaStatistic},
-        BoyaAPI,
-    },
-    class::{ClassAPI, ClassCourse, ClassSchedule},
+    boya::BoyaAPI,
+    class::ClassAPI,
     spoc::{
-        get_schedule::{SpocSchedule, SpocTimeRange, SpocWeek},
+        get_schedule::SpocWeek,
         SpocAPI,
     },
     user::UserCenterAPI,
