@@ -232,36 +232,50 @@ impl BoyaAPI {
     /// # Query Course
     pub async fn query_course(&self) -> crate::Result<BoyaCourses> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";
-        // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
+        let res = self.universal_request(query, url).await?;
+        let res = serde_json::from_str::<BoyaCourses>(&res)?;
+        Ok(res)
+    }
+
+    pub async fn query_course_vpn(&self) -> crate::Result<BoyaCourses> {
+        let query = "{\"pageNumber\":1,\"pageSize\":10}";
+        let url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage";
         let res = self.universal_request(query, url).await?;
         let res = serde_json::from_str::<BoyaCourses>(&res)?;
         Ok(res)
     }
 }
 
-#[tokio::test]
-async fn test_boya_query_course() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
+#[cfg(test)]
+mod tests {
+    use crate::utils::env;
+    use crate::Context;
 
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
+    #[ignore]
+    #[tokio::test]
+    async fn test_boya_query_course() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
 
-    let boya = context.boya();
-    boya.login().await.unwrap();
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
 
-    let res = match boya.query_course().await {
-        Ok(s) => s,
-        Err(e) => {
-            println!("{}", e);
-            return;
-        }
-    };
-    println!("{:?}", res);
+        let boya = context.boya();
+        boya.login().await.unwrap();
 
-    context.save();
+        let res = match boya.query_course().await {
+            Ok(s) => s,
+            Err(e) => {
+                println!("{}", e);
+                return;
+            }
+        };
+        println!("{:?}", res);
+
+        context.save();
+    }
 }

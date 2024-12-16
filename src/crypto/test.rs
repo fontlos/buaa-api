@@ -1,6 +1,3 @@
-//! # API tests
-//! These are passed API. Default ignore
-
 #[cfg(test)]
 mod tests {
     use crate::crypto::{aes::*, des::*, *};

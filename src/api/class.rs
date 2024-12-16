@@ -207,62 +207,69 @@ impl ClassAPI {
     }
 }
 
-#[tokio::test]
-async fn test_class_query_course() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
+#[cfg(test)]
+mod tests {
+    use crate::utils::env;
+    use crate::Context;
 
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
+    #[ignore]
+    #[tokio::test]
+    async fn test_class_query_course() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
 
-    let class = context.class();
-    class.login().await.unwrap();
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
 
-    let res = class.query_course("202420251").await.unwrap();
-    println!("{:#?}", res);
+        let class = context.class();
+        class.login().await.unwrap();
 
-    context.save();
-}
+        let res = class.query_course("202420251").await.unwrap();
+        println!("{:#?}", res);
 
-#[tokio::test]
-async fn test_class_query_schedule() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
+        context.save();
+    }
 
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
+    #[tokio::test]
+    async fn test_class_query_schedule() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
 
-    let class = context.class();
-    class.login().await.unwrap();
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
 
-    let res = class.query_schedule("64668").await.unwrap();
-    println!("{:#?}", res);
+        let class = context.class();
+        class.login().await.unwrap();
 
-    context.save();
-}
+        let res = class.query_schedule("64668").await.unwrap();
+        println!("{:#?}", res);
 
-#[tokio::test]
-async fn test_class_checkin() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
+        context.save();
+    }
 
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
+    #[tokio::test]
+    async fn test_class_checkin() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
 
-    let class = context.class();
-    class.login().await.unwrap();
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
 
-    let res = class.checkin("2090542").await.unwrap();
-    println!("{}", res.text().await.unwrap());
+        let class = context.class();
+        class.login().await.unwrap();
 
-    context.save();
+        let res = class.checkin("2090542").await.unwrap();
+        println!("{}", res.text().await.unwrap());
+
+        context.save();
+    }
 }

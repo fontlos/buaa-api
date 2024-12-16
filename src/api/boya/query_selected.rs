@@ -11,6 +11,7 @@ use super::query_course::{
     tabled_boya_kind, tabled_boya_name, tabled_boya_position, tabled_boya_time,
 };
 
+// 由于学校的抽象设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
 #[derive(Debug, Deserialize)]
 pub struct BoyaSelecteds {
     #[serde(deserialize_with = "deserialize_boya_selecteds")]
@@ -95,24 +96,38 @@ impl BoyaAPI {
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
         Ok(res)
     }
+
+    pub async fn query_selected_vpn(&self) -> crate::Result<BoyaSelecteds> {
+        let query = "{\"startDate\":\"2024-08-26 00:00:00\",\"endDate\":\"2024-12-29 00:00:00\"}";
+        let url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryChosenCourse";
+        let res = self.universal_request(query, url).await?;
+        let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
+        Ok(res)
+    }
 }
+#[cfg(test)]
+mod tests {
+    use crate::utils::env;
+    use crate::Context;
 
-#[tokio::test]
-async fn test_boya_query_selected() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
+    #[ignore]
+    #[tokio::test]
+    async fn test_boya_query_selected() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
 
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
 
-    let boya = context.boya();
-    boya.login().await.unwrap();
+        let boya = context.boya();
+        boya.login().await.unwrap();
 
-    let res = boya.query_selected().await.unwrap();
-    println!("{:?}", res);
+        let res = boya.query_selected().await.unwrap();
+        println!("{:?}", res);
 
-    context.save();
+        context.save();
+    }
 }

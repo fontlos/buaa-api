@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::{self, File, OpenOptions};
 use std::io::BufReader;
 use std::ops::Deref;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>

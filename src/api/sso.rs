@@ -34,11 +34,7 @@ impl Context {
         self.sso_login_internal(login_url, verify_url).await
     }
 
-    async fn sso_login_internal(
-        &self,
-        login_url: &str,
-        verify_url: &str,
-    ) -> crate::Result<()> {
+    async fn sso_login_internal(&self, login_url: &str, verify_url: &str) -> crate::Result<()> {
         let config = self.config.read().unwrap();
         let un = match config.username.as_ref() {
             Some(s) => s,

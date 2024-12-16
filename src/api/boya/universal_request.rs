@@ -1,56 +1,17 @@
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
+use serde::Deserialize;
 
 use crate::{crypto, utils, Error};
 
-use super::{BoyaAPI, BoyaStatus};
+use super::BoyaAPI;
+
+#[derive(Deserialize)]
+struct BoyaStatus {
+    status: String,
+    errmsg: String,
+}
 
 impl BoyaAPI {
-    /// # Boya Login
-    pub async fn login(&self) -> crate::Result<()> {
-        let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
-        // 获取 JSESSIONID
-        let res = self.get(url).send().await?;
-        // 未转跳就证明登录过期
-        if res.url().as_str() == url {
-            return Err(Error::LoginExpired("SSO Expired".to_string()));
-        }
-        let mut query = res.url().query_pairs();
-        let token = match query.next() {
-            Some(t) => t,
-            None => return Err(Error::LoginError("No Token".to_string())),
-        };
-        if token.0 == "token" {
-            // TODO 记得处理异步锁
-            let mut config = self.config.write().unwrap();
-            config.boya_token = Some(token.1.to_string());
-            return Ok(());
-        } else {
-            return Err(Error::LoginError("No Token".to_string()));
-        }
-    }
-
-    pub async fn login_vpn(&self) -> crate::Result<()> {
-        let url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/cas/login";
-        // 获取 JSESSIONID
-        let res = self.get(url).send().await?;
-        // 未转跳就证明登录过期
-        if res.url().as_str() == url {
-            return Err(Error::LoginExpired("SSO Expired".to_string()));
-        }
-        let mut query = res.url().query_pairs();
-        let token = match query.next() {
-            Some(t) => t,
-            None => return Err(Error::LoginError("No Token".to_string())),
-        };
-        if token.0 == "token" {
-            // TODO 记得处理异步锁
-            let mut config = self.config.write().unwrap();
-            config.boya_token = Some(token.1.to_string());
-            return Ok(());
-        } else {
-            return Err(Error::LoginError("No Token".to_string()));
-        }
-    }
     /// # Boya Universal Request API
     /// - Input:
     ///     - Query: JSON String for request
@@ -160,62 +121,4 @@ impl BoyaAPI {
         }
         Ok(res)
     }
-
-    /// # Select Course
-    /// - Input: Course ID from [`query_course`](#method.query_course)
-    /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn select_course(&self, id: u32) -> crate::Result<String> {
-        let query = format!("{{\"courseId\":{}}}", id);
-        let url = "https://bykc.buaa.edu.cn/sscv/choseCourse";
-        let res = self.universal_request(&query, url).await?;
-        Ok(res)
-    }
-
-    /// # Drop Course
-    /// - Input: Course ID from [`query_course`](#method.query_course)
-    /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`
-    pub async fn drop_course(&self, id: u32) -> crate::Result<String> {
-        let query = format!("{{\"id\":{}}}", id);
-        let url = "https://bykc.buaa.edu.cn/sscv/delChosenCourse";
-        let res = self.universal_request(&query, url).await?;
-        Ok(res)
-    }
-}
-
-#[tokio::test]
-async fn test_boya_select() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
-
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
-
-    let boya = context.boya();
-    boya.login().await.unwrap();
-    let res = boya.select_course(6637).await.unwrap();
-    println!("{}", res);
-
-    context.save();
-}
-
-#[tokio::test]
-async fn test_boya_drop() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
-
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
-
-    let boya = context.boya();
-    boya.login().await.unwrap();
-    let res = boya.drop_course(6637).await.unwrap();
-    println!("{}", res);
-
-    context.save();
 }

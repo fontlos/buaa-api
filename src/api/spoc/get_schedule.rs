@@ -1,24 +1,8 @@
-//! BUAA Spoc API
-
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::{format_description, PrimitiveDateTime, Weekday};
 
-use crate::{crypto, Error};
-
-crate::wrap_api!(
-    /// BUAA Spoc API Wrapper <br>
-    /// Call `spoc()` on `Context` to get an instance of this struct and call corresponding API on this instance.
-    SpocAPI,
-    spoc
-);
-
-#[derive(Deserialize)]
-struct SpocState {
-    code: u32,
-    msg: Option<String>,
-}
+use super::SpocAPI;
 
 #[derive(Deserialize)]
 struct SpocRes1 {
@@ -118,71 +102,6 @@ where
 }
 
 impl SpocAPI {
-    /// # Spoc Login
-    pub async fn login(&self) -> crate::Result<()> {
-        let res = self
-            .get("https://spoc.buaa.edu.cn/spocnewht/cas")
-            .send()
-            .await?;
-        if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
-            return Err(Error::LoginExpired("SSO Expired".to_string()));
-        }
-        let mut query = res.url().query_pairs();
-        let token = match query.next() {
-            Some((key, value)) => {
-                if key == "token" {
-                    value
-                } else {
-                    return Err(Error::LoginError("No Token".to_string()));
-                }
-            }
-            None => return Err(Error::LoginError("No Token".to_string())),
-        };
-        // 暂时不知道有什么用, 看名字是用来刷新 token 的 token
-        // let _refresh_token = match query.next() {
-        //     Some((key, value)) => {
-        //         if key == "refreshToken" {
-        //             value
-        //         } else {
-        //             return Err(SessionError::LoginError("No Refresh Token".to_string()));
-        //         }
-        //     }
-        //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
-        // };
-        let mut config = self.config.write().unwrap();
-        config.spoc_token = Some(token.into_owned());
-        Ok(())
-    }
-
-    pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
-        let config = self.config.read().unwrap();
-        let token = match &config.spoc_token {
-            Some(t) => t,
-            None => return Err(Error::APIError("No Token".to_string())),
-        };
-        // 逆向出来的密钥和初始向量, 既然写死了为什么不用 ECB 模式啊
-        let ase_key = "inco12345678ocni";
-        let ase_iv = "ocni12345678inco";
-        let body = serde_json::json!({
-            "param": crypto::aes::aes_encrypt_cbc(query, ase_key, ase_iv)
-        });
-        let token = format!("Inco-{}", token);
-        let mut header = HeaderMap::new();
-        header.insert(
-            HeaderName::from_bytes(b"Token").unwrap(),
-            HeaderValue::from_str(&token).unwrap(),
-        );
-        let res = self.post(url).headers(header).json(&body).send().await?;
-        let res = res.text().await?;
-        let status = serde_json::from_str::<SpocState>(&res)?;
-        if status.code != 200 {
-            return Err(Error::APIError(
-                status.msg.unwrap_or("Unknown Error".to_string()),
-            ));
-        }
-        Ok(res)
-    }
-
     /// Get current week
     pub async fn get_week(&self) -> crate::Result<SpocWeek> {
         // SQL ID 似乎可以是固定值, 应该是用于鉴权的, 不知道是否会过期
@@ -208,24 +127,31 @@ impl SpocAPI {
     }
 }
 
-#[tokio::test]
-async fn test_spoc_universal_request() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
+#[cfg(test)]
+mod tests {
+    use crate::utils::env;
+    use crate::Context;
 
-    let context = crate::Context::new();
-    context.set_account(username, password);
-    context.with_cookies("cookie.json");
-    context.login().await.unwrap();
+    #[ignore]
+    #[tokio::test]
+    async fn test_spoc_get_schedule() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
 
-    let spoc = context.spoc();
-    spoc.login().await.unwrap();
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
 
-    let res = spoc.get_week().await.unwrap();
-    println!("{:?}", res);
-    let res = spoc.get_week_schedule(&res).await.unwrap();
-    println!("{:?}", res);
+        let spoc = context.spoc();
+        spoc.login().await.unwrap();
 
-    context.save();
+        let res = spoc.get_week().await.unwrap();
+        println!("{:?}", res);
+        let res = spoc.get_week_schedule(&res).await.unwrap();
+        println!("{:?}", res);
+
+        context.save();
+    }
 }

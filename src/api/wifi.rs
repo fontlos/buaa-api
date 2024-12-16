@@ -199,3 +199,37 @@ impl WiFiAPI {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::env;
+    use crate::Context;
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_wifi_login() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
+
+        let context = Context::new();
+        context.set_account(username, password);
+
+        let wifi = context.wifi();
+        wifi.login().await.unwrap();
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_wifi_logout() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
+
+        let context = Context::new();
+        context.set_account(username, password);
+
+        let wifi = context.wifi();
+        wifi.logout().await.unwrap();
+    }
+}

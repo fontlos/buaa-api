@@ -44,3 +44,30 @@ impl UserCenterAPI {
         Ok(state)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::env;
+    use crate::Context;
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_user() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
+
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
+
+        let user = context.user();
+        user.login().await.unwrap();
+
+        let state = user.get_state().await.unwrap();
+        println!("{}", state);
+
+        context.save();
+    }
+}
