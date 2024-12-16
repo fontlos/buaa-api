@@ -16,7 +16,6 @@ pub fn get_primitive_time() -> PrimitiveDateTime {
 }
 
 pub fn parse_date(time: &str) -> Date {
-    let format_string =
-        time::format_description::parse("[year]-[month]-[day]").unwrap();
+    let format_string = time::format_description::parse("[year]-[month]-[day]").unwrap();
     Date::parse(time, &format_string).unwrap()
 }

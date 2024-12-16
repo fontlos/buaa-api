@@ -90,9 +90,10 @@ pub struct BoyaSelected {
 
 impl BoyaAPI {
     /// # Query Selected Courses
-    /// Date should like [year]-[month]-[day]
+    /// Date should like `year-month-day`
     pub async fn query_selected(&self, start: Date, end: Date) -> crate::Result<BoyaSelecteds> {
-        let query = format!("{{\"startDate\":\"{start} 00:00:00\",\"endDate\":\"{end} 00:00:00\"}}");
+        let query =
+            format!("{{\"startDate\":\"{start} 00:00:00\",\"endDate\":\"{end} 00:00:00\"}}");
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
         let res = self.universal_request(&query, url).await?;
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
@@ -100,7 +101,8 @@ impl BoyaAPI {
     }
 
     pub async fn query_selected_vpn(&self, start: Date, end: Date) -> crate::Result<BoyaSelecteds> {
-        let query = format!("{{\"startDate\":\"{start} 00:00:00\",\"endDate\":\"{end} 00:00:00\"}}");
+        let query =
+            format!("{{\"startDate\":\"{start} 00:00:00\",\"endDate\":\"{end} 00:00:00\"}}");
         let url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryChosenCourse";
         let res = self.universal_request(&query, url).await?;
         let res = serde_json::from_str::<BoyaSelecteds>(&res)?;
