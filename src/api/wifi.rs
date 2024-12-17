@@ -3,12 +3,10 @@
 use crate::crypto::{hash, x_encode};
 use crate::{utils, Error};
 
-crate::wrap_api!(
-    /// BUAA WiFi API Wrapper <br>
-    /// Call `wifi()` on `Context` to get an instance of this struct and call corresponding API on this instance.
-    WiFiAPI,
-    wifi
-);
+/// BUAA WiFi API Wrapper <br>
+/// Call `wifi()` on `Context` to get an instance of this struct and call corresponding API on this instance.
+#[wrap_api::wrap_api(wifi)]
+struct WiFiAPI;
 
 impl WiFiAPI {
     /// # BUAA WiFi Login

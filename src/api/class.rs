@@ -10,12 +10,10 @@ use crate::{crypto, utils, Error};
 
 use super::boya::query_course::deserialize_time;
 
-crate::wrap_api!(
-    /// BUAA Smart Classroom API Wrapper <br>
-    /// Call `class()` on `Context` to get an instance of this struct and call corresponding API on this instance.
-    ClassAPI,
-    class
-);
+/// BUAA Smart Classroom API Wrapper <br>
+/// Call `class()` on `Context` to get an instance of this struct and call corresponding API on this instance.
+#[wrap_api::wrap_api(class)]
+struct ClassAPI;
 
 #[derive(Deserialize)]
 struct ClassLogin {

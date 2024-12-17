@@ -28,7 +28,7 @@ impl Context {
         self.sso_login_internal(login_url, verify_url).await
     }
 
-    pub async fn login_vpn(&self) -> crate::Result<()> {
+    pub async fn vpn(&self) -> crate::Result<()> {
         let login_url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
         let verify_url = "https://d.buaa.edu.cn/";
         self.sso_login_internal(login_url, verify_url).await

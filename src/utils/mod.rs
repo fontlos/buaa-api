@@ -18,5 +18,3 @@ pub use time::*;
 mod wifi;
 #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
 pub use wifi::*;
-
-mod wrap_api;

@@ -25,7 +25,6 @@ pub struct Config {
     pub username: Option<String>,
     pub password: Option<String>,
     pub cookie_path: Option<PathBuf>,
-    pub vpn: bool,
     /// Token for Boya API
     pub boya_token: Option<String>,
     /// User ID for SmartClass API
@@ -40,7 +39,6 @@ impl Config {
             username: None,
             password: None,
             cookie_path: None,
-            vpn: false,
             boya_token: None,
             class_token: None,
             spoc_token: None,
