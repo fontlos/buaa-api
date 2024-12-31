@@ -58,7 +58,7 @@ mod tests {
         let res = boya.select_course(6637).await.unwrap();
         println!("{}", res);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 
     #[ignore]
@@ -78,6 +78,6 @@ mod tests {
         let res = boya.drop_course(6637).await.unwrap();
         println!("{}", res);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 }

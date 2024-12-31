@@ -153,6 +153,6 @@ mod tests {
         let res = spoc.get_week_schedule(&res).await.unwrap();
         println!("{:?}", res);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 }

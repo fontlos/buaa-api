@@ -24,7 +24,6 @@ pub struct Context {
 pub struct Config {
     pub username: Option<String>,
     pub password: Option<String>,
-    pub cookie_path: Option<PathBuf>,
     /// Token for Boya API
     pub boya_token: Option<String>,
     /// User ID for SmartClass API
@@ -38,7 +37,6 @@ impl Config {
         Config {
             username: None,
             password: None,
-            cookie_path: None,
             boya_token: None,
             class_token: None,
             spoc_token: None,
@@ -135,20 +133,11 @@ impl Context {
         // TODO 记得处理锁失败的情况
         let mut cookie_lock = self.cookies.lock().unwrap();
         *cookie_lock = cookie_store;
-
-        let mut config = self.config.write().unwrap();
-        config.cookie_path = Some(path);
     }
 
     /// save cookies manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn save(&self) {
-        // TODO 记得处理锁失败的情况
-        let config = self.config.read().unwrap();
-        let path = match &config.cookie_path {
-            Some(p) => p.to_str().unwrap(),
-            None => "cookies.json",
-        };
+    pub fn save_cookie<P: AsRef<Path>>(&self, path: P) {
         let mut file = match fs::OpenOptions::new()
             .write(true)
             .create(true)

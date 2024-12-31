@@ -62,7 +62,7 @@ impl Context {
             ("password", &pw[..]),
             ("submit", "登录"),
             ("type", "username_password"),
-            ("execution", &execution),
+            ("execution", execution),
             ("_eventId", "submit"),
         ];
         let res = self.post(login_url).form(&form).send().await?;

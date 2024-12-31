@@ -66,6 +66,6 @@ mod tests {
         let state = user.get_state().await.unwrap();
         println!("{}", state);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 }

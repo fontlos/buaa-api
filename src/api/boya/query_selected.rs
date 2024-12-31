@@ -135,6 +135,6 @@ mod tests {
         let res = boya.query_selected(start, end).await.unwrap();
         println!("{:?}", res);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 }

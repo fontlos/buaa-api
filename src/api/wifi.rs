@@ -67,16 +67,15 @@ impl WiFiAPI {
             .query(&params)
             .send()
             .await?;
-        let token = if res.status().is_success() {
-            let html = res.text().await.unwrap();
-            match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
-                Some(s) => s,
-                None => return Err(Error::LoginError("No Challenge Value".to_string())),
-            }
-        } else {
+        if !res.status().is_success() {
             return Err(Error::LoginError(
                 "Request Failed. Maybe wrong username and password".to_string(),
             ));
+        };
+        let html = res.text().await.unwrap();
+        let token = match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
+            Some(s) => s,
+            None => return Err(Error::LoginError("No Challenge Value".to_string())),
         };
 
         // 计算登录信息

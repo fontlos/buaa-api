@@ -100,7 +100,7 @@ impl ClassAPI {
             .await?;
 
         let params = [
-            ("phone", &login_name[..]),
+            ("phone", login_name),
             ("password", ""),
             ("verificationType", "2"),
             ("verificationUrl", ""),
@@ -228,7 +228,7 @@ mod tests {
         let res = class.query_course("202420251").await.unwrap();
         println!("{:#?}", res);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 
     #[tokio::test]
@@ -248,7 +248,7 @@ mod tests {
         let res = class.query_schedule("64668").await.unwrap();
         println!("{:#?}", res);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 
     #[tokio::test]
@@ -268,6 +268,6 @@ mod tests {
         let res = class.checkin("2090542").await.unwrap();
         println!("{}", res.text().await.unwrap());
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 }

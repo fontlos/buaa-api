@@ -158,6 +158,6 @@ mod tests {
 
         println!("{:?}", res);
 
-        context.save();
+        context.save_cookie("cookie.json");
     }
 }

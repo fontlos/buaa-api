@@ -1,6 +1,7 @@
 // mod app;
 pub mod boya;
 pub mod class;
+pub mod evaluation;
 pub mod office;
 pub mod pan;
 pub mod spoc;
