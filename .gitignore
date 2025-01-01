@@ -1,6 +1,5 @@
-/js
+/data
 /target
+**/Cargo.lock
 .env
-Cargo.lock
-*/Cargo.lock
 cookie.json

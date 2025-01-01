@@ -1,7 +1,7 @@
 use crate::{utils, Error};
 
 use super::data_struct::{
-    EvaluationCompletedForm, EvaluationForm, EvaluationList, EvaluationListItem,
+    EvaluationForm, EvaluationList, EvaluationListItem, EvaluationAnswer
 };
 use super::EvaluationAPI;
 
@@ -57,27 +57,54 @@ impl EvaluationAPI {
         item: &EvaluationListItem,
     ) -> crate::Result<EvaluationForm> {
         // 无用查询参数太多了懒得记
-        let url = format!("https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic?rwid={}&wjid={}&sxz={}&bpdm={}&kcdm={}&rwh={}",
-            item.rwid, item.wjid, item.sxz, item.bpdm, item.kcdm, item.rwh
-        );
-        let res = self.get(url).send().await?;
+        let query = [
+            ("rwid", &item.rwid),
+            ("wjid", &item.wjid),
+            ("sxz", &item.sxz),
+            ("pjrdm", &item.pjrdm),
+            ("pjrmc", &item.pjrmc),
+            ("bpdm", &item.bpdm),
+            ("bpmc", &item.teacher),
+            ("kcdm", &item.kcdm),
+            ("kcmc", &item.course),
+            ("rwh", &item.rwh),
+        ];
+        let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
+        let res = self.get(url)
+            .query(&query).send().await?;
         let text = res.text().await?;
         let form: EvaluationForm = serde_json::from_str(&text)?;
         Ok(form)
     }
 
-    pub async fn submit_evaluation(&self, ans: &EvaluationCompletedForm) -> crate::Result<()> {
+    pub async fn submit_evaluation(&self, form: EvaluationForm, ans: Vec<EvaluationAnswer>) -> crate::Result<reqwest::Response> {
+        let rwid = form.info.rwid.clone();
+        let wjid = form.info.wjid.clone();
+
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/submitSaveEvaluation";
-        self.post(url).json(ans).send().await?;
-        Ok(())
+        let json = form.fill(ans);
+        let res = self.post(url).json(&json).send().await?;
+
+        // 也许是用于验证是否提交成功的
+        let query = [
+            ("rwid", rwid),
+            ("wjid", wjid),
+        ];
+        self.post("https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/checkWhetherTheTaskIsEvaluable")
+            .query(&query)
+            .send().await.unwrap();
+        self.post("https://spoc.buaa.edu.cn/pjxt/system/property")
+            .send().await.unwrap();
+
+        Ok(res)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::api::evaluation::data_struct::EvaluationListItem;
     use crate::utils::env;
     use crate::Context;
+    use super::*;
 
     #[ignore]
     #[tokio::test]
@@ -95,6 +122,44 @@ mod tests {
 
         let list = evaluation.get_evaluation_list().await.unwrap();
         println!("{:?}", list);
+
+        context.save_cookie("cookie.json");
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_submit_evaluation() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
+
+        let context = Context::new();
+        context.set_account(username, password);
+        context.with_cookies("cookie.json");
+        context.login().await.unwrap();
+
+        let evaluation = context.evaluation();
+
+        let list = evaluation.get_evaluation_list().await.unwrap();
+
+        let last = list.get(2).unwrap();
+
+        let form = evaluation.get_evaluation_form(last).await.unwrap();
+
+        let ans = vec![
+            EvaluationAnswer::Choice(1),
+            EvaluationAnswer::Choice(0),
+            EvaluationAnswer::Choice(0),
+            EvaluationAnswer::Choice(0),
+            EvaluationAnswer::Choice(0),
+            EvaluationAnswer::Choice(0),
+            EvaluationAnswer::Completion("".to_string()),
+            EvaluationAnswer::Completion("".to_string()),
+        ];
+
+        let res = evaluation.submit_evaluation(form, ans).await.unwrap();
+
+        println!("{}", res.text().await.unwrap());
 
         context.save_cookie("cookie.json");
     }
