@@ -1,8 +1,6 @@
 use crate::{utils, Error};
 
-use super::data_struct::{
-    EvaluationForm, EvaluationList, EvaluationListItem, EvaluationAnswer
-};
+use super::data_struct::{EvaluationAnswer, EvaluationForm, EvaluationList, EvaluationListItem};
 use super::EvaluationAPI;
 
 impl EvaluationAPI {
@@ -70,14 +68,17 @@ impl EvaluationAPI {
             ("rwh", &item.rwh),
         ];
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
-        let res = self.get(url)
-            .query(&query).send().await?;
+        let res = self.get(url).query(&query).send().await?;
         let text = res.text().await?;
         let form: EvaluationForm = serde_json::from_str(&text)?;
         Ok(form)
     }
 
-    pub async fn submit_evaluation(&self, form: EvaluationForm, ans: Vec<EvaluationAnswer>) -> crate::Result<reqwest::Response> {
+    pub async fn submit_evaluation(
+        &self,
+        form: EvaluationForm,
+        ans: Vec<EvaluationAnswer>,
+    ) -> crate::Result<reqwest::Response> {
         let rwid = form.info.rwid.clone();
         let wjid = form.info.wjid.clone();
 
@@ -86,15 +87,18 @@ impl EvaluationAPI {
         let res = self.post(url).json(&json).send().await?;
 
         // 也许是用于验证是否提交成功的
-        let query = [
-            ("rwid", rwid),
-            ("wjid", wjid),
-        ];
-        self.post("https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/checkWhetherTheTaskIsEvaluable")
-            .query(&query)
-            .send().await.unwrap();
+        let query = [("rwid", rwid), ("wjid", wjid)];
+        self.post(
+            "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/checkWhetherTheTaskIsEvaluable",
+        )
+        .query(&query)
+        .send()
+        .await
+        .unwrap();
         self.post("https://spoc.buaa.edu.cn/pjxt/system/property")
-            .send().await.unwrap();
+            .send()
+            .await
+            .unwrap();
 
         Ok(res)
     }
@@ -102,9 +106,9 @@ impl EvaluationAPI {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::utils::env;
     use crate::Context;
-    use super::*;
 
     #[ignore]
     #[tokio::test]

@@ -1,4 +1,3 @@
-// mod app;
 pub mod boya;
 pub mod class;
 pub mod evaluation;

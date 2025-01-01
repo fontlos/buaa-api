@@ -17,11 +17,19 @@ pub mod exports {
     pub mod class {
         pub use crate::api::class::{ClassCourse, ClassSchedule};
     }
+    pub mod evaluation {
+        pub use crate::api::evaluation::data_struct::{
+            EvaluationAnswer, EvaluationForm, EvaluationListItem,
+        };
+    }
     pub mod spoc {
         pub use crate::api::spoc::get_schedule::{SpocSchedule, SpocTimeRange, SpocWeek};
     }
 }
 
-pub use api::{boya::BoyaAPI, class::ClassAPI, spoc::SpocAPI, user::UserCenterAPI, wifi::WiFiAPI};
+pub use api::{
+    boya::BoyaAPI, class::ClassAPI, evaluation::EvaluationAPI, spoc::SpocAPI, user::UserCenterAPI,
+    wifi::WiFiAPI,
+};
 pub use context::{Config, Context};
 pub use error::{Error, Result};

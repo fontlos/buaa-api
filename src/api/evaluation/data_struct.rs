@@ -214,7 +214,11 @@ impl<'de> Deserialize<'de> for EvaluationForm {
             })
             .collect();
 
-        Ok(EvaluationForm { info, questions, map })
+        Ok(EvaluationForm {
+            info,
+            questions,
+            map,
+        })
     }
 }
 
@@ -235,7 +239,7 @@ impl EvaluationForm {
             panic!("Question count not match: {} != {}", question_len, ans_len);
         }
         let mut score = 0f32;
-        let mut completed:Vec<EvaluationCompletedQuestion> = Vec::with_capacity(question_len);
+        let mut completed: Vec<EvaluationCompletedQuestion> = Vec::with_capacity(question_len);
         for (question, answer) in self.questions.into_iter().zip(ans.into_iter()) {
             match answer {
                 EvaluationAnswer::Choice(index) => {
@@ -268,10 +272,10 @@ impl EvaluationForm {
                         question_id: question.id,
                         answer: ans,
                     });
-                },
+                }
             };
         }
-        let mut content:Vec<EvaluationCompletedList> = Vec::with_capacity(1);
+        let mut content: Vec<EvaluationCompletedList> = Vec::with_capacity(1);
         content.push(EvaluationCompletedList {
             teacher_id: self.info.teacher_id,
             teacher_name: self.info.teacher_name,
