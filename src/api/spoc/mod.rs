@@ -1,7 +1,7 @@
 //! BUAA Spoc API
 
 mod auth;
-pub mod get_schedule;
+pub mod opt;
 mod universal_request;
 
 /// BUAA Spoc API Wrapper <br>

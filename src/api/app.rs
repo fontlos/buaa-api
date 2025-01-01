@@ -36,21 +36,3 @@ impl Context {
         Ok(text)
     }
 }
-
-#[tokio::test]
-async fn test_get_classtable() {
-    let env = crate::utils::env();
-    let username = env.get("USERNAME").unwrap();
-    let password = env.get("PASSWORD").unwrap();
-
-    let session = Context::new();
-    session.with_cookies("cookie.json");
-
-    session.login(&username, &password).await.unwrap();
-    session.app_login().await.unwrap();
-
-    let res = session.app_classtable_get_data().await.unwrap();
-    println!("{}", res);
-
-    session.save();
-}
