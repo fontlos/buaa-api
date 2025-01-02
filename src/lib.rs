@@ -4,8 +4,8 @@ mod api;
 mod context;
 mod crypto;
 mod error;
-pub mod utils;
 pub mod exports;
+pub mod utils;
 
 pub use api::{
     boya::BoyaAPI, class::ClassAPI, evaluation::EvaluationAPI, spoc::SpocAPI, user::UserCenterAPI,

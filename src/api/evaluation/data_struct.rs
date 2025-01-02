@@ -102,12 +102,21 @@ struct EvaluationMap {
 
 #[derive(Debug)]
 pub struct EvaluationQuestion {
-    // 题目 id
+    /// 题目 id
     pub id: String,
-    // 题目名称
+    /// 题目类型
+    pub kind: EvaluationKind,
+    /// 题目名称
     pub name: String,
-    // 选项列表
+    /// 选项列表
     pub options: Vec<EvaluationOption>,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum EvaluationKind {
+    Choice,
+    Completion,
+    Unknown,
 }
 
 #[derive(Debug)]
@@ -155,6 +164,8 @@ impl<'de> Deserialize<'de> for EvaluationForm {
             // 题目 id
             #[serde(rename = "tmid")]
             id: String,
+            #[serde(rename = "tmlx")]
+            kind: String,
             // 题目名称
             #[serde(rename = "tgmc")]
             name: String,
@@ -196,11 +207,15 @@ impl<'de> Deserialize<'de> for EvaluationForm {
             .list
             .into_iter()
             .flat_map(|raw_list| {
-                raw_list
-                    .tasklist
-                    .into_iter()
-                    .map(|raw_task| EvaluationQuestion {
+                raw_list.tasklist.into_iter().map(|raw_task| {
+                    let kind = match raw_task.kind.as_str() {
+                        "1" => EvaluationKind::Choice,
+                        "6" => EvaluationKind::Completion,
+                        _ => EvaluationKind::Unknown,
+                    };
+                    EvaluationQuestion {
                         id: raw_task.id,
+                        kind,
                         name: raw_task.name,
                         options: raw_task
                             .optionlist
@@ -210,7 +225,8 @@ impl<'de> Deserialize<'de> for EvaluationForm {
                                 score: raw_option.score,
                             })
                             .collect(),
-                    })
+                    }
+                })
             })
             .collect();
 

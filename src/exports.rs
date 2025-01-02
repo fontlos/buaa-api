@@ -10,7 +10,7 @@ pub mod iclass {
 }
 pub mod evaluation {
     pub use crate::api::evaluation::data_struct::{
-        EvaluationAnswer, EvaluationForm, EvaluationListItem,
+        EvaluationAnswer, EvaluationForm, EvaluationKind, EvaluationListItem,
     };
 }
 pub mod spoc {
