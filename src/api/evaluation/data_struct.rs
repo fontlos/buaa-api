@@ -248,7 +248,7 @@ pub enum EvaluationAnswer {
 }
 
 impl EvaluationForm {
-    pub(super) fn fill(self, ans: Vec<EvaluationAnswer>) -> EvaluationCompleted {
+    pub fn fill(self, ans: Vec<EvaluationAnswer>) -> EvaluationCompleted {
         let question_len = self.questions.len();
         let ans_len = ans.len();
         if question_len != ans_len {
@@ -330,11 +330,20 @@ impl EvaluationForm {
 }
 
 #[derive(Debug, Serialize)]
-pub(super) struct EvaluationCompleted {
+pub struct EvaluationCompleted {
     pjidlist: Vec<bool>,
     #[serde(rename = "pjjglist")]
     content: Vec<EvaluationCompletedList>,
     pjzt: String,
+}
+
+impl EvaluationCompleted {
+    pub fn rwid(&self) -> &str {
+        &self.content[0].rwid
+    }
+    pub fn wjid(&self) -> &str {
+        &self.content[0].wjid
+    }
 }
 
 #[derive(Debug, Serialize)]

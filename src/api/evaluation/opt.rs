@@ -1,6 +1,6 @@
 use crate::{utils, Error};
 
-use super::data_struct::{EvaluationAnswer, EvaluationForm, EvaluationList, EvaluationListItem};
+use super::data_struct::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 use super::EvaluationAPI;
 
 impl EvaluationAPI {
@@ -76,16 +76,13 @@ impl EvaluationAPI {
 
     pub async fn submit_evaluation(
         &self,
-        form: EvaluationForm,
-        ans: Vec<EvaluationAnswer>,
+        complete: EvaluationCompleted,
     ) -> crate::Result<reqwest::Response> {
-        let rwid = form.info.rwid.clone();
-        let wjid = form.info.wjid.clone();
-
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/submitSaveEvaluation";
-        let json = form.fill(ans);
-        let res = self.post(url).json(&json).send().await?;
+        let res = self.post(url).json(&complete).send().await?;
 
+        let rwid = complete.rwid();
+        let wjid = complete.wjid();
         // 也许是用于验证是否提交成功的
         let query = [("rwid", rwid), ("wjid", wjid)];
         self.post(
@@ -106,7 +103,6 @@ impl EvaluationAPI {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::utils::env;
     use crate::Context;
 
@@ -133,6 +129,8 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_submit_evaluation() {
+        use crate::api::evaluation::data_struct::EvaluationAnswer;
+
         let env = env();
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
@@ -161,7 +159,9 @@ mod tests {
             EvaluationAnswer::Completion("".to_string()),
         ];
 
-        let res = evaluation.submit_evaluation(form, ans).await.unwrap();
+        let complete = form.fill(ans);
+
+        let res = evaluation.submit_evaluation(complete).await.unwrap();
 
         println!("{}", res.text().await.unwrap());
 
