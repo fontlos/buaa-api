@@ -5,7 +5,7 @@ pub mod boya {
         query_statistic::{BoyaAssessment, BoyaStatistic},
     };
 }
-pub mod iclass {
+pub mod class {
     pub use crate::api::class::{ClassCourse, ClassSchedule};
 }
 pub mod evaluation {
