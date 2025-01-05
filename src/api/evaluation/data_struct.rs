@@ -105,18 +105,11 @@ pub struct EvaluationQuestion {
     /// 题目 id
     pub id: String,
     /// 题目类型
-    pub kind: EvaluationKind,
+    pub is_choice: bool,
     /// 题目名称
     pub name: String,
     /// 选项列表
     pub options: Vec<EvaluationOption>,
-}
-
-#[derive(Debug, Deserialize)]
-pub enum EvaluationKind {
-    Choice,
-    Completion,
-    Unknown,
 }
 
 #[derive(Debug)]
@@ -209,13 +202,12 @@ impl<'de> Deserialize<'de> for EvaluationForm {
             .flat_map(|raw_list| {
                 raw_list.tasklist.into_iter().map(|raw_task| {
                     let kind = match raw_task.kind.as_str() {
-                        "1" => EvaluationKind::Choice,
-                        "6" => EvaluationKind::Completion,
-                        _ => EvaluationKind::Unknown,
+                        "1" => true,
+                        _ => false,
                     };
                     EvaluationQuestion {
                         id: raw_task.id,
-                        kind,
+                        is_choice: kind,
                         name: raw_task.name,
                         options: raw_task
                             .optionlist
