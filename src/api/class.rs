@@ -31,7 +31,6 @@ struct ClassCourses {
     result: Vec<ClassCourse>,
 }
 
-#[cfg_attr(feature = "table", derive(tabled::Tabled))]
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClassCourse {
     #[serde(rename = "course_id")]
@@ -65,7 +64,6 @@ struct ClassSchedules {
     result: Vec<ClassSchedule>,
 }
 
-#[cfg_attr(feature = "table", derive(tabled::Tabled))]
 #[derive(Debug, Deserialize)]
 pub struct ClassSchedule {
     #[serde(rename = "courseSchedId")]

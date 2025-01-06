@@ -6,11 +6,6 @@ pub use env::env;
 mod parse;
 pub(crate) use parse::{get_value_by_lable, get_values_by_lable};
 
-#[cfg(feature = "table")]
-mod table;
-#[cfg(feature = "table")]
-pub use table::table;
-
 mod time;
 pub use time::*;
 

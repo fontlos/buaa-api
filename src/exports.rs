@@ -1,7 +1,7 @@
 pub mod boya {
     pub use crate::api::boya::{
-        query_course::{BoyaCampus, BoyaCapacity, BoyaCourse, BoyaCourses, BoyaKind, BoyaTime},
-        query_selected::{BoyaSelected, BoyaSelecteds},
+        query_course::{BoyaCampus, BoyaCapacity, BoyaCourse, BoyaKind, BoyaTime},
+        query_selected::BoyaSelected,
         query_statistic::{BoyaAssessment, BoyaStatistic},
     };
 }
