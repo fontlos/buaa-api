@@ -4,9 +4,8 @@ use super::data_struct::{EvaluationCompleted, EvaluationForm, EvaluationList, Ev
 use super::EvaluationAPI;
 
 impl EvaluationAPI {
-    /// 获取需要评教的列表<br>
-    /// 方法内部进行了多次请求, 速度较慢
-    pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
+    /// Teacher Evaluation System Login
+    pub async fn login(&self) -> crate::Result<()> {
         // 获取账号
         let config = self.config.read().unwrap();
         let username = config.username.as_ref().unwrap();
@@ -24,10 +23,22 @@ impl EvaluationAPI {
         let url = format!("https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10");
         let res = self.get(url).send().await?;
         let text = res.text().await?;
-        let rwid = match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
-            Some(rwid) => rwid,
+        match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
+            Some(rwid) => {
+                let mut config = self.config.write().unwrap();
+                config.evaluation_token = Some(rwid.to_string());
+            },
             None => return Err(Error::APIError("No rwid".to_string())),
         };
+
+        Ok(())
+    }
+    /// 获取需要评教的列表<br>
+    /// 方法内部进行了多次请求, 速度较慢
+    pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
+        // 获取 RWID
+        let config = self.config.read().unwrap();
+        let rwid = config.evaluation_token.as_ref().unwrap();
 
         // 看不懂, 但需要获取一些称为 wjid 的东西, 对应于理论课, 实践课, 英语课, 体育课, 科研课堂, 这是已知的五个类型
         // 省略的无用查询参数 &sfyp=0&pageNum=1&pageSize=999

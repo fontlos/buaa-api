@@ -33,7 +33,7 @@ APIs not listed above might have been overlooked or deemed unimportant by me, bu
 The basic process is:
 
 - Initialize the `Context`
-- Set cccount
+- Set account
 - (Optional) Specifies the file used to read and write cookies
 - Login to context
 - Get a subdomain instance
