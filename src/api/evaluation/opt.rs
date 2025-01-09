@@ -130,7 +130,7 @@ mod tests {
         context.login().await.unwrap();
 
         let evaluation = context.evaluation();
-
+        evaluation.login().await.unwrap();
         let list = evaluation.get_evaluation_list().await.unwrap();
         println!("{:?}", list);
 
@@ -152,7 +152,7 @@ mod tests {
         context.login().await.unwrap();
 
         let evaluation = context.evaluation();
-
+        evaluation.login().await.unwrap();
         let list = evaluation.get_evaluation_list().await.unwrap();
 
         let last = list.get(2).unwrap();
