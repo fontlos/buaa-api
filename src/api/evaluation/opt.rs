@@ -23,6 +23,8 @@ impl EvaluationAPI {
         let url = format!("https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10");
         let res = self.get(url).send().await?;
         let text = res.text().await?;
+        // 释放掉读锁
+        drop(config);
         match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
             Some(rwid) => {
                 let mut config = self.config.write().unwrap();
