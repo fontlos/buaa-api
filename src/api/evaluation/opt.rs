@@ -6,10 +6,6 @@ use super::EvaluationAPI;
 impl EvaluationAPI {
     /// Teacher Evaluation System Login
     pub async fn login(&self) -> crate::Result<()> {
-        // 获取账号
-        let config = self.config.read().unwrap();
-        let username = config.username.as_ref().unwrap();
-
         // 登录
         let login_url =
             "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fspoc.buaa.edu.cn%2Fpjxt%2Fcas";
@@ -17,30 +13,24 @@ impl EvaluationAPI {
         if res.url().as_str() == login_url {
             return Err(Error::LoginExpired("SSO Expired".to_string()));
         }
-
+        Ok(())
+    }
+    /// Get a list of the ones that need to beevaluated <br>
+    /// The method has made multiple requests inside it, and the speed is slow
+    pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
+        // 考虑到 rwid 只有这一个地方用到, 所以直接在这里获取
+        // 获取账号
+        let config = self.config.read().unwrap();
+        let username = config.username.as_ref().unwrap();
         // 获取rwid
         // 省略的无用查询参数 &rwmc=&sfyp=0
         let url = format!("https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10");
         let res = self.get(url).send().await?;
         let text = res.text().await?;
-        // 释放掉读锁
-        drop(config);
-        match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
-            Some(rwid) => {
-                let mut config = self.config.write().unwrap();
-                config.evaluation_token = Some(rwid.to_string());
-            },
+        let rwid = match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
+            Some(rwid) => rwid,
             None => return Err(Error::APIError("No rwid".to_string())),
         };
-
-        Ok(())
-    }
-    /// 获取需要评教的列表<br>
-    /// 方法内部进行了多次请求, 速度较慢
-    pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
-        // 获取 RWID
-        let config = self.config.read().unwrap();
-        let rwid = config.evaluation_token.as_ref().unwrap();
 
         // 看不懂, 但需要获取一些称为 wjid 的东西, 对应于理论课, 实践课, 英语课, 体育课, 科研课堂, 这是已知的五个类型
         // 省略的无用查询参数 &sfyp=0&pageNum=1&pageSize=999
@@ -59,7 +49,6 @@ impl EvaluationAPI {
             list.extend(new_list.list);
         }
 
-        let list = list.into_iter().filter(|item| !item.state).collect();
         Ok(list)
     }
 

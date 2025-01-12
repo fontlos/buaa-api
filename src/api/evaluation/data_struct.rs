@@ -18,7 +18,7 @@ pub struct EvaluationListItem {
     // 是否已评教, 1 为是, 0 为否
     #[serde(deserialize_with = "deserialize_evaluation_state")]
     #[serde(rename = "ypjcs")]
-    pub(super) state: bool,
+    pub state: bool,
     // 看不懂
     pub(super) sxz: String,
     // 评教人代码
@@ -330,11 +330,14 @@ pub struct EvaluationCompleted {
 }
 
 impl EvaluationCompleted {
-    pub fn rwid(&self) -> &str {
+    pub(crate) fn rwid(&self) -> &str {
         &self.content[0].rwid
     }
-    pub fn wjid(&self) -> &str {
+    pub(crate) fn wjid(&self) -> &str {
         &self.content[0].wjid
+    }
+    pub fn score(&self) -> f32 {
+        self.content[0].score
     }
 }
 

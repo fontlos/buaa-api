@@ -17,8 +17,9 @@ impl WiFiAPI {
     /// #[tokio::main]
     /// async fn main() {
     ///     let context = Context::new();
+    ///     context.set_account("username", "password");
     ///     let wifi = context.wifi();
-    ///     wifi.login("username", "password").await.unwrap();
+    ///     wifi.login().await.unwrap();
     /// }
     /// ```
     pub async fn login(&self) -> crate::Result<()> {

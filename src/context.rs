@@ -28,8 +28,6 @@ pub struct Config {
     pub boya_token: Option<String>,
     /// User ID for SmartClass API
     pub class_token: Option<String>,
-    /// RWID for Evaluation API
-    pub evaluation_token: Option<String>,
     /// User ID for Spoc API
     pub spoc_token: Option<String>,
 }
@@ -41,7 +39,6 @@ impl Config {
             password: None,
             boya_token: None,
             class_token: None,
-            evaluation_token: None,
             spoc_token: None,
         }
     }
