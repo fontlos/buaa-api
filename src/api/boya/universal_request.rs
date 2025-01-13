@@ -1,3 +1,4 @@
+use rand::Rng;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
@@ -74,12 +75,19 @@ impl BoyaAPI {
         let sha1_query = crypto::hash::sha1(query);
         // sk参数, rsa sha1_query
         let sk = crypto::rsa(&sha1_query);
-        // TODO 十六位随机字符, 这里先用固定的
-        let aes_key = "SenQBA8xn6CQGNJs";
+        // 十六位随机字符
+        const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let mut rng = rand::thread_rng();
+        let aes_key: String = (0..16)
+            .map(|_| {
+                let idx = rng.gen_range(0..CHARSET.len());
+                CHARSET[idx] as char
+            })
+            .collect();
         // ak参数, rsa aes_key
-        let ak = crypto::rsa(aes_key);
+        let ak = crypto::rsa(&aes_key);
         // 这是请求的负载, 是使用 aes 加密的查询参数
-        let body = crypto::aes::aes_encrypt_ecb(query, aes_key);
+        let body = crypto::aes::aes_encrypt_ecb(query, &aes_key);
         let time = utils::get_time();
 
         let mut header = HeaderMap::new();
@@ -121,4 +129,23 @@ impl BoyaAPI {
         }
         Ok(res)
     }
+}
+
+#[test]
+fn test_rand() {
+    use rand::Rng;
+    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    // 创建一个随机数生成器
+    let mut rng = rand::thread_rng();
+
+    // 生成长度为16的随机字符串
+    let random_string: String = (0..16)
+        .map(|_| {
+            let idx = rng.gen_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
+        .collect();
+
+    println!("随机生成的字符串: {}", random_string);
 }
