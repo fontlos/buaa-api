@@ -18,8 +18,10 @@ impl BoyaAPI {
             None => return Err(Error::LoginError("No Token".to_string())),
         };
         if token.0 == "token" {
-            // TODO 记得处理异步锁
-            let mut config = self.config.write().unwrap();
+            let mut config = match self.config.write() {
+                Ok(c) => c,
+                Err(_) => return Err(Error::LockError),
+            };
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
@@ -41,8 +43,10 @@ impl BoyaAPI {
             None => return Err(Error::LoginError("No Token".to_string())),
         };
         if token.0 == "token" {
-            // TODO 记得处理异步锁
-            let mut config = self.config.write().unwrap();
+            let mut config = match self.config.write() {
+                Ok(c) => c,
+                Err(_) => return Err(Error::LockError),
+            };
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {

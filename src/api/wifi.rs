@@ -211,7 +211,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password);
+        context.set_account(username, password).unwrap();
 
         let wifi = context.wifi();
         wifi.login().await.unwrap();
@@ -225,7 +225,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password);
+        context.set_account(username, password).unwrap();
 
         let wifi = context.wifi();
         wifi.logout().await.unwrap();

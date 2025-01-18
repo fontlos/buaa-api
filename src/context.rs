@@ -79,28 +79,33 @@ impl Context {
         }
     }
 
-    pub fn set_config(&self, config: Config) {
-        let mut config_lock = self.config.write().unwrap();
+    pub fn set_config(&self, config: Config) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+        let mut config_lock = self.config.write()?;
         *config_lock = config;
+        Ok(())
     }
 
-    pub fn set_account(&self, username: &str, password: &str) {
-        let mut config = self.config.write().unwrap();
+    pub fn set_account(&self, username: &str, password: &str) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+        let mut config = self.config.write()?;
         config.username = Some(username.to_string());
         config.password = Some(password.to_string());
+        Ok(())
     }
 
-    pub fn set_username(&self, username: &str) {
-        let mut config = self.config.write().unwrap();
+    pub fn set_username(&self, username: &str) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+        let mut config = self.config.write()?;
         config.username = Some(username.to_string());
+        Ok(())
     }
 
-    pub fn set_password(&self, password: &str) {
-        let mut config = self.config.write().unwrap();
+    pub fn set_password(&self, password: &str) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+        let mut config = self.config.write()?;
         config.password = Some(password.to_string());
+        Ok(())
     }
 
     /// Load config from path, if the path is not exist or parse failed, it will return a default one
+    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn with_config<P: AsRef<Path>>(&self, path: P) {
         let file = OpenOptions::new()
             .read(true)
@@ -120,7 +125,7 @@ impl Context {
 
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn with_cookies<P: AsRef<Path>>(&self, path: P) {
+    pub fn with_cookies<P: AsRef<Path>>(&self, path: P) -> crate::Result<()> {
         let path = PathBuf::from(path.as_ref());
         let cookie_store = match File::open(&path) {
             Ok(f) => {
@@ -130,9 +135,12 @@ impl Context {
             Err(_) => CookieStore::default(),
         };
 
-        // TODO 记得处理锁失败的情况
-        let mut cookie_lock = self.cookies.lock().unwrap();
+        let mut cookie_lock = match self.cookies.lock() {
+            Ok(c) => c,
+            Err(_) => return Err(crate::Error::LockError),
+        };
         *cookie_lock = cookie_store;
+        Ok(())
     }
 
     /// save cookies manually
