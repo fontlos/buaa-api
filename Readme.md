@@ -50,7 +50,7 @@ async fn main() {
     // Initialize the `Context`
     let context = Context::new();
     // Set account
-    context.set_account("username", "password")
+    context.set_account("username", "password");
     // Specifies the file used to read and write cookies
     context.with_cookies("cookie.json");
     // Login to context

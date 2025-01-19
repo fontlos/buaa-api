@@ -20,6 +20,11 @@ pub struct Context {
     pub config: Arc<RwLock<Config>>,
 }
 
+pub struct ContextBuilder<P: AsRef<Path>> {
+    cookies: Option<P>,
+    config: Option<P>,
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Config {
     pub username: Option<String>,
@@ -45,18 +50,16 @@ impl Config {
 }
 
 impl Context {
-    /// Create a new session in memory, if you call `save` method, it will save cookies to `cookies.json` defaultly
+    /// Initialize the `Context`
     /// ```rust
-    /// use buaa::Session;
+    /// use buaa::Context;
     ///
     /// fn main() {
-    ///     let mut session = Session::new();
-    ///     // if you call `save` method, it will save cookies to `cookies.json` defaultly
-    ///     // session.save();
-    ///     // if you need load cookies from file, you can use `with_cookies` method
-    ///     // session.with_cookies("path_to_cookies.json");
-    ///     // and then you call `save` method will save cookies to the file you specified
-    ///     // session.save();
+    ///     let mut context = Context::new();
+    ///     // Set account
+    ///     context.set_account("username", "password");
+    ///     // Login to context
+    ///     context.login().await.unwrap();
     /// }
     /// ```
     pub fn new() -> Self {
@@ -76,6 +79,13 @@ impl Context {
             client,
             cookies: cookie_store,
             config: Arc::new(RwLock::new(config)),
+        }
+    }
+
+    pub fn builder<P: AsRef<Path>>() -> ContextBuilder<P> {
+        ContextBuilder {
+            cookies: None,
+            config: None,
         }
     }
 
@@ -178,6 +188,65 @@ impl Context {
             .open(path)
             .unwrap();
         serde_json::to_writer(file, &*config).unwrap();
+    }
+}
+
+impl<P: AsRef<Path>> ContextBuilder<P> {
+    pub fn with_config(&mut self, path: P) -> &mut Self {
+        self.config = Some(path);
+        self
+    }
+
+    pub fn with_cookies(&mut self, path: P) -> &mut Self {
+        self.cookies = Some(path);
+        self
+    }
+
+    pub fn build(&self) -> Context {
+        let config = if let Some(path) = &self.config {
+            let file = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .open(path)
+                .unwrap();
+            match serde_json::from_reader(file) {
+                Ok(config) => config,
+                Err(_) => Config::new(),
+            }
+        } else {
+            Config::new()
+        };
+        let cookie_store = if let Some(path) = &self.cookies {
+            let file = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .create(true)
+                .open(path)
+                .unwrap();
+            match CookieStore::load_all(BufReader::new(file), |s| serde_json::from_str::<Cookie>(s)) {
+                Ok(store) => store,
+                Err(_) => CookieStore::default(),
+            }
+        } else {
+            CookieStore::default()
+        };
+        let cookies = Arc::new(CookieStoreMutex::new(cookie_store));
+
+        let mut header = HeaderMap::new();
+        header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
+
+        let client = Client::builder()
+            .default_headers(header)
+            .cookie_provider(cookies.clone())
+            .build()
+            .unwrap();
+
+        Context {
+            client,
+            cookies,
+            config: Arc::new(RwLock::new(config)),
+        }
     }
 }
 
