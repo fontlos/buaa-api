@@ -28,11 +28,6 @@ pub struct ElectiveFilter {
     #[serde(rename = "KCLB")]
     #[serde(serialize_with = "serialize_elective_type")]
     r#type: Option<ElectiveType>,
-    // 授课语言, 可选
-    // 01 全汉语, 02 全英语, 03 英汉双语, 04 其他, 05 全英语(大英), 06 法汉双语, 07 全法语, 08 全俄语, 09 全日语, 12 德语
-    // 但意义存疑, 我们暂时不实现这个过滤器
-    #[serde(rename = "SKYY")]
-    language: Option<String>,
     // 搜索关键字, 可选
     #[serde(rename = "KEY")]
     key: Option<String>,
@@ -49,7 +44,6 @@ impl ElectiveFilter {
             conflict: Some(0),
             nature: None,
             r#type: None,
-            language: None,
             key: None,
         }
     }
@@ -97,11 +91,6 @@ impl ElectiveFilter {
     /// Set up the type of the course
     pub fn set_type(&mut self, r#type: Option<ElectiveType>) {
         self.r#type = r#type;
-    }
-
-    /// Set up the language of the course
-    pub fn set_language(&mut self, language: String) {
-        self.language = Some(language);
     }
 
     /// Set up the key word of the course
