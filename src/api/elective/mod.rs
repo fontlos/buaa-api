@@ -2,6 +2,7 @@
 
 mod auth;
 mod filter;
+mod opt_course;
 mod query_course;
 mod query_selected;
 

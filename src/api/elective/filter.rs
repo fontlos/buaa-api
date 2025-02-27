@@ -1,10 +1,11 @@
 use serde::{Serialize, Serializer};
 
+// ==================== 用于课程查询 ====================
+
+/// # A filter for querying courses
 #[derive(Serialize)]
 pub struct ElectiveFilter {
     // 课程查询的范围
-    // TJKC 班级课表推荐课程, FANKC 方案内课程, FAWKC 方案外课程, CXKC 重修课程, 只有重修课程可以选校区
-    // YYKC 英语课程, TYKC 体育课程, XGKC 通识选修课程, KYKT 科研课堂, ALLKC 全校课程查询
     #[serde(rename = "teachingClassType")]
     #[serde(serialize_with = "serialize_elective_range")]
     range: ElectiveRange,
@@ -14,17 +15,16 @@ pub struct ElectiveFilter {
     // 每页大小
     #[serde(rename = "pageSize")]
     size: u8,
-    // 校区, 1 学院路, 2 沙河
+    // 校区
     campus: u8,
     // 是否显示冲突课程, 可选
-    // 0 否
     #[serde(rename = "SFCT")]
     conflict: Option<u8>,
     // 课程性质, 可选
-    // 01 必修, 02 选修, 03 限修, 04 任修
     #[serde(rename = "KCXZ")]
-    nature: Option<String>,
-    // 课程类型
+    #[serde(serialize_with = "serialize_elective_nature")]
+    nature: Option<ElectiveNature>,
+    // 课程类型, 可选
     #[serde(rename = "KCLB")]
     #[serde(serialize_with = "serialize_elective_type")]
     r#type: Option<ElectiveType>,
@@ -84,8 +84,8 @@ impl ElectiveFilter {
     }
 
     /// Set up the nature of the course
-    pub fn set_nature(&mut self, nature: String) {
-        self.nature = Some(nature);
+    pub fn set_nature(&mut self, nature: Option<ElectiveNature>) {
+        self.nature = nature;
     }
 
     /// Set up the type of the course
@@ -101,6 +101,9 @@ impl ElectiveFilter {
 
 /// # The scope of the course query
 /// Be sure to consult the corresponding notes in the document to know the specific type
+// 离谱首字母命名法, 甚至有一个首字母都疑似拼错了
+// TJKC 班级课表推荐课程, FANKC 方案内课程, FAWKC 方案外课程, CXKC 重修课程, 只有重修课程可以选校区
+// YYKC 英语课程, TYKC 体育课程, XGKC 通识选修课程, KYKT 科研课堂, ALLKC 全校课程查询
 pub enum ElectiveRange {
     /// 班级课表推荐课程
     SUGGEST,
@@ -140,8 +143,47 @@ where
     }
 }
 
+/// # The nature of the course
+/// Be sure to consult the corresponding notes in the document to know the specific type
+pub enum ElectiveNature {
+    /// 必修
+    Compulsory,
+    /// 选修
+    Elective,
+    /// 限修
+    Limited,
+    /// 任修
+    Optional,
+}
+
+// 序列化选课过滤器性质为对应的查询字符
+fn serialize_elective_nature<S>(
+    nature: &Option<ElectiveNature>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    if let Some(n) = nature {
+        match n {
+            ElectiveNature::Compulsory => serializer.serialize_str("01"),
+            ElectiveNature::Elective => serializer.serialize_str("02"),
+            ElectiveNature::Limited => serializer.serialize_str("03"),
+            ElectiveNature::Optional => serializer.serialize_str("04"),
+        }
+    } else {
+        serializer.serialize_none()
+    }
+}
+
+
+
 /// # The type of course
 /// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
+// 这抽象系统是什么惊为天人的脑回路能想出来的逆天命名方式, 字母混数字, 还有合并的, 还乱序, 简单起见直接按字母表顺序排了
+// A 数学与自然科学类, B 工程基础类, C 外语类, D 思政军理类, E 体育类, FG 素质教育通识限修课, K Office Hours
+// 011 数理基础课, 012 工程基础课, 013 外语课类, 021 思政课, 022 军理课, 023 体育课, 024 素质教育理论必修课
+// 025 素质教育实践必修课, 026 综合素养课, 031 核心专业类, 032 一般专业类, 01 自然科学类课程
 pub enum ElectiveType {
     /// 数学与自然科学类
     A,
@@ -216,4 +258,21 @@ where
     } else {
         serializer.serialize_none()
     }
+}
+
+// ==================== 用于课程退选 ====================
+
+/// # Structure for course select and drop
+#[derive(Serialize)]
+pub struct ElectiveOpt {
+    // 类型
+    #[serde(rename = "clazzType")]
+    #[serde(serialize_with = "serialize_elective_range")]
+    range: ElectiveRange,
+    // 课程 ID
+    #[serde(rename = "clazzId")]
+    id: String,
+    // 校验和
+    #[serde(rename = "secretVal")]
+    sum: String
 }
