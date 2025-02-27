@@ -1,7 +1,7 @@
-use crate::{utils, Error};
+use crate::{Error, utils};
 
-use super::data_struct::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 use super::EvaluationAPI;
+use super::data_struct::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 
 impl EvaluationAPI {
     /// Teacher Evaluation System Login
@@ -24,7 +24,9 @@ impl EvaluationAPI {
         let username = config.username.as_ref().unwrap();
         // 获取rwid
         // 省略的无用查询参数 &rwmc=&sfyp=0
-        let url = format!("https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10");
+        let url = format!(
+            "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10"
+        );
         let res = self.get(url).send().await?;
         let text = res.text().await?;
         let rwid = match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
@@ -34,7 +36,9 @@ impl EvaluationAPI {
 
         // 看不懂, 但需要获取一些称为 wjid 的东西, 对应于理论课, 实践课, 英语课, 体育课, 科研课堂, 这是已知的五个类型
         // 省略的无用查询参数 &sfyp=0&pageNum=1&pageSize=999
-        let url = format!("https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireListToTask?rwid={rwid}");
+        let url = format!(
+            "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireListToTask?rwid={rwid}"
+        );
         let list = self.get(url).send().await?;
         let text = list.text().await?;
         let wjids = utils::get_values_by_lable(&text, r#""wjid":""#, "\"");
@@ -42,7 +46,9 @@ impl EvaluationAPI {
         let mut list = Vec::<EvaluationListItem>::with_capacity(20);
         for wjid in wjids {
             // 省略的无用查询参数 &sfyp=0&xnxq=2024-20251&pageNum=1&pageSize=999
-            let url = format!("https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData?wjid={wjid}");
+            let url = format!(
+                "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData?wjid={wjid}"
+            );
             let res = self.get(url).send().await?;
             let text = res.text().await?;
             let new_list: EvaluationList = serde_json::from_str(&text)?;
@@ -105,8 +111,8 @@ impl EvaluationAPI {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
     use crate::Context;
+    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]

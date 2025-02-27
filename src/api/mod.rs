@@ -1,6 +1,6 @@
 pub mod boya;
-pub mod elective;
 pub mod class;
+pub mod elective;
 pub mod evaluation;
 pub mod office;
 pub mod pan;

@@ -16,7 +16,10 @@ mod tests {
         let key = "inco12345678ocni";
         let iv = "ocni12345678inco";
         let encrypted = aes_encrypt_cbc(&raw, key, iv);
-        assert_eq!("sjMMi2wbmqqFOAChr9uGQhPMjU9aXylfswLzenO+ne0BUNGx9zPP0sbOPO3dlds6yQp7lejz7U99uiYPjfcRWjCa/peJWOEvc+MljRS4x3k=", encrypted);
+        assert_eq!(
+            "sjMMi2wbmqqFOAChr9uGQhPMjU9aXylfswLzenO+ne0BUNGx9zPP0sbOPO3dlds6yQp7lejz7U99uiYPjfcRWjCa/peJWOEvc+MljRS4x3k=",
+            encrypted
+        );
     }
 
     #[test]
@@ -51,7 +54,9 @@ mod tests {
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
         let ip = env.get("IP").unwrap();
-        let data = format!("{{\"username\":\"{username}\",\"password\":\"{password}\",\"ip\":\"{ip}\",\"acid\":\"62\",\"enc_ver\":\"srun_bx1\"}}");
+        let data = format!(
+            "{{\"username\":\"{username}\",\"password\":\"{password}\",\"ip\":\"{ip}\",\"acid\":\"62\",\"enc_ver\":\"srun_bx1\"}}"
+        );
         let res = x_encode(
             &data,
             "8e4e83f094924913acc6a9d5149015aafc898bd38ba8f45be6bd0f9edd450403",

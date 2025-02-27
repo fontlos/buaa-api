@@ -1,7 +1,7 @@
 //! BUAA WiFi API
 
 use crate::crypto::{hash, x_encode};
-use crate::{utils, Error};
+use crate::{Error, utils};
 
 /// BUAA WiFi API Wrapper <br>
 /// Call `wifi()` on `Context` to get an instance of this struct and call corresponding API on this instance.
@@ -92,7 +92,9 @@ impl WiFiAPI {
 
         // 计算校验和, 参数顺序如下
         //                             token username token password_md5 token ac_id token ip token n token type token info
-        let check_str = format!("{token}{un}{token}{password_md5}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}");
+        let check_str = format!(
+            "{token}{un}{token}{password_md5}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}"
+        );
         let chk_sum = hash::sha1(&check_str);
 
         // 构造登录 URL 并登录
@@ -200,8 +202,8 @@ impl WiFiAPI {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
     use crate::Context;
+    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]

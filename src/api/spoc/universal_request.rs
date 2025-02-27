@@ -1,7 +1,7 @@
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{crypto, Error};
+use crate::{Error, crypto};
 
 use super::SpocAPI;
 

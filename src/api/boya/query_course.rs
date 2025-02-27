@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use time::{format_description, PrimitiveDateTime};
+use time::{PrimitiveDateTime, format_description};
 
 use super::BoyaAPI;
 
@@ -164,8 +164,8 @@ impl BoyaAPI {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
     use crate::Context;
+    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]

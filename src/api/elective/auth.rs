@@ -1,5 +1,5 @@
-use crate::Error;
 use super::ElectiveAPI;
+use crate::Error;
 
 impl ElectiveAPI {
     /// # 本研选课登录
@@ -19,7 +19,7 @@ impl ElectiveAPI {
                 config.elective_token = Some(t.value().to_string());
                 return Ok(());
             }
-            None => return Err(Error::LoginError("No Token".to_string()))
+            None => return Err(Error::LoginError("No Token".to_string())),
         }
     }
 
@@ -50,8 +50,8 @@ impl ElectiveAPI {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
     use crate::Context;
+    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]

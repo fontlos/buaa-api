@@ -6,7 +6,7 @@ use reqwest::Response;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-use crate::{crypto, utils, Error};
+use crate::{Error, crypto, utils};
 
 use super::boya::query_course::deserialize_time;
 
@@ -133,7 +133,7 @@ impl ClassAPI {
             None => {
                 return Err(Error::LoginError(
                     "Smart Classroom Login Required".to_string(),
-                ))
+                ));
             }
         };
         let res = self.post(
@@ -159,7 +159,7 @@ impl ClassAPI {
             None => {
                 return Err(Error::LoginError(
                     "Smart Classroom Login Required".to_string(),
-                ))
+                ));
             }
         };
         let res = self.post(
@@ -185,7 +185,7 @@ impl ClassAPI {
             None => {
                 return Err(Error::LoginError(
                     "Smart Classroom Login Required".to_string(),
-                ))
+                ));
             }
         };
         let time = utils::get_time();
@@ -205,8 +205,8 @@ impl ClassAPI {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
     use crate::Context;
+    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]

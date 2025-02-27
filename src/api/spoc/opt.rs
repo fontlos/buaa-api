@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use time::{format_description, PrimitiveDateTime, Weekday};
+use time::{PrimitiveDateTime, Weekday, format_description};
 
 use super::SpocAPI;
 
@@ -117,9 +117,7 @@ impl SpocAPI {
         // 后面三个值分别是开始日期, 结束日期和学年学期
         let query = format!(
             "{{\"sqlid\":\"17138556333937a86d7c38783bc62811e7c6bb5ef955a\",\"zksrq\":\"{}\",\"zjsrq\":\"{}\",\"xnxq\":\"{}\"}}",
-            week.time.0,
-            week.time.1,
-            week.term
+            week.time.0, week.time.1, week.term
         );
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryList";
         let res = self.universal_request(&query, url).await?;
@@ -130,8 +128,8 @@ impl SpocAPI {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
     use crate::Context;
+    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]

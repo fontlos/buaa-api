@@ -1,6 +1,6 @@
-use aes::cipher::{generic_array::GenericArray, BlockDecrypt, BlockEncrypt, KeyInit};
 use aes::Aes128;
-use base64::{engine::general_purpose, Engine as _};
+use aes::cipher::{BlockDecrypt, BlockEncrypt, KeyInit, generic_array::GenericArray};
+use base64::{Engine as _, engine::general_purpose};
 
 /// AES encrypt, use Base64, ECB mode, PKCS5Padding
 pub fn aes_encrypt_ecb(data: &str, key: &str) -> String {

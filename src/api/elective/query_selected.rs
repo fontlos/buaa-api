@@ -1,5 +1,5 @@
-use crate::Error;
 use super::ElectiveAPI;
+use crate::Error;
 
 impl ElectiveAPI {
     /// 查询已选课程
@@ -13,11 +13,7 @@ impl ElectiveAPI {
             None => return Err(Error::APIError("No Elective Token".to_string())),
         };
 
-        let res = self
-            .post(url)
-            .header("Authorization", token)
-            .send()
-            .await?;
+        let res = self.post(url).header("Authorization", token).send().await?;
         let body = res.text().await?;
         println!("{}", body);
         Ok(())
@@ -34,11 +30,7 @@ impl ElectiveAPI {
             None => return Err(Error::APIError("No Elective Token".to_string())),
         };
 
-        let res = self
-            .post(url)
-            .header("Authorization", token)
-            .send()
-            .await?;
+        let res = self.post(url).header("Authorization", token).send().await?;
         let body = res.text().await?;
         println!("{}", body);
         Ok(())
@@ -47,8 +39,8 @@ impl ElectiveAPI {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::env;
     use crate::Context;
+    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]

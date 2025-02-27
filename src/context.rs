@@ -1,7 +1,7 @@
 use cookie_store::{Cookie, CookieStore};
 use reqwest::{
-    header::{HeaderMap, HeaderName, HeaderValue},
     Client,
+    header::{HeaderMap, HeaderName, HeaderValue},
 };
 use reqwest_cookie_store::CookieStoreMutex;
 use serde::{Deserialize, Serialize};
@@ -91,26 +91,39 @@ impl Context {
         }
     }
 
-    pub fn set_config(&self, config: Config) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+    pub fn set_config(
+        &self,
+        config: Config,
+    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
         let mut config_lock = self.config.write()?;
         *config_lock = config;
         Ok(())
     }
 
-    pub fn set_account(&self, username: &str, password: &str) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+    pub fn set_account(
+        &self,
+        username: &str,
+        password: &str,
+    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
         let mut config = self.config.write()?;
         config.username = Some(username.to_string());
         config.password = Some(password.to_string());
         Ok(())
     }
 
-    pub fn set_username(&self, username: &str) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+    pub fn set_username(
+        &self,
+        username: &str,
+    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
         let mut config = self.config.write()?;
         config.username = Some(username.to_string());
         Ok(())
     }
 
-    pub fn set_password(&self, password: &str) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
+    pub fn set_password(
+        &self,
+        password: &str,
+    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
         let mut config = self.config.write()?;
         config.password = Some(password.to_string());
         Ok(())
@@ -226,7 +239,8 @@ impl<P: AsRef<Path>> ContextBuilder<P> {
                 .create(true)
                 .open(path)
                 .unwrap();
-            match CookieStore::load_all(BufReader::new(file), |s| serde_json::from_str::<Cookie>(s)) {
+            match CookieStore::load_all(BufReader::new(file), |s| serde_json::from_str::<Cookie>(s))
+            {
                 Ok(store) => store,
                 Err(_) => CookieStore::default(),
             }

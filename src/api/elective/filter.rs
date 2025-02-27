@@ -24,7 +24,7 @@ pub struct ElectiveFilter {
     #[serde(rename = "SFCT")]
     conflict: Option<u8>,
     // 课程性质, 可选
-    // 01必修, 02 选修, 03 限修, 04 任修
+    // 01 必修, 02 选修, 03 限修, 04 任修
     #[serde(rename = "KCXZ")]
     nature: Option<String>,
     // 课程类型
@@ -203,7 +203,10 @@ pub enum ElectiveType {
 }
 
 // 序列化选课过滤器类型为对应的查询字符
-fn serialize_elective_type<S>(r#type: &Option<ElectiveType>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_elective_type<S>(
+    r#type: &Option<ElectiveType>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

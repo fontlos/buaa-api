@@ -3,7 +3,7 @@ use time::Date;
 
 use super::BoyaAPI;
 
-use super::query_course::{deserialize_boya_kind, BoyaKind, BoyaTime};
+use super::query_course::{BoyaKind, BoyaTime, deserialize_boya_kind};
 
 // 由于学校的抽象设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
 #[derive(Debug, Deserialize)]
@@ -78,8 +78,8 @@ impl BoyaAPI {
 }
 #[cfg(test)]
 mod tests {
-    use crate::utils::{self, env};
     use crate::Context;
+    use crate::utils::{self, env};
 
     #[ignore]
     #[tokio::test]

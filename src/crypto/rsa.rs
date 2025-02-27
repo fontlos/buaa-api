@@ -1,7 +1,7 @@
 use rsa::pkcs8::DecodePublicKey;
 use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
 
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 
 pub fn rsa(data: &str) -> String {
     // 逆向得到的, 硬编码进 JS, 理论上应该永远不变

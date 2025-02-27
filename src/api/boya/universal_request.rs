@@ -2,7 +2,7 @@ use rand::Rng;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{crypto, utils, Error};
+use crate::{Error, crypto, utils};
 
 use super::BoyaAPI;
 
