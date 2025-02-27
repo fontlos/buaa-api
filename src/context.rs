@@ -31,6 +31,7 @@ pub struct Config {
     pub password: Option<String>,
     /// Token for Boya API
     pub boya_token: Option<String>,
+    pub elective_token: Option<String>,
     /// User ID for SmartClass API
     pub class_token: Option<String>,
     /// User ID for Spoc API
@@ -43,6 +44,7 @@ impl Config {
             username: None,
             password: None,
             boya_token: None,
+            elective_token: None,
             class_token: None,
             spoc_token: None,
         }
