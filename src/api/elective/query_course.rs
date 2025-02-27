@@ -50,8 +50,6 @@ mod tests {
         let filter = ElectiveFilter::new();
 
         course.query_course(&filter).await.unwrap();
-        // let json = serde_json::to_string(&filter).unwrap();
-        // println!("{}", json);
 
         context.save_cookie("cookie.json");
     }

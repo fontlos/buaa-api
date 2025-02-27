@@ -14,9 +14,6 @@ pub struct ElectiveFilter {
     // 每页大小
     #[serde(rename = "pageSize")]
     size: u8,
-    // 排序方式
-    #[serde(rename = "orderBy")]
-    order: String,
     // 校区, 1 学院路, 2 沙河
     campus: u8,
     // 是否显示冲突课程, 可选
@@ -48,7 +45,6 @@ impl ElectiveFilter {
             range: ElectiveRange::SUGGEST,
             page: 1,
             size: 10,
-            order: "".to_string(),
             campus: 1,
             conflict: Some(0),
             nature: None,
@@ -71,10 +67,6 @@ impl ElectiveFilter {
     /// Set up the page size of the course query
     pub fn set_size(&mut self, size: u8) {
         self.size = size;
-    }
-
-    pub fn set_order(&mut self, order: String) {
-        self.order = order;
     }
 
     /// Set up the campus as XueYuanLu
