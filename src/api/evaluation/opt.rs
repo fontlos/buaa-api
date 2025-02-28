@@ -1,7 +1,7 @@
 use crate::{Error, utils};
 
 use super::EvaluationAPI;
-use super::data_struct::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
+use super::utils::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 
 impl EvaluationAPI {
     /// Teacher Evaluation System Login
@@ -137,7 +137,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_submit_evaluation() {
-        use crate::api::evaluation::data_struct::EvaluationAnswer;
+        use crate::api::evaluation::utils::EvaluationAnswer;
 
         let env = env();
         let username = env.get("USERNAME").unwrap();

@@ -1,6 +1,7 @@
-use super::ElectiveAPI;
-use super::filter::ElectiveFilter;
 use crate::Error;
+
+use super::ElectiveAPI;
+use super::utils::ElectiveFilter;
 
 impl ElectiveAPI {
     /// 查询课程
@@ -29,7 +30,7 @@ impl ElectiveAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::api::elective::filter::ElectiveFilter;
+    use crate::api::elective::utils::*;
     use crate::utils::env;
 
     #[ignore]

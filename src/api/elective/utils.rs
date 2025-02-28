@@ -176,8 +176,6 @@ where
     }
 }
 
-
-
 /// # The type of course
 /// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
 // 这抽象系统是什么惊为天人的脑回路能想出来的逆天命名方式, 字母混数字, 还有合并的, 还乱序, 简单起见直接按字母表顺序排了
@@ -274,5 +272,5 @@ pub struct ElectiveOpt {
     id: String,
     // 校验和
     #[serde(rename = "secretVal")]
-    sum: String
+    sum: String,
 }

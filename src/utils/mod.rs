@@ -13,3 +13,20 @@ pub use time::*;
 mod wifi;
 #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
 pub use wifi::*;
+
+pub mod boya {
+    pub use crate::api::boya::{
+        query_course::{BoyaCampus, BoyaCapacity, BoyaCourse, BoyaKind, BoyaTime},
+        query_selected::BoyaSelected,
+        query_statistic::{BoyaAssessment, BoyaStatistic},
+    };
+}
+pub mod class {
+    pub use crate::api::class::{ClassCourse, ClassSchedule};
+}
+pub mod evaluation {
+    pub use crate::api::evaluation::utils::{EvaluationAnswer, EvaluationForm, EvaluationListItem};
+}
+pub mod spoc {
+    pub use crate::api::spoc::opt::{SpocSchedule, SpocTimeRange, SpocWeek};
+}

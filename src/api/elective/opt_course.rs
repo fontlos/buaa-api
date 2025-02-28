@@ -1,6 +1,7 @@
 use crate::Error;
+
 use super::ElectiveAPI;
-use super::filter::ElectiveOpt;
+use super::utils::ElectiveOpt;
 
 impl ElectiveAPI {
     /// # Select Course

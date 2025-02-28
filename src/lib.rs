@@ -4,7 +4,6 @@ mod api;
 mod context;
 mod crypto;
 mod error;
-pub mod exports;
 pub mod utils;
 
 pub use api::{
