@@ -287,16 +287,20 @@ pub struct ElectiveCourse {
     // 教学班 ID
     #[serde(rename = "JXBID")]
     pub(crate) id: String,
+    // 校区
     #[serde(rename = "XQ")]
     pub campus: String,
     // 课程代码
     #[serde(rename = "KCH")]
     pub course_code: String,
-    #[serde(rename = "KCM")]
-    pub name: String,
     // 课程序号
     #[serde(rename = "KXH")]
     pub course_index: String,
+    #[serde(rename = "KCM")]
+    pub name: String,
+    // 上课时间表
+    #[serde(rename = "SKSJ")]
+    pub schedule: Vec<ElectiveSchedule>,
     // 开课单位
     #[serde(rename = "KKDW")]
     pub department: String,
@@ -321,30 +325,60 @@ pub struct ElectiveCourse {
     // 授课语言
     #[serde(rename = "teachingLanguageName")]
     pub lang: String,
+    // 课程容量
+    #[serde(rename = "internalCapacity")]
+    pub internal_cap: u16,
+    #[serde(rename = "internalSelectedNum")]
+    pub internal_sel: u16,
+    #[serde(rename = "externalCapacity")]
+    pub external_cap: u16,
+    #[serde(rename = "externalSelectedNum")]
+    pub external_sel: u16,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ElectiveSchedule {
+    #[serde(rename = "SKZCMC")]
+    pub week: String,
+    #[serde(rename = "SKXQ")]
+    pub weekday: String,
+    #[serde(rename = "KSJC")]
+    pub start_lesson: String,
+    #[serde(rename = "JSJC")]
+    pub end_lesson: String,
+    #[serde(rename = "YPSJDD")]
+    pub place: String,
+}
+
+// impl ElectiveCourse {
+//     pub fn to_opt(&self) -> &[(&str, &str)] {
+//         vec![
+//             ("clazzId", &self.id),
+//         ]
+//     }
+// }
 
 /// # Structure for course select and drop
 #[derive(Serialize)]
-pub struct ElectiveOpt {
+pub struct ElectiveOpt<'a> {
     // 类型
     #[serde(rename = "clazzType")]
     #[serde(serialize_with = "serialize_elective_range")]
     range: ElectiveRange,
     // 课程 ID
     #[serde(rename = "clazzId")]
-    id: String,
+    id: &'a str,
     // 校验和
     #[serde(rename = "secretVal")]
-    sum: String,
+    sum: &'a str,
 }
 
-impl ElectiveOpt {
-    /// Create a default course select and drop structure
-    pub fn new() -> Self {
+impl<'a> ElectiveOpt<'a> {
+    pub fn from(course: &'a ElectiveCourse) -> Self {
         ElectiveOpt {
             range: ElectiveRange::SUGGEST,
-            id: String::new(),
-            sum: String::new(),
+            id: &course.id,
+            sum: &course.sum,
         }
     }
 }

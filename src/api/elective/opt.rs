@@ -27,6 +27,8 @@ impl ElectiveAPI {
             return Err(Error::APIError(status.msg));
         }
 
+        // TODO: 处理搜索值为空的情况
+
         // 因为学校服务器逆天设计导致 JSON 不合法, 这里需要手动截取其中合法的部分, 去掉重复键
 
         let last_key = if let Some(i) = text.find("secretVal") {
@@ -82,7 +84,7 @@ impl ElectiveAPI {
 
     /// # Select Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn select_course(&self, opt: &ElectiveOpt) -> crate::Result<String> {
+    pub async fn select_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<String> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
 
         // 获取 token
@@ -98,19 +100,17 @@ impl ElectiveAPI {
             .header("Authorization", token)
             .send()
             .await?;
-        // let status = res.json::<ElectiveStatus>().await?;
         let text = res.text().await?;
         let status = serde_json::from_str::<_ElectiveStatus>(&text)?;
         if status.code != 200 {
             return Err(Error::APIError(status.msg));
         }
-        println!("{}", text);
         Ok(text)
     }
 
     /// # Drop Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn drop_course(&self, opt: &ElectiveOpt) -> crate::Result<String> {
+    pub async fn drop_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<String> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
 
         // 获取 token
@@ -127,6 +127,10 @@ impl ElectiveAPI {
             .send()
             .await?;
         let text = res.text().await?;
+        let status = serde_json::from_str::<_ElectiveStatus>(&text)?;
+        if status.code != 200 {
+            return Err(Error::APIError(status.msg));
+        }
         Ok(text)
     }
 }
@@ -149,15 +153,20 @@ mod tests {
         context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
-        let course = context.elective();
-        course.login().await.unwrap();
+        let elective = context.elective();
+        elective.login().await.unwrap();
 
         let mut filter = ElectiveFilter::new();
         filter.set_range(ElectiveRange::EXTRA);
-        filter.set_key("基础物理学A".to_string());
+        filter.set_key("心理学导论".to_string());
 
-        let res = course.query_course(&filter).await.unwrap();
-        println!("{:?}", res.data);
+        let res = elective.query_course(&filter).await.unwrap();
+        let list = res.data;
+        let c = list.get(0).unwrap();
+        let opt = ElectiveOpt::from(c);
+
+        let res = elective.select_course(&opt).await.unwrap();
+        println!("{:?}", res);
 
         context.save_cookie("cookie.json");
     }
@@ -178,28 +187,6 @@ mod tests {
         course.login().await.unwrap();
 
         course.query_selected().await.unwrap();
-
-        context.save_cookie("cookie.json");
-    }
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_elective() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
-        context.login().await.unwrap();
-
-        let course = context.elective();
-        course.login().await.unwrap();
-
-        let opt = ElectiveOpt::new();
-
-        course.select_course(&opt).await.unwrap();
 
         context.save_cookie("cookie.json");
     }
