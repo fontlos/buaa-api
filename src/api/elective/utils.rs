@@ -1,4 +1,12 @@
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
+
+// ==================== 用于请求校验 ====================
+
+#[derive(Deserialize)]
+pub(crate) struct _ElectiveStatus {
+    pub code: u16,
+    pub msg: String,
+}
 
 // ==================== 用于课程查询 ====================
 
@@ -260,6 +268,61 @@ where
 
 // ==================== 用于课程退选 ====================
 
+
+#[derive(Deserialize)]
+pub(crate) struct _ElectiveRes {
+    pub data: ElectiveCourses,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ElectiveCourses {
+    #[serde(rename = "total")]
+    pub count: u16,
+    #[serde(rename = "rows")]
+    pub data: Vec<ElectiveCourse>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ElectiveCourse {
+    // 教学班 ID
+    #[serde(rename = "JXBID")]
+    pub(crate) id: String,
+    #[serde(rename = "XQ")]
+    pub campus: String,
+    // 课程代码
+    #[serde(rename = "KCH")]
+    pub course_code: String,
+    #[serde(rename = "KCM")]
+    pub name: String,
+    // 课程序号
+    #[serde(rename = "KXH")]
+    pub course_index: String,
+    // 开课单位
+    #[serde(rename = "KKDW")]
+    pub department: String,
+    // 学时
+    #[serde(rename = "XS")]
+    pub class_hours: String,
+    // 学分
+    #[serde(rename = "XF")]
+    pub credit: String,
+    // 课程性质
+    #[serde(rename = "KCXZ")]
+    pub nature: String,
+    // 课程类型
+    #[serde(rename = "KCLB")]
+    pub r#type: String,
+    // 教师
+    #[serde(rename = "SKJSZC")]
+    pub teacher: String,
+    // 校验和
+    #[serde(rename = "secretVal")]
+    pub(crate) sum: String,
+    // 授课语言
+    #[serde(rename = "teachingLanguageName")]
+    pub lang: String,
+}
+
 /// # Structure for course select and drop
 #[derive(Serialize)]
 pub struct ElectiveOpt {
@@ -273,4 +336,15 @@ pub struct ElectiveOpt {
     // 校验和
     #[serde(rename = "secretVal")]
     sum: String,
+}
+
+impl ElectiveOpt {
+    /// Create a default course select and drop structure
+    pub fn new() -> Self {
+        ElectiveOpt {
+            range: ElectiveRange::SUGGEST,
+            id: String::new(),
+            sum: String::new(),
+        }
+    }
 }
