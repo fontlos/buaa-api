@@ -47,6 +47,8 @@ pub struct ElectiveFilter {
 
 impl ElectiveFilter {
     /// Create a default course filter
+    /// # Warning
+    /// - make sure the campus is correct, or you can use ElectiveAPI.gen_filter() to get the default campus
     pub fn new(campus: u8) -> Self {
         ElectiveFilter {
             range: ElectiveRange::SUGGEST,
@@ -75,11 +77,13 @@ impl ElectiveFilter {
         self.size = size;
     }
 
+    /// # Warning, only range is RETAKE can set the campus
     /// Set up the campus as XueYuanLu
     pub fn set_campus_xueyuanlu(&mut self) {
         self.campus = 1;
     }
 
+    /// # Warning, only range is RETAKE can set the campus
     /// Set up the campus as ShaHe
     pub fn set_campus_shahe(&mut self) {
         self.campus = 2;

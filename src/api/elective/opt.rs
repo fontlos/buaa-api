@@ -1,7 +1,10 @@
 use crate::Error;
 
 use super::ElectiveAPI;
-use super::utils::{ElectiveCourses, ElectiveFilter, ElectiveSeleted, _ElectiveOpt, _ElectiveRes1, _ElectiveRes2, _ElectiveStatus};
+use super::utils::{
+    _ElectiveOpt, _ElectiveRes1, _ElectiveRes2, _ElectiveStatus, ElectiveCourses, ElectiveFilter,
+    ElectiveSeleted,
+};
 
 impl ElectiveAPI {
     pub async fn gen_filter(&self) -> crate::Result<ElectiveFilter> {
@@ -26,9 +29,7 @@ impl ElectiveAPI {
         let campus = crate::utils::get_value_by_lable(&text, "\"campus\": \"", "\"");
         if let Some(campus) = campus {
             match campus.parse::<u8>() {
-                Ok(campus) => {
-                    return Ok(ElectiveFilter::new(campus))
-                }
+                Ok(campus) => return Ok(ElectiveFilter::new(campus)),
                 Err(_) => return Err(Error::APIError("Invalid Campus".to_string())),
             };
         } else {
@@ -140,7 +141,6 @@ impl ElectiveAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::api::elective::utils::*;
     use crate::utils::env;
 
     #[ignore]
@@ -178,7 +178,7 @@ mod tests {
         let elective = context.elective();
         elective.login().await.unwrap();
 
-        let filter = ElectiveFilter::new(1);
+        let filter = elective.gen_filter().await.unwrap();
 
         let res = elective.query_course(&filter).await.unwrap();
         println!("{:?}", res);
