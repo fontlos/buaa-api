@@ -1,4 +1,4 @@
-//! BUAA Boya API
+//! BUAA Boya (博雅选课) API
 
 mod auth;
 mod opt;

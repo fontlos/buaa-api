@@ -1,6 +1,6 @@
-use super::{SpocAPI, _SpocRes1, _SpocRes2, SpocSchedule, SpocWeek};
+use super::{_SpocRes1, _SpocRes2, SpocSchedule, SpocWeek};
 
-impl SpocAPI {
+impl super::SpocAPI {
     /// Get current week
     pub async fn get_week(&self) -> crate::Result<SpocWeek> {
         // SQL ID 似乎可以是固定值, 应该是用于鉴权的, 不知道是否会过期

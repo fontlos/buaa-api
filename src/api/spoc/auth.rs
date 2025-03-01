@@ -1,8 +1,6 @@
 use crate::Error;
 
-use super::SpocAPI;
-
-impl SpocAPI {
+impl super::SpocAPI {
     /// # Spoc Login
     pub async fn login(&self) -> crate::Result<()> {
         let res = self

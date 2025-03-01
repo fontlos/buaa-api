@@ -1,11 +1,11 @@
 use crate::Error;
 
 use super::{
-    ElectiveAPI, _ElectiveOpt, _ElectiveRes1, _ElectiveRes2, _ElectiveStatus, ElectiveCourses, ElectiveFilter,
+    _ElectiveOpt, _ElectiveRes1, _ElectiveRes2, _ElectiveStatus, ElectiveCourses, ElectiveFilter,
     ElectiveSeleted,
 };
 
-impl ElectiveAPI {
+impl super::ElectiveAPI {
     pub async fn gen_filter(&self) -> crate::Result<ElectiveFilter> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
 

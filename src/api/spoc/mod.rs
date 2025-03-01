@@ -1,4 +1,4 @@
-//! BUAA Spoc API
+//! BUAA Spoc (智学北航) API
 
 mod auth;
 mod opt;

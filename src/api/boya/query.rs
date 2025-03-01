@@ -1,8 +1,10 @@
 use time::Date;
 
-use super::{BoyaAPI, _BoyaCourses, BoyaCourse, _BoyaSelecteds, BoyaSelected, _BoyaStatistics, BoyaStatistic};
+use super::{
+    _BoyaCourses, _BoyaSelecteds, _BoyaStatistics, BoyaCourse, BoyaSelected, BoyaStatistic,
+};
 
-impl BoyaAPI {
+impl super::BoyaAPI {
     /// # Query Course
     pub async fn query_course(&self) -> crate::Result<Vec<BoyaCourse>> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";

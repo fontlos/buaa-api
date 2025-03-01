@@ -1,8 +1,6 @@
 use crate::utils;
 
-use super::UserCenterAPI;
-
-impl UserCenterAPI {
+impl super::UserCenterAPI {
     /// # User Center Login
     pub async fn login(&self) -> crate::Result<()> {
         let time = utils::get_time();

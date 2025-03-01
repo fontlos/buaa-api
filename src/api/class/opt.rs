@@ -2,10 +2,9 @@ use reqwest::Response;
 
 use crate::{Error, utils};
 
-use super::ClassAPI;
 use super::{_ClassCourses, _ClassSchedules, ClassCourse, ClassSchedule};
 
-impl ClassAPI {
+impl super::ClassAPI {
     /// # Smart Classroom query all course of a term
     /// - Input: Term ID
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term

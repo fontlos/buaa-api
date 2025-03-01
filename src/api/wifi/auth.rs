@@ -1,9 +1,7 @@
 use crate::crypto::{hash, x_encode};
 use crate::{Error, utils};
 
-use super::WiFiAPI;
-
-impl WiFiAPI {
+impl super::WiFiAPI {
     /// # BUAA WiFi Login
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
     /// ```rust

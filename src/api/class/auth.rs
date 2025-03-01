@@ -1,8 +1,8 @@
 use crate::{Error, crypto, utils};
 
-use super::{ClassAPI, _ClassLogin};
+use super::_ClassLogin;
 
-impl ClassAPI {
+impl super::ClassAPI {
     /// # Smart Classroom Login
     pub async fn login(&self) -> crate::Result<()> {
         // 获取 JSESSIONID

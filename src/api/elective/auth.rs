@@ -1,7 +1,6 @@
-use super::ElectiveAPI;
 use crate::Error;
 
-impl ElectiveAPI {
+impl super::ElectiveAPI {
     pub async fn login(&self) -> crate::Result<()> {
         let url = "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fbyxk.buaa.edu.cn%2Fxsxk%2Fauth%2Fcas";
         // 获取 JSESSIONID

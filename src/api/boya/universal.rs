@@ -4,15 +4,13 @@ use serde::Deserialize;
 
 use crate::{Error, crypto, utils};
 
-use super::BoyaAPI;
-
 #[derive(Deserialize)]
 struct BoyaStatus {
     status: String,
     errmsg: String,
 }
 
-impl BoyaAPI {
+impl super::BoyaAPI {
     /// # Boya Universal Request API
     /// - Input:
     ///     - Query: JSON String for request

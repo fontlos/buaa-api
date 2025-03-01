@@ -3,15 +3,13 @@ use serde::Deserialize;
 
 use crate::{Error, crypto};
 
-use super::SpocAPI;
-
 #[derive(Deserialize)]
 struct SpocState {
     code: u32,
     msg: Option<String>,
 }
 
-impl SpocAPI {
+impl super::SpocAPI {
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
         let config = self.config.read().unwrap();
         let token = match &config.spoc_token {

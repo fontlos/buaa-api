@@ -1,8 +1,8 @@
 use crate::{Error, utils};
 
-use super::{EvaluationAPI, EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
+use super::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 
-impl EvaluationAPI {
+impl super::EvaluationAPI {
     /// Teacher Evaluation System Login
     pub async fn login(&self) -> crate::Result<()> {
         // 登录

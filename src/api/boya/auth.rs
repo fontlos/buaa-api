@@ -1,8 +1,6 @@
 use crate::Error;
 
-use super::BoyaAPI;
-
-impl BoyaAPI {
+impl super::BoyaAPI {
     /// # Boya Login
     pub async fn login(&self) -> crate::Result<()> {
         let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";

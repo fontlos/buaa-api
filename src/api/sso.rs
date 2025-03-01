@@ -1,8 +1,6 @@
-use crate::{Context, Error};
+use crate::{Error, utils};
 
-use crate::utils;
-
-impl Context {
+impl crate::Context {
     /// # SSO Login
     /// This is the most important method and should be called first <br>
     /// This method is used to login to the SSO system, and the login information will be saved in the cookie <br>

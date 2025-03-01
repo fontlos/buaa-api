@@ -1,1 +1,1 @@
-//! BUAA Pan API
+//! BUAA Pan (北航云盘) API
