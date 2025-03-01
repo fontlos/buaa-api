@@ -138,16 +138,21 @@ fn serialize_elective_range<S>(range: &ElectiveRange, serializer: S) -> Result<S
 where
     S: Serializer,
 {
+    serializer.serialize_str(elective_range_to_str(range))
+}
+
+#[inline]
+fn elective_range_to_str(range: &ElectiveRange) -> &str {
     match range {
-        ElectiveRange::SUGGEST => serializer.serialize_str("TJKC"),
-        ElectiveRange::PLAN => serializer.serialize_str("FANKC"),
-        ElectiveRange::EXTRA => serializer.serialize_str("FAWKC"),
-        ElectiveRange::RETAKE => serializer.serialize_str("CXKC"),
-        ElectiveRange::English => serializer.serialize_str("YYKC"),
-        ElectiveRange::PE => serializer.serialize_str("TYKC"),
-        ElectiveRange::GENERAL => serializer.serialize_str("XGKC"),
-        ElectiveRange::RESEARCH => serializer.serialize_str("KYKT"),
-        ElectiveRange::ALL => serializer.serialize_str("ALLKC"),
+        ElectiveRange::SUGGEST => "TJKC",
+        ElectiveRange::PLAN => "FANKC",
+        ElectiveRange::EXTRA => "FAWKC",
+        ElectiveRange::RETAKE => "CXKC",
+        ElectiveRange::English => "YYKC",
+        ElectiveRange::PE => "TYKC",
+        ElectiveRange::GENERAL => "XGKC",
+        ElectiveRange::RESEARCH => "KYKT",
+        ElectiveRange::ALL => "ALLKC",
     }
 }
 
@@ -266,11 +271,10 @@ where
     }
 }
 
-// ==================== 用于课程退选 ====================
-
+// ==================== 用于课程查询 ====================
 
 #[derive(Deserialize)]
-pub(crate) struct _ElectiveRes {
+pub(crate) struct _ElectiveRes1 {
     pub data: ElectiveCourses,
 }
 
@@ -300,7 +304,7 @@ pub struct ElectiveCourse {
     pub name: String,
     // 上课时间表
     #[serde(rename = "SKSJ")]
-    pub schedule: Vec<ElectiveSchedule>,
+    pub schedule: Option<Vec<ElectiveSchedule>>,
     // 开课单位
     #[serde(rename = "KKDW")]
     pub department: String,
@@ -310,12 +314,14 @@ pub struct ElectiveCourse {
     // 学分
     #[serde(rename = "XF")]
     pub credit: String,
-    // 课程性质
-    #[serde(rename = "KCXZ")]
-    pub nature: String,
-    // 课程类型
-    #[serde(rename = "KCLB")]
-    pub r#type: String,
+    // 因为学校服务器逆天设计导致 JSON 不合法, 含有重复键
+    // 手动截取会出现玄学问题, 索性直接抛弃不合法的键值对
+    // // 课程性质
+    // #[serde(rename = "KCXZ")]
+    // pub nature: String,
+    // // 课程类型
+    // #[serde(rename = "KCLB")]
+    // pub r#type: String,
     // 教师
     #[serde(rename = "SKJSZC")]
     pub teacher: String,
@@ -350,21 +356,23 @@ pub struct ElectiveSchedule {
     pub place: String,
 }
 
-// impl ElectiveCourse {
-//     pub fn to_opt(&self) -> &[(&str, &str)] {
-//         vec![
-//             ("clazzId", &self.id),
-//         ]
-//     }
-// }
+impl ElectiveCourse {
+    pub fn to_opt<'a>(&'a self, filter: &'a ElectiveFilter) -> _ElectiveOpt1<'a> {
+        _ElectiveOpt1 {
+            range: &filter.range,
+            id: &self.id,
+            sum: &self.sum,
+        }
+    }
+}
 
 /// # Structure for course select and drop
 #[derive(Serialize)]
-pub struct ElectiveOpt<'a> {
+pub struct _ElectiveOpt1<'a> {
     // 类型
     #[serde(rename = "clazzType")]
     #[serde(serialize_with = "serialize_elective_range")]
-    range: ElectiveRange,
+    range: &'a ElectiveRange,
     // 课程 ID
     #[serde(rename = "clazzId")]
     id: &'a str,
@@ -373,12 +381,61 @@ pub struct ElectiveOpt<'a> {
     sum: &'a str,
 }
 
-impl<'a> ElectiveOpt<'a> {
-    pub fn from(course: &'a ElectiveCourse) -> Self {
-        ElectiveOpt {
-            range: ElectiveRange::SUGGEST,
-            id: &course.id,
-            sum: &course.sum,
-        }
-    }
+// ==================== 用于查询已选 ====================
+
+#[derive(Deserialize)]
+pub(crate) struct _ElectiveRes2 {
+    pub data: Vec<ElectiveSeleted>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ElectiveSeleted {
+    #[serde(rename = "JXBID")]
+    pub id: String,
+    #[serde(rename = "teachingClassType")]
+    pub range: Option<String>,
+    #[serde(rename = "XQ")]
+    pub campus: String,
+    #[serde(rename = "KCH")]
+    pub course_code: String,
+    #[serde(rename = "KXH")]
+    pub course_index: String,
+    #[serde(rename = "KCM")]
+    pub name: String,
+    #[serde(rename = "SKJS")]
+    pub teacher: String,
+    #[serde(rename = "KKDW")]
+    pub department: String,
+    #[serde(rename = "XS")]
+    pub class_hours: String,
+    #[serde(rename = "XF")]
+    pub credit: String,
+    #[serde(rename = "SFKT")]
+    pub can_drop: String,
+    #[serde(rename = "secretVal")]
+    pub sum: String,
+}
+
+// impl ElectiveSeleted {
+//     pub fn to_opt<'a>(&'a self) -> _ElectiveOpt2<'a> {
+//         _ElectiveOpt2 {
+//             range: &self.range,
+//             id: &self.id,
+//             sum: &self.sum,
+//         }
+//     }
+// }
+
+/// # Structure for course select and drop
+#[derive(Serialize)]
+pub struct _ElectiveOpt2<'a> {
+    // 类型
+    #[serde(rename = "clazzType")]
+    range: &'a str,
+    // 课程 ID
+    #[serde(rename = "clazzId")]
+    id: &'a str,
+    // 校验和
+    #[serde(rename = "secretVal")]
+    sum: &'a str,
 }

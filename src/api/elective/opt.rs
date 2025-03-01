@@ -1,7 +1,9 @@
+use serde::Serialize;
+
 use crate::Error;
 
 use super::ElectiveAPI;
-use super::utils::{ElectiveOpt, ElectiveFilter, _ElectiveStatus, _ElectiveRes, ElectiveCourses};
+use super::utils::{ElectiveCourses, ElectiveFilter, ElectiveSeleted, _ElectiveRes1, _ElectiveRes2, _ElectiveStatus};
 
 impl ElectiveAPI {
     /// 查询课程
@@ -27,34 +29,13 @@ impl ElectiveAPI {
             return Err(Error::APIError(status.msg));
         }
 
-        // 因为学校服务器逆天设计导致 JSON 不合法, 这里需要手动截取其中合法的部分, 去掉重复键
-        // 手动截取会出现玄学问题, 只能凭感觉了
-
-        // 处理搜索值为空的情况, 长度小于 100 大概率代表查询结果为空
-        if text.len() < 100 {
-            let res = serde_json::from_str::<_ElectiveRes>(&text)?;
-            return Ok(res.data);
-        }
-
-        let last_key = if let Some(i) = text.find("secretVal") {
-            i
-        } else {
-            return Err(Error::APIError("Invalid JSON without secretVal".to_string()));
-        };
-        let end = if let Some(i) = text[last_key..].find(",") {
-            // 不加 1 为了去掉逗号
-            last_key + i
-        } else {
-            return Err(Error::APIError("Invalid JSON".to_string()));
-        };
-        // 修补缺失的括号
-        let fix_json = format!("{}{}", &text[..end], "}]}}");
-        let res = serde_json::from_str::<_ElectiveRes>(&fix_json)?;
+        let res = serde_json::from_str::<_ElectiveRes1>(&text)?;
         Ok(res.data)
     }
 
     /// 查询已选课程
-    pub async fn query_selected(&self) -> Result<String, Error> {
+    pub async fn query_selected(&self) -> Result<Vec<ElectiveSeleted>, Error> {
+        // https://byxk.buaa.edu.cn/xsxk/elective/deselect 查询退选记录的 URL, 操作相同, 但感觉没啥用
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
 
         // 获取 token
@@ -66,28 +47,17 @@ impl ElectiveAPI {
 
         let res = self.post(url).header("Authorization", token).send().await?;
         let text = res.text().await?;
-        Ok(text)
-    }
-
-    /// 查询退选记录
-    pub async fn query_deselected(&self) -> Result<String, Error> {
-        let url = "https://byxk.buaa.edu.cn/xsxk/elective/deselect";
-
-        // 获取 token
-        let config = self.config.read().unwrap();
-        let token = match &config.elective_token {
-            Some(t) => t,
-            None => return Err(Error::APIError("No Elective Token".to_string())),
-        };
-
-        let res = self.post(url).header("Authorization", token).send().await?;
-        let text = res.text().await?;
-        Ok(text)
+        let status = serde_json::from_str::<_ElectiveStatus>(&text)?;
+        if status.code != 200 {
+            return Err(Error::APIError(status.msg));
+        }
+        let res = serde_json::from_str::<_ElectiveRes2>(&text)?;
+        Ok(res.data)
     }
 
     /// # Select Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn select_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<()> {
+    pub async fn select_course<'a, T: Serialize>(&self, opt: &'a T) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
 
         // 获取 token
@@ -113,7 +83,7 @@ impl ElectiveAPI {
 
     /// # Drop Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn drop_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<()> {
+    pub async fn drop_course<'a, T: Serialize>(&self, opt: &'a T) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
 
         // 获取 token
@@ -159,16 +129,10 @@ mod tests {
         let elective = context.elective();
         elective.login().await.unwrap();
 
-        let mut filter = ElectiveFilter::new();
-        filter.set_range(ElectiveRange::EXTRA);
-        filter.set_key("心理学导论".to_string());
+        let filter = ElectiveFilter::new();
 
         let res = elective.query_course(&filter).await.unwrap();
-        let list = res.data;
-        let c = list.get(0).unwrap();
-        let opt = ElectiveOpt::from(c);
-
-        elective.select_course(&opt).await.unwrap();
+        println!("{:?}", res);
 
         context.save_cookie("cookie.json");
     }
@@ -188,7 +152,10 @@ mod tests {
         let course = context.elective();
         course.login().await.unwrap();
 
-        course.query_selected().await.unwrap();
+        let res = course.query_selected().await.unwrap();
+
+        // std::fs::write("data/res2.json", res).unwrap();
+        println!("{:?}", res);
 
         context.save_cookie("cookie.json");
     }

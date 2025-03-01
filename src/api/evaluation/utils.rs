@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 // ====================
-// 这些用来解析需要评教的列表的 Json
+// 用于解析需要评教的列表 Json
 // ====================
 
 #[derive(Debug, Deserialize)]
@@ -51,7 +51,7 @@ where
 }
 
 // ====================
-// 这些用来解析评教表单的返回 Json
+// 用于解析评教表单返回 Json
 // ====================
 
 #[derive(Debug)]
@@ -231,7 +231,7 @@ impl<'de> Deserialize<'de> for EvaluationForm {
 }
 
 // ====================
-// 这些用来构造请求 Json 的
+// 用于构造请求 Json
 // ====================
 
 pub enum EvaluationAnswer {
