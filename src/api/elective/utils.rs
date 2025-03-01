@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize, Serializer};
 
-// ==================== 用于请求校验 ====================
+// ====================
+// 用于请求校验
+// ====================
 
 #[derive(Deserialize)]
 pub(crate) struct _ElectiveStatus {
@@ -8,7 +10,9 @@ pub(crate) struct _ElectiveStatus {
     pub msg: String,
 }
 
-// ==================== 用于课程查询 ====================
+// ====================
+// 用于课程查询
+// ====================
 
 /// # A filter for querying courses
 #[derive(Serialize)]
@@ -43,12 +47,12 @@ pub struct ElectiveFilter {
 
 impl ElectiveFilter {
     /// Create a default course filter
-    pub fn new() -> Self {
+    pub fn new(campus: u8) -> Self {
         ElectiveFilter {
             range: ElectiveRange::SUGGEST,
             page: 1,
             size: 10,
-            campus: 1,
+            campus,
             conflict: Some(0),
             nature: None,
             r#type: None,
@@ -271,7 +275,9 @@ where
     }
 }
 
-// ==================== 用于课程查询 ====================
+// ====================
+// 用于课程查询
+// ====================
 
 #[derive(Deserialize)]
 pub(crate) struct _ElectiveRes1 {
@@ -357,31 +363,18 @@ pub struct ElectiveSchedule {
 }
 
 impl ElectiveCourse {
-    pub fn to_opt<'a>(&'a self, filter: &'a ElectiveFilter) -> _ElectiveOpt1<'a> {
-        _ElectiveOpt1 {
-            range: &filter.range,
+    pub fn to_opt<'a>(&'a self, filter: &'a ElectiveFilter) -> _ElectiveOpt<'a> {
+        _ElectiveOpt {
+            range: elective_range_to_str(&filter.range),
             id: &self.id,
             sum: &self.sum,
         }
     }
 }
 
-/// # Structure for course select and drop
-#[derive(Serialize)]
-pub struct _ElectiveOpt1<'a> {
-    // 类型
-    #[serde(rename = "clazzType")]
-    #[serde(serialize_with = "serialize_elective_range")]
-    range: &'a ElectiveRange,
-    // 课程 ID
-    #[serde(rename = "clazzId")]
-    id: &'a str,
-    // 校验和
-    #[serde(rename = "secretVal")]
-    sum: &'a str,
-}
-
-// ==================== 用于查询已选 ====================
+// ====================
+// 用于查询已选
+// ====================
 
 #[derive(Deserialize)]
 pub(crate) struct _ElectiveRes2 {
@@ -411,24 +404,36 @@ pub struct ElectiveSeleted {
     #[serde(rename = "XF")]
     pub credit: String,
     #[serde(rename = "SFKT")]
-    pub can_drop: String,
+    can_drop: String,
     #[serde(rename = "secretVal")]
     pub sum: String,
 }
 
-// impl ElectiveSeleted {
-//     pub fn to_opt<'a>(&'a self) -> _ElectiveOpt2<'a> {
-//         _ElectiveOpt2 {
-//             range: &self.range,
-//             id: &self.id,
-//             sum: &self.sum,
-//         }
-//     }
-// }
+impl ElectiveSeleted {
+    pub fn can_drop(&self) -> bool {
+        self.can_drop == "1"
+    }
+
+    /// # Warning!
+    /// It can only be used to drop course,
+    /// and you need to make sure that `can_drop()` returns true,
+    /// otherwise it will fail at 'drop_course' or there will be some other unknown error
+    pub fn to_opt<'a>(&'a self) -> _ElectiveOpt<'a> {
+        _ElectiveOpt {
+            range: self.range.as_deref().unwrap_or(""),
+            id: &self.id,
+            sum: &self.sum,
+        }
+    }
+}
+
+// ====================
+// 用于选退操作
+// ====================
 
 /// # Structure for course select and drop
 #[derive(Serialize)]
-pub struct _ElectiveOpt2<'a> {
+pub struct _ElectiveOpt<'a> {
     // 类型
     #[serde(rename = "clazzType")]
     range: &'a str,
