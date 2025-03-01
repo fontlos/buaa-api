@@ -1,7 +1,7 @@
 use crate::{Error, utils};
 
 use super::EvaluationAPI;
-use super::utils::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
+use super::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 
 impl EvaluationAPI {
     /// Teacher Evaluation System Login

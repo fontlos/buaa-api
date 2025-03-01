@@ -1,7 +1,7 @@
 use crate::Error;
 
 use super::ElectiveAPI;
-use super::utils::{
+use super::{
     _ElectiveOpt, _ElectiveRes1, _ElectiveRes2, _ElectiveStatus, ElectiveCourses, ElectiveFilter,
     ElectiveSeleted,
 };

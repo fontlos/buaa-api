@@ -330,10 +330,10 @@ pub struct EvaluationCompleted {
 }
 
 impl EvaluationCompleted {
-    pub(crate) fn rwid(&self) -> &str {
+    pub(super) fn rwid(&self) -> &str {
         &self.content[0].rwid
     }
-    pub(crate) fn wjid(&self) -> &str {
+    pub(super) fn wjid(&self) -> &str {
         &self.content[0].wjid
     }
     pub fn score(&self) -> f32 {

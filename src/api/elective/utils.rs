@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize, Serializer};
 // ====================
 
 #[derive(Deserialize)]
-pub(crate) struct _ElectiveStatus {
+pub(super) struct _ElectiveStatus {
     pub code: u16,
     pub msg: String,
 }
@@ -284,7 +284,7 @@ where
 // ====================
 
 #[derive(Deserialize)]
-pub(crate) struct _ElectiveRes1 {
+pub(super) struct _ElectiveRes1 {
     pub data: ElectiveCourses,
 }
 
@@ -300,7 +300,7 @@ pub struct ElectiveCourses {
 pub struct ElectiveCourse {
     // 教学班 ID
     #[serde(rename = "JXBID")]
-    pub(crate) id: String,
+    pub(super) id: String,
     // 校区
     #[serde(rename = "XQ")]
     pub campus: String,
@@ -337,7 +337,7 @@ pub struct ElectiveCourse {
     pub teacher: String,
     // 校验和
     #[serde(rename = "secretVal")]
-    pub(crate) sum: String,
+    pub(super) sum: String,
     // 授课语言
     #[serde(rename = "teachingLanguageName")]
     pub lang: String,
