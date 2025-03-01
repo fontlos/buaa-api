@@ -27,9 +27,14 @@ impl ElectiveAPI {
             return Err(Error::APIError(status.msg));
         }
 
-        // TODO: 处理搜索值为空的情况
-
         // 因为学校服务器逆天设计导致 JSON 不合法, 这里需要手动截取其中合法的部分, 去掉重复键
+        // 手动截取会出现玄学问题, 只能凭感觉了
+
+        // 处理搜索值为空的情况, 长度小于 100 大概率代表查询结果为空
+        if text.len() < 100 {
+            let res = serde_json::from_str::<_ElectiveRes>(&text)?;
+            return Ok(res.data);
+        }
 
         let last_key = if let Some(i) = text.find("secretVal") {
             i
@@ -49,7 +54,7 @@ impl ElectiveAPI {
     }
 
     /// 查询已选课程
-    pub async fn query_selected(&self) -> Result<(), Error> {
+    pub async fn query_selected(&self) -> Result<String, Error> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
 
         // 获取 token
@@ -60,13 +65,12 @@ impl ElectiveAPI {
         };
 
         let res = self.post(url).header("Authorization", token).send().await?;
-        let body = res.text().await?;
-        println!("{}", body);
-        Ok(())
+        let text = res.text().await?;
+        Ok(text)
     }
 
     /// 查询退选记录
-    pub async fn query_deselected(&self) -> Result<(), Error> {
+    pub async fn query_deselected(&self) -> Result<String, Error> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/deselect";
 
         // 获取 token
@@ -77,14 +81,13 @@ impl ElectiveAPI {
         };
 
         let res = self.post(url).header("Authorization", token).send().await?;
-        let body = res.text().await?;
-        println!("{}", body);
-        Ok(())
+        let text = res.text().await?;
+        Ok(text)
     }
 
     /// # Select Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn select_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<String> {
+    pub async fn select_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
 
         // 获取 token
@@ -105,12 +108,12 @@ impl ElectiveAPI {
         if status.code != 200 {
             return Err(Error::APIError(status.msg));
         }
-        Ok(text)
+        Ok(())
     }
 
     /// # Drop Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn drop_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<String> {
+    pub async fn drop_course<'a>(&self, opt: &'a ElectiveOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
 
         // 获取 token
@@ -131,7 +134,7 @@ impl ElectiveAPI {
         if status.code != 200 {
             return Err(Error::APIError(status.msg));
         }
-        Ok(text)
+        Ok(())
     }
 }
 
@@ -165,8 +168,7 @@ mod tests {
         let c = list.get(0).unwrap();
         let opt = ElectiveOpt::from(c);
 
-        let res = elective.select_course(&opt).await.unwrap();
-        println!("{:?}", res);
+        elective.select_course(&opt).await.unwrap();
 
         context.save_cookie("cookie.json");
     }
