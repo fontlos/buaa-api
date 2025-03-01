@@ -2,6 +2,7 @@
 //!
 //! It is used for class sign-in and class attendance inquiry
 
+mod auth;
 mod opt;
 mod utils;
 

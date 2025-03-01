@@ -1,5 +1,4 @@
-use super::SpocAPI;
-use super::{_SpocRes1, _SpocRes2, SpocSchedule, SpocWeek};
+use super::{SpocAPI, _SpocRes1, _SpocRes2, SpocSchedule, SpocWeek};
 
 impl SpocAPI {
     /// Get current week

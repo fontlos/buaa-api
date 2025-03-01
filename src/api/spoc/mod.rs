@@ -2,7 +2,7 @@
 
 mod auth;
 mod opt;
-mod universal_request;
+mod universal;
 mod utils;
 
 pub use utils::*;

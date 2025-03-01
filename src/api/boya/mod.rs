@@ -1,11 +1,9 @@
 //! BUAA Boya API
 
 mod auth;
-mod opt_course;
-mod query_course;
-mod query_selected;
-mod query_statistic;
-mod universal_request;
+mod opt;
+mod query;
+mod universal;
 mod utils;
 
 pub use utils::*;

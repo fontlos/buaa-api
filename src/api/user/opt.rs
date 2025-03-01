@@ -1,11 +1,6 @@
-//! BUAA User Center API
-
 use crate::utils;
 
-/// BUAA User Center API Wrapper <br>
-/// Call `user()` on `Context` to get an instance of this struct and call corresponding API on this instance.
-#[wrap_api::wrap_api(user)]
-struct UserCenterAPI;
+use super::UserCenterAPI;
 
 impl UserCenterAPI {
     /// # User Center Login

@@ -1,7 +1,6 @@
 use crate::{Error, utils};
 
-use super::EvaluationAPI;
-use super::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
+use super::{EvaluationAPI, EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 
 impl EvaluationAPI {
     /// Teacher Evaluation System Login
@@ -15,6 +14,7 @@ impl EvaluationAPI {
         }
         Ok(())
     }
+
     /// Get a list of the ones that need to beevaluated <br>
     /// The method has made multiple requests inside it, and the speed is slow
     pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
