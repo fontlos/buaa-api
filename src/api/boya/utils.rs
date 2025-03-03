@@ -8,7 +8,7 @@ use crate::utils::deserialize_time;
 // 用于 query_course
 // ====================
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub(super) struct _BoyaCourses {
     #[serde(deserialize_with = "deserialize_boya_courses")]
     pub data: Vec<BoyaCourse>,
@@ -55,6 +55,7 @@ pub struct BoyaCourse {
     pub selected: bool,
 }
 
+/// Boya course's start, end, pre-selection and cancellation times
 #[derive(Debug, Deserialize)]
 pub struct BoyaTime {
     #[serde(deserialize_with = "deserialize_time")]
@@ -74,6 +75,7 @@ pub struct BoyaTime {
     pub cancel_end: PrimitiveDateTime,
 }
 
+/// Boya course's kind
 #[derive(Debug, Deserialize)]
 pub enum BoyaKind {
     /// 美育
@@ -105,6 +107,7 @@ where
     }
 }
 
+/// Boya course's capacity
 #[derive(Debug, Deserialize)]
 pub struct BoyaCapacity {
     #[serde(rename = "courseMaxCount")]
@@ -113,6 +116,7 @@ pub struct BoyaCapacity {
     pub current: u32,
 }
 
+/// Boya course's campus
 #[derive(Debug, Deserialize)]
 pub enum BoyaCampus {
     XueYuanLu,
@@ -139,7 +143,7 @@ where
 // ====================
 
 // 由于学校的抽象设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub(super) struct _BoyaSelecteds {
     #[serde(deserialize_with = "deserialize_boya_selecteds")]
     pub data: Vec<BoyaSelected>,
@@ -165,6 +169,7 @@ where
     Ok(course_list.into_iter().map(|x| x.info).collect())
 }
 
+/// Selected Boya courses
 #[derive(Debug, Deserialize)]
 pub struct BoyaSelected {
     // 课程 ID
@@ -214,6 +219,7 @@ where
     Ok(intermediate.statistical.data)
 }
 
+/// Boya course's Statistics
 #[derive(Debug, Deserialize)]
 pub struct BoyaStatistic {
     /// 德育
@@ -230,6 +236,7 @@ pub struct BoyaStatistic {
     pub safety: BoyaAssessment,
 }
 
+/// Boya course's assessment. Includes required quantity, selected quantity, completed quantity, incomplete quantity, and failed quantity
 #[derive(Debug, Deserialize)]
 pub struct BoyaAssessment {
     #[serde(rename = "assessmentCount")]

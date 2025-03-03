@@ -28,7 +28,7 @@ impl super::ClassAPI {
             .send()
             .await?;
         let res = res.text().await?;
-        let res = serde_json::from_str::<_ClassCourses>(&res).unwrap();
+        let res = serde_json::from_str::<_ClassCourses>(&res)?;
         Ok(res.result)
     }
 
