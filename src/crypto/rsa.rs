@@ -1,13 +1,14 @@
-//! 只针对 Pkcs1v15Encrypt RSA 加密的单独实现, 以省略外部 RSA Crate 的依赖
+//! Separate implementation of Pkcs1v15Encrypt RSA encryption only to omit dependencies on external RSA Crates
+//! Since the vanilla RSA relies on rand 0.6, this is implemented in order to upgrade the rand
 
+use base64::{Engine as _, engine::general_purpose};
 use num_bigint::BigUint;
 use rand::Rng;
-use base64::{Engine as _, engine::general_purpose};
 
 // RSA 公钥结构体
 struct RsaPublicKey {
-    n: BigUint,  // 模数
-    e: BigUint,  // 指数
+    n: BigUint, // 模数
+    e: BigUint, // 指数
 }
 
 impl RsaPublicKey {
@@ -103,7 +104,10 @@ impl RsaPublicKey {
         // 确保数据长度合适 (PKCS#1 v1.5)
         // TODO 也许这里应该进行一下错误处理
         #[cfg(debug_assertions)]
-        assert!(data.len() <= (self.n.bits() / 8 - 11) as usize, "Data too long for RSA modulus");
+        assert!(
+            data.len() <= (self.n.bits() / 8 - 11) as usize,
+            "Data too long for RSA modulus"
+        );
 
         // 应用 PKCS#1 v1.5 填充
         let padded = self.pkcs1v15_pad(data);
@@ -158,3 +162,27 @@ Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
     // 将加密结果转换为 Base64 字符串
     general_purpose::STANDARD.encode(&enc_data)
 }
+
+// 原版实现. 如果未来 RSA 更新可能会换回原实现
+// use rsa::pkcs8::DecodePublicKey;
+// use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
+
+// use base64::{Engine as _, engine::general_purpose};
+
+// pub fn rsa(data: &str) -> String {
+//     // 逆向得到的, 硬编码进 JS, 理论上应该永远不变
+//     let key = "-----BEGIN PUBLIC KEY-----
+// MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDlHMQ3B5GsWnCe7Nlo1YiG/YmH
+// dlOiKOST5aRm4iaqYSvhvWmwcigoyWTM+8bv2+sf6nQBRDWTY4KmNV7DBk1eDnTI
+// Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
+// 0jbxfDVBBNtyltIsDQIDAQAB
+// -----END PUBLIC KEY-----";
+//     let mut rng = rand::thread_rng();
+//     // 解析公钥
+//     let public_key = RsaPublicKey::from_public_key_pem(key).expect("Failed to parse public key");
+//     let enc_data = public_key
+//         .encrypt(&mut rng, Pkcs1v15Encrypt, data.as_bytes())
+//         .expect("failed to encrypt");
+//     // 将加密结果转换为 Base64 字符串
+//     general_purpose::STANDARD.encode(&enc_data)
+// }

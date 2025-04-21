@@ -42,6 +42,21 @@ mod tests {
     }
 
     #[test]
+    fn test_md5_hmac() {
+        let data = "HelloWorld";
+        let key = "Key";
+        let hmac = hash::md5_hmac(data, key);
+        assert_eq!(&hmac, "219e14bef981f117479a7695dacb10c7");
+    }
+
+    #[test]
+    fn test_sha1() {
+        let data = "HelloWorld";
+        let sha1 = hash::sha1(data);
+        assert_eq!(&sha1, "db8ac1c259eb89d4a131b253bacfca5f319d54f2");
+    }
+
+    #[test]
     fn test_rsa() {
         let data = "SenQBA8xn6CQGNJs";
         let enc_data = rsa(data);

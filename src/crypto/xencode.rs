@@ -1,7 +1,7 @@
 use base64::alphabet::Alphabet;
 use base64::engine::{Engine, GeneralPurpose, GeneralPurposeConfig};
 
-/// 将字符串字节数组每四位转换后合并成一个新的数组
+/// Convert the string byte array every four bits and merge it into a new array
 fn str2vec(a: &str) -> Vec<u32> {
     let c = a.len();
     let mut v = Vec::new();

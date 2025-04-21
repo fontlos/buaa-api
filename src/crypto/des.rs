@@ -1,6 +1,5 @@
 use des::Des;
 use des::cipher::{BlockEncrypt, KeyInit, generic_array::GenericArray};
-use hex::ToHex;
 
 /// DES encrypt for iclass api, use ECB mode
 pub fn des_encrypt(data: &str) -> String {
@@ -21,5 +20,8 @@ pub fn des_encrypt(data: &str) -> String {
         output[i * 8..(i + 1) * 8].copy_from_slice(&block);
     }
     // 将加密后的数据转换为 Hex 格式
-    output.encode_hex()
+    #[cfg(feature = "crypto")]
+    return hex::encode(&output);
+    #[cfg(not(feature = "crypto"))]
+    super::byte2hex::bytes_to_hex_fast(&output)
 }

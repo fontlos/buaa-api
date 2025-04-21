@@ -1,5 +1,4 @@
-use crate::crypto::{hash, x_encode};
-use crate::{Error, utils};
+use crate::{Error, crypto, utils};
 
 impl super::WiFiAPI {
     /// # BUAA WiFi Login
@@ -78,17 +77,17 @@ impl super::WiFiAPI {
             r#"{{"username":"{un}","password":"{pw}","ip":"{ip}","acid":"{ac_id}","enc_ver":"srun_bx1"}}"#
         );
         // 自带前缀
-        let info = x_encode(&data, &token);
+        let info = crypto::x_encode(&data, &token);
 
         // 计算加密后的密码, 并且后补前缀
-        let password_md5 = hash::md5_hmac(pw, &token);
+        let password_md5 = crypto::hash::md5_hmac(pw, &token);
 
         // 计算校验和, 参数顺序如下
         //                             token username token password_md5 token ac_id token ip token n token type token info
         let check_str = format!(
             "{token}{un}{token}{password_md5}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}"
         );
-        let chk_sum = hash::sha1(&check_str);
+        let chk_sum = crypto::hash::sha1(&check_str);
 
         // 构造登录 URL 并登录
         // 暂时不知道后面五个参数有无修改必要
