@@ -57,13 +57,6 @@ mod tests {
     }
 
     #[test]
-    fn test_rsa() {
-        let data = "SenQBA8xn6CQGNJs";
-        let enc_data = rsa(data);
-        println!("{}", enc_data);
-    }
-
-    #[test]
     fn test_xencoder() {
         let env = crate::utils::env();
         let username = env.get("USERNAME").unwrap();

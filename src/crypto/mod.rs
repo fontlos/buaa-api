@@ -2,9 +2,7 @@ mod byte2hex;
 
 pub mod aes;
 pub mod des;
-
-mod rsa;
-pub use rsa::rsa;
+pub mod rsa;
 
 #[cfg(feature = "crypto")]
 /// High-performance implementation of the community, HMAC MD5 and SHA1

@@ -16,7 +16,6 @@ base64 = "0.22.1"
 cookie_store = "0.21.1"
 des = "0.8.1"
 num-bigint = "0.4.6"
-num-traits = "0.2.19"
 rand = "0.9.1"
 reqwest = { version = "0.12.15", features = ["json", "cookies"] }
 reqwest_cookie_store = "0.8.0"
@@ -37,5 +36,5 @@ tokio = { version = "1.44.2", features = ["macros"] }
 
 [features]
 default = []
-# 社区提供的高性能加密方案
+# High-performance crypto solutions provided by the community
 crypto = []

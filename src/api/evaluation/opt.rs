@@ -22,7 +22,7 @@ impl super::EvaluationAPI {
         // 获取账号
         let config = self.config.read().unwrap();
         let username = config.username.as_ref().unwrap();
-        // 获取rwid
+        // 获取 rwid
         // 省略的无用查询参数 &rwmc=&sfyp=0
         let url = format!(
             "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10"

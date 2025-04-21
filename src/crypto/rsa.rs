@@ -6,13 +6,18 @@ use num_bigint::BigUint;
 use rand::Rng;
 
 // RSA 公钥结构体
-struct RsaPublicKey {
+pub struct RsaPublicKey {
     n: BigUint, // 模数
     e: BigUint, // 指数
 }
 
 impl RsaPublicKey {
-    fn from_pem(pem: &str) -> Self {
+    pub fn new(n: BigUint, e: BigUint) -> Self {
+        RsaPublicKey { n, e }
+    }
+
+    #[allow(dead_code)]
+    pub fn from_pem(pem: &str) -> Self {
         // 提取 Base64 部分
         let base64_str = pem
             .lines()
@@ -98,7 +103,7 @@ impl RsaPublicKey {
         len
     }
 
-    fn encrypt(&self, data: &[u8]) -> Vec<u8> {
+    pub fn encrypt(&self, data: &[u8]) -> Vec<u8> {
         // RSA 加密: ciphertext = plaintext^e mod n
 
         // 确保数据长度合适 (PKCS#1 v1.5)
@@ -122,6 +127,12 @@ impl RsaPublicKey {
         c.to_bytes_be()
     }
 
+    pub fn encrypt_to_string(&self, data: &[u8]) -> String {
+        // RSA 加密并转换为 Base64 字符串
+        let enc_data = self.encrypt(data);
+        general_purpose::STANDARD.encode(&enc_data)
+    }
+
     fn pkcs1v15_pad(&self, data: &[u8]) -> Vec<u8> {
         // PKCS#1 v1.5 加密填充
         let k = (self.n.bits() / 8) as usize;
@@ -141,26 +152,6 @@ impl RsaPublicKey {
         padded[3 + ps_len..].copy_from_slice(data);
         padded
     }
-}
-
-pub fn rsa(data: &str) -> String {
-    // 公钥 PEM
-    // 逆向得到的, 硬编码进 JS, 理论上应该永远不变
-    let key = "-----BEGIN PUBLIC KEY-----
-MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDlHMQ3B5GsWnCe7Nlo1YiG/YmH
-dlOiKOST5aRm4iaqYSvhvWmwcigoyWTM+8bv2+sf6nQBRDWTY4KmNV7DBk1eDnTI
-Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
-0jbxfDVBBNtyltIsDQIDAQAB
------END PUBLIC KEY-----";
-
-    // 解析公钥
-    let public_key = RsaPublicKey::from_pem(key);
-
-    // 加密数据
-    let enc_data = public_key.encrypt(data.as_bytes());
-
-    // 将加密结果转换为 Base64 字符串
-    general_purpose::STANDARD.encode(&enc_data)
 }
 
 // 原版实现. 如果未来 RSA 更新可能会换回原实现

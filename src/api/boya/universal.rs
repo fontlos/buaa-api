@@ -1,3 +1,4 @@
+use num_bigint::BigUint;
 use rand::Rng;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
@@ -62,6 +63,18 @@ impl super::BoyaAPI {
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
     /// - Query: `{}`
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
+        // 考虑到这里只使用一个 RSA 公钥, 直接硬编码进去省略解析, 下面是 JS 逆向得到的公钥
+        // -----BEGIN PUBLIC KEY-----
+        // MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDlHMQ3B5GsWnCe7Nlo1YiG/YmH
+        // dlOiKOST5aRm4iaqYSvhvWmwcigoyWTM+8bv2+sf6nQBRDWTY4KmNV7DBk1eDnTI
+        // Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
+        // 0jbxfDVBBNtyltIsDQIDAQAB
+        // -----END PUBLIC KEY-----
+        let rsa = crypto::rsa::RsaPublicKey::new(
+            BigUint::parse_bytes("160888176901620604305352861809177261938762057016319779754807041689583497071063662739822117937549470133551626633870393770286681244760722711708602120884986220998770095524522498502415051190478765491126480852711587593365046521407362610305824222413933838389111328227344865362271410246251876261314138515871039106061".as_bytes(), 10).unwrap(),
+            BigUint::parse_bytes("65537".as_bytes(), 10).unwrap(),
+            );
+
         // 获取 token
         let config = self.config.read().unwrap();
         let token = match &config.boya_token {
@@ -72,7 +85,7 @@ impl super::BoyaAPI {
         // 这是查询参数, 然后被 sha1 处理
         let sha1_query = crypto::hash::sha1(query);
         // sk参数, rsa sha1_query
-        let sk = crypto::rsa(&sha1_query);
+        let sk = rsa.encrypt_to_string(&sha1_query.as_bytes());
         // 十六位随机字符
         const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         let mut rng = rand::rng();
@@ -83,7 +96,7 @@ impl super::BoyaAPI {
             })
             .collect();
         // ak参数, rsa aes_key
-        let ak = crypto::rsa(&aes_key);
+        let ak = rsa.encrypt_to_string(&aes_key.as_bytes());
         // 这是请求的负载, 是使用 aes 加密的查询参数
         let body = crypto::aes::aes_encrypt_ecb(query, &aes_key);
         let time = utils::get_time();
