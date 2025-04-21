@@ -75,10 +75,10 @@ impl super::BoyaAPI {
         let sk = crypto::rsa(&sha1_query);
         // 十六位随机字符
         const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let aes_key: String = (0..16)
             .map(|_| {
-                let idx = rng.gen_range(0..CHARSET.len());
+                let idx = rng.random_range(0..CHARSET.len());
                 CHARSET[idx] as char
             })
             .collect();
@@ -135,12 +135,12 @@ fn test_rand() {
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     // 创建一个随机数生成器
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
 
     // 生成长度为16的随机字符串
     let random_string: String = (0..16)
         .map(|_| {
-            let idx = rng.gen_range(0..CHARSET.len());
+            let idx = rng.random_range(0..CHARSET.len());
             CHARSET[idx] as char
         })
         .collect();
