@@ -22,12 +22,7 @@ impl super::CloudAPI {
 
         let res = match method {
             Method::GET => self.get(url).bearer_auth(token).send().await?,
-            Method::POST => self
-                .post(url)
-                .bearer_auth(token)
-                .json(data)
-                .send()
-                .await?,
+            Method::POST => self.post(url).bearer_auth(token).json(data).send().await?,
             _ => return Err(Error::APIError("Unsupported Method".to_string())),
         };
         let text = res.text().await?;
@@ -61,9 +56,7 @@ impl super::CloudAPI {
             "sort": "asc",
             "by": "name"
         });
-        let text = self
-            .universal_request(&url, &data, Method::POST)
-            .await?;
+        let text = self.universal_request(&url, &data, Method::POST).await?;
 
         Ok(text)
     }

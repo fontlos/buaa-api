@@ -245,10 +245,7 @@ pub enum CourseType {
 }
 
 // 序列化选课过滤器类型为对应的查询字符
-fn serialize_course_type<S>(
-    r#type: &Option<CourseType>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+fn serialize_course_type<S>(r#type: &Option<CourseType>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {

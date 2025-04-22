@@ -1,11 +1,11 @@
+pub mod aas;
 pub mod boya;
 pub mod class;
 pub mod cloud;
-pub mod srs;
-pub mod tes;
-pub mod aas;
 pub mod spoc;
+pub mod srs;
 mod sso;
+pub mod tes;
 pub mod user;
 #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
 pub mod wifi;

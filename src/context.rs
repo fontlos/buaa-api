@@ -30,12 +30,12 @@ pub struct Config {
     pub password: Option<String>,
     /// Token for Boya API
     pub boya_token: Option<String>,
-    /// Token for Srs API
-    pub srs_token: Option<String>,
     /// User ID for SmartClass API
     pub class_token: Option<String>,
     /// User ID for Spoc API
     pub spoc_token: Option<String>,
+    /// Token for Srs API
+    pub srs_token: Option<String>,
 }
 
 impl Config {

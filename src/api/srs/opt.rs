@@ -1,9 +1,6 @@
 use crate::Error;
 
-use super::{
-    _SrsOpt, _SrsRes1, _SrsRes2, _SrsStatus, Courses, CourseFilter,
-    CourseSeleted,
-};
+use super::{_SrsOpt, _SrsRes1, _SrsRes2, _SrsStatus, CourseFilter, CourseSeleted, Courses};
 
 impl super::SrsAPI {
     pub async fn gen_filter(&self) -> crate::Result<CourseFilter> {
