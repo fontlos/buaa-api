@@ -6,12 +6,12 @@ use num_bigint::BigUint;
 use rand::Rng;
 
 // RSA 公钥结构体
-pub struct RsaPublicKey {
+pub struct RsaPkcs1v15 {
     n: BigUint, // 模数
     e: BigUint, // 指数
 }
 
-impl RsaPublicKey {
+impl RsaPkcs1v15 {
     pub fn from_pem(pem: &str) -> Self {
         // 提取 Base64 部分
         let base64_str = pem
@@ -75,7 +75,7 @@ impl RsaPublicKey {
         let e_len = Self::read_length(&der, &mut cursor);
         let e_bytes = &der[cursor..cursor + e_len];
 
-        RsaPublicKey {
+        RsaPkcs1v15 {
             n: BigUint::from_bytes_be(n_bytes),
             e: BigUint::from_bytes_be(e_bytes),
         }

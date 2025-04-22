@@ -1,3 +1,6 @@
+mod byte2hex;
+pub(crate) use byte2hex::bytes_to_hex_fast;
+
 mod env;
 
 #[cfg(test)]

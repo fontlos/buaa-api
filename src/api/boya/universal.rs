@@ -70,15 +70,15 @@ impl super::BoyaAPI {
         };
 
         // 初始化 RSA, 设置公钥
-        let rsa = crypto::rsa::RsaPublicKey::from_pem(crate::consts::BOYA_RSA_KEY);
+        let rsa = crypto::rsa::RsaPkcs1v15::from_pem(crate::consts::BOYA_RSA_KEY);
 
         // 这是查询参数, 然后被 sha1 处理
-        let sha1_query = crypto::hash::sha1(query);
+        let sha1_query = crypto::sha1::sha1(query.as_bytes());
         // sk 参数, rsa sha1_query
         let sk = rsa.encrypt_to_string(&sha1_query.as_bytes());
 
         // AES Key, 使用十六位随机字符
-        let aes_key= gen_rand_str(16);
+        let aes_key = gen_rand_str(16);
         // ak 参数, rsa aes_key
         let ak = rsa.encrypt_to_string(&aes_key.as_bytes());
 

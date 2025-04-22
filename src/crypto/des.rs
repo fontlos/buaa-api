@@ -3,7 +3,7 @@ use des::cipher::{BlockEncrypt, KeyInit, generic_array::GenericArray};
 
 /// DES encrypt, use ECB mode
 pub fn des_encrypt(data: &str, key: &str) -> String {
-    // 
+    //
     let key = key.as_bytes();
     let cipher = Des::new_from_slice(key).unwrap();
     let mut input = data.as_bytes().to_vec();
@@ -23,5 +23,5 @@ pub fn des_encrypt(data: &str, key: &str) -> String {
     #[cfg(feature = "crypto")]
     return hex::encode(&output);
     #[cfg(not(feature = "crypto"))]
-    super::byte2hex::bytes_to_hex_fast(&output)
+    crate::utils::bytes_to_hex_fast(&output)
 }

@@ -25,29 +25,25 @@ pub struct ContextBuilder<P: AsRef<Path>> {
     config: Option<P>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct Config {
     pub username: Option<String>,
     pub password: Option<String>,
     /// Token for Boya API
     pub boya_token: Option<String>,
+    /// Token for Elective API
     pub elective_token: Option<String>,
     /// User ID for SmartClass API
     pub class_token: Option<String>,
+    /// User ID for Pan API
+    pub pan_token: Option<String>,
     /// User ID for Spoc API
     pub spoc_token: Option<String>,
 }
 
 impl Config {
     pub fn new() -> Self {
-        Config {
-            username: None,
-            password: None,
-            boya_token: None,
-            elective_token: None,
-            class_token: None,
-            spoc_token: None,
-        }
+        Config::default()
     }
 }
 
