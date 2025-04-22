@@ -8,27 +8,34 @@
 
 ## TodoList
 
-- [x] SSO Login: `login` built in `Context`
+- [x] BUAA SSO Login: `login` built in `Context`
+- [ ] BUAA Academic Affairs System
+- [x] BUAA Boya Course: `boya`
+  - [x] Login
+  - [x] Query
+  - [x] Select
+  - [x] Drop
+  - [x] A universal request API for extensions
+- [x] BUAA Smart Classroom: `class`
+  - [x] Login
+  - [x] Checkin
+  - [x] Query
+- [ ] BUAA Cloud Disk: `cloud`
+  - [x] Login
+- [ ] Spoc Platform: `spoc`
+  - [x] Login
+  - [x] Query class schedule
+- [ ] BUAA Undergraduate & Graduate Student Course Registration System
+  - [x] Login
+- [ ] BUAA Teacher Evaluation System
+  - [x] Login
+- [x] User Center: `user`
+  - [x] Login
+  - [x] Get state
 - [x] BUAA WiFi: `wifi`
   - [x] Login
   - [x] Logout
-- [x] User Center: `user`
-  - [x] login
-  - [x] get state
-- [ ] Spoc: `spoc`
-  - [x] login
-  - [x] query class table
-- [ ] Course selection
-- [x] Boya Course: `boya`
-  - [x] login
-  - [x] query
-  - [x] select
-  - [x] drop
-  - [x] A universal request API for extensions
-- [x] Smart Classroom: `class`
-  - [x] login
-  - [x] checkin
-  - [x] query
+
 
 APIs not listed above might have been overlooked or deemed unimportant by me, but if you need them, feel free to open an issue or submit a pull request.
 
@@ -38,16 +45,16 @@ The basic process is:
 
 - Initialize the `Context`
 - Set account
-- (Optional) Specifies the file used to read and write cookies
-- Login to context
-- Get a subdomain instance
-- Login to subdomain
-- Call API in subdomain
+- (Optional) Specifies the file used to read and write cookies and config
+- Login to SSO (Context)
+- Get the API group you need
+- Login to this group
+- Call API in this group
 
 There is a simple example:
 
 ```rust
-use buaa::Context;
+use buaa_api::Context;
 
 #[tokio::main]
 async fn main() {
@@ -70,14 +77,14 @@ async fn main() {
     println!("{}", state);
 
     // (Optional) Save cookies to file
-    context.save();
+    context.save_cookie("cookie.json");
 }
 ```
 
 A more complex example:
 
 ```rust
-use buaa::Context;
+use buaa_api::Context;
 
 #[tokio::main]
 async fn main() {
@@ -92,15 +99,15 @@ async fn main() {
     let course_list = boya.query_course().await.unwrap();
     println!("{}", course_list);
 
-    let id = 1; // Get from course_list
-    let res = boya.select_course(6637).await.unwrap();
+    let id = 1; // Should get from course_list, just an example
+    let res = boya.select_course(id).await.unwrap();
     println!("{}", res);
 
     context.save();
 }
 ```
 
-BUAA WiFi is independent of other APIs and does not require cookies or `context.login`, so you need to provide a separate username and password:
+BUAA WiFi is independent of other APIs and does not require cookies or `Context.login()`:
 
 ```rust
 use buaa::Context;
