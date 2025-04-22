@@ -2,7 +2,18 @@
 
 mod auth;
 
-/// BUAA WiFi API Wrapper <br>
-/// Call `wifi()` on `Context` to get an instance of this struct and call corresponding API on this instance.
-#[wrap_api::wrap_api(wifi)]
-struct WiFiAPI;
+/// BUAA WiFi API Group
+///
+/// Obtain a context view for WiFi operations via [`Context.wifi()`],
+/// then call specific APIs through this grouping.
+///
+/// # Examples
+/// ```
+/// let ctx = Context::new();
+/// let wifi = ctx.wifi();
+/// wifi.login("BUAA-WiFi");
+/// ```
+///
+/// Note: All API groups share the same underlying context - modifications
+/// will be instantly visible across all groups.
+pub type WiFiAPI = crate::Context<super::WiFi>;

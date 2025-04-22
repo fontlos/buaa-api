@@ -8,21 +8,20 @@ use serde::{Deserialize, Serialize};
 
 use std::fs::{self, File, OpenOptions};
 use std::io::BufReader;
+use std::marker::PhantomData;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
+use crate::api::SSO;
+
 /// This is the core of this crate, it is used to store cookies and send requests <br>
 #[derive(Debug, Clone)]
-pub struct Context {
+pub struct Context<G = SSO> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<CookieStoreMutex>,
     pub config: Arc<RwLock<Config>>,
-}
-
-pub struct ContextBuilder<P: AsRef<Path>> {
-    cookies: Option<P>,
-    config: Option<P>,
+    _marker: PhantomData<G>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -60,7 +59,7 @@ impl Context {
     ///     context.login().await.unwrap();
     /// }
     /// ```
-    pub fn new() -> Self {
+    pub fn new() -> Context<SSO> {
         let cookie_store = Arc::new(CookieStoreMutex::new(CookieStore::default()));
         let mut header = HeaderMap::new();
         header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
@@ -77,13 +76,7 @@ impl Context {
             client,
             cookies: cookie_store,
             config: Arc::new(RwLock::new(config)),
-        }
-    }
-
-    pub fn builder<P: AsRef<Path>>() -> ContextBuilder<P> {
-        ContextBuilder {
-            cookies: None,
-            config: None,
+            _marker: PhantomData,
         }
     }
 
@@ -202,67 +195,7 @@ impl Context {
     }
 }
 
-impl<P: AsRef<Path>> ContextBuilder<P> {
-    pub fn with_config(&mut self, path: P) -> &mut Self {
-        self.config = Some(path);
-        self
-    }
-
-    pub fn with_cookies(&mut self, path: P) -> &mut Self {
-        self.cookies = Some(path);
-        self
-    }
-
-    pub fn build(&self) -> Context {
-        let config = if let Some(path) = &self.config {
-            let file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .open(path)
-                .unwrap();
-            match serde_json::from_reader(file) {
-                Ok(config) => config,
-                Err(_) => Config::new(),
-            }
-        } else {
-            Config::new()
-        };
-        let cookie_store = if let Some(path) = &self.cookies {
-            let file = OpenOptions::new()
-                .read(true)
-                .write(true)
-                .create(true)
-                .open(path)
-                .unwrap();
-            match CookieStore::load_all(BufReader::new(file), |s| serde_json::from_str::<Cookie>(s))
-            {
-                Ok(store) => store,
-                Err(_) => CookieStore::default(),
-            }
-        } else {
-            CookieStore::default()
-        };
-        let cookies = Arc::new(CookieStoreMutex::new(cookie_store));
-
-        let mut header = HeaderMap::new();
-        header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
-
-        let client = Client::builder()
-            .default_headers(header)
-            .cookie_provider(cookies.clone())
-            .build()
-            .unwrap();
-
-        Context {
-            client,
-            cookies,
-            config: Arc::new(RwLock::new(config)),
-        }
-    }
-}
-
-impl Deref for Context {
+impl<G> Deref for Context<G> {
     type Target = Client;
 
     fn deref(&self) -> &Self::Target {
