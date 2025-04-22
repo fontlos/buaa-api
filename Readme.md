@@ -67,12 +67,12 @@ async fn main() {
     // Login to context
     context.login().await.unwrap();
 
-    // Get a subdomain instance
+    // Get an API Group
     let user = context.user();
-    // Login to subdomain
+    // Login to this group
     user.login().await.unwrap();
 
-    // Call API in subdomain
+    // Call API in this group
     let state = user.get_state().await.unwrap();
     println!("{}", state);
 
