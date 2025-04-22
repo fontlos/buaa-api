@@ -1,20 +1,20 @@
-//! BUAA Pan API
+//! BUAA Cloud Disk API
 
 mod auth;
 mod opt;
 
-/// BUAA Pan API Group
+/// BUAA Cloud Disk API Group
 ///
-/// Obtain a context view via [`Context.pan()`],
+/// Obtain a context view via [`Context.cloud()`],
 /// then call specific APIs through this grouping.
 ///
 /// # Examples
 /// ```
 /// let ctx = Context::new();
-/// let pan = ctx.pan();
-/// pan.login().await.unwrap();
+/// let cloud = ctx.cloud();
+/// cloud.login().await.unwrap();
 /// ```
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type PanAPI = crate::Context<super::Pan>;
+pub type CloudAPI = crate::Context<super::Cloud>;

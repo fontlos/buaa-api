@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::Error;
 
-impl super::PanAPI {
+impl super::CloudAPI {
     pub async fn universal_request(
         &self,
         url: &str,
@@ -15,7 +15,7 @@ impl super::PanAPI {
         let cookie = self.cookies.lock().unwrap();
         let token = match cookie.get("bhpan.buaa.edu.cn", "/", "client.oauth2_token") {
             Some(t) => t.value().to_string(),
-            None => return Err(Error::APIError("No Pan Token".to_string())),
+            None => return Err(Error::APIError("No Cloud Token".to_string())),
         };
         // 释放锁
         drop(cookie);
@@ -85,11 +85,11 @@ mod tests {
         context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
-        let pan = context.pan();
-        pan.login().await.unwrap();
+        let cloud = context.cloud();
+        cloud.login().await.unwrap();
 
-        let dir = pan.get_user_dir().await.unwrap();
-        let list = pan.list(&dir).await.unwrap();
+        let dir = cloud.get_user_dir().await.unwrap();
+        let list = cloud.list(&dir).await.unwrap();
 
         println!("list: {list}");
 

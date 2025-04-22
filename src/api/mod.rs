@@ -1,9 +1,9 @@
 pub mod boya;
 pub mod class;
-pub mod elective;
-pub mod evaluation;
-pub mod office;
-pub mod pan;
+pub mod cloud;
+pub mod srs;
+pub mod tes;
+pub mod aas;
 pub mod spoc;
 mod sso;
 pub mod user;
@@ -12,25 +12,36 @@ pub mod wifi;
 
 /// Marker type for BUAA SSO API Grouping, and it is the default API Group
 pub struct SSO;
-/// Marker type for BUAA Boya API Grouping
+/// Marker type for BUAA Academic Affairs System API Grouping
+pub struct Aas;
+/// Marker type for BUAA Boya Course API Grouping
 pub struct Boya;
 /// Marker type for BUAA Smart Classroom API Grouping
 pub struct Class;
-pub struct Elective;
-/// Marker type for BUAA Teacher Evaluation System API Grouping
-pub struct Evaluation;
-/// Marker type for BUAA Academic Affairs System API Grouping
-pub struct AAS;
-/// Marker type for BUAA Pan API Grouping
-pub struct Pan;
-/// Marker type for BUAA Spoc API Grouping
+/// Marker type for BUAA Cloud Disk API Grouping
+pub struct Cloud;
+/// Marker type for BUAA Spoc Platform API Grouping
 pub struct Spoc;
+/// Marker type for BUAA Undergraduate & Graduate Student Course Registration System API Grouping
+pub struct Srs;
+/// Marker type for BUAA Teacher Evaluation System API Grouping
+pub struct Tes;
 /// Marker type for BUAA User Center API Grouping
 pub struct User;
 /// Marker type for BUAA WiFi API Grouping
 pub struct WiFi;
 
 impl crate::Context<SSO> {
+    /// Obtains a type-state view for the specified API group
+    ///
+    /// This zero-cost conversion provides access to group-specific APIs
+    /// while sharing the same underlying context.
+    ///
+    /// # Safety
+    /// The cast is safe because:
+    /// 1. `PhantomData<G>` has no runtime representation
+    /// 2. All context data is stored in `Arc`-wrapped fields
+    /// 3. The original context remains accessible
     #[inline]
     pub fn api<G>(&self) -> &crate::Context<G> {
         unsafe {
@@ -38,30 +49,39 @@ impl crate::Context<SSO> {
             &*(self as *const crate::Context<SSO> as *const crate::Context<G>)
         }
     }
+    /// Get BUAA Academic Affairs System API Group
+    pub fn aas(&self) -> &crate::Context<Aas> {
+        self.api::<Aas>()
+    }
+    /// Get BUAA Boya Course API Group
     pub fn boya(&self) -> &crate::Context<Boya> {
         self.api::<Boya>()
     }
+    /// Get BUAA Smart Classroom API Group
     pub fn class(&self) -> &crate::Context<Class> {
         self.api::<Class>()
     }
-    pub fn elective(&self) -> &crate::Context<Elective> {
-        self.api::<Elective>()
+    /// Get BUAA Cloud Disk API Group
+    pub fn cloud(&self) -> &crate::Context<Cloud> {
+        self.api::<Cloud>()
     }
-    pub fn evaluation(&self) -> &crate::Context<Evaluation> {
-        self.api::<Evaluation>()
-    }
-    pub fn office(&self) -> &crate::Context<AAS> {
-        self.api::<AAS>()
-    }
-    pub fn pan(&self) -> &crate::Context<Pan> {
-        self.api::<Pan>()
-    }
+    /// Get BUAA Spoc Platform API Group
     pub fn spoc(&self) -> &crate::Context<Spoc> {
         self.api::<Spoc>()
     }
+    /// Get BUAA User Center API Group
     pub fn user(&self) -> &crate::Context<User> {
         self.api::<User>()
     }
+    /// Get BUAA Undergraduate & Graduate Student Course Registration System API Group
+    pub fn srs(&self) -> &crate::Context<Srs> {
+        self.api::<Srs>()
+    }
+    /// Get BUAA Teacher Evaluation System API Group
+    pub fn tes(&self) -> &crate::Context<Tes> {
+        self.api::<Tes>()
+    }
+    /// Get BUAA WiFi API Group
     pub fn wifi(&self) -> &crate::Context<WiFi> {
         self.api::<WiFi>()
     }

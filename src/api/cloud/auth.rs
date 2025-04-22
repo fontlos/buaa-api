@@ -1,6 +1,6 @@
 use crate::Error;
 
-impl super::PanAPI {
+impl super::CloudAPI {
     pub async fn login(&self) -> crate::Result<()> {
         // 获取登录参数, 302 后可解析出 login_challenge
         let url =

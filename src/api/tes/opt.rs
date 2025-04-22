@@ -2,7 +2,7 @@ use crate::{Error, utils};
 
 use super::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 
-impl super::EvaluationAPI {
+impl super::TesAPI {
     /// Teacher Evaluation System Login
     pub async fn login(&self) -> crate::Result<()> {
         // 登录
@@ -126,9 +126,9 @@ mod tests {
         context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
-        let evaluation = context.evaluation();
-        evaluation.login().await.unwrap();
-        let list = evaluation.get_evaluation_list().await.unwrap();
+        let tes = context.tes();
+        tes.login().await.unwrap();
+        let list = tes.get_evaluation_list().await.unwrap();
         println!("{:?}", list);
 
         context.save_cookie("cookie.json");
@@ -137,7 +137,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_submit_evaluation() {
-        use crate::api::evaluation::utils::EvaluationAnswer;
+        use crate::api::tes::utils::EvaluationAnswer;
 
         let env = env();
         let username = env.get("USERNAME").unwrap();
@@ -148,13 +148,13 @@ mod tests {
         context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
-        let evaluation = context.evaluation();
-        evaluation.login().await.unwrap();
-        let list = evaluation.get_evaluation_list().await.unwrap();
+        let tes = context.tes();
+        tes.login().await.unwrap();
+        let list = tes.get_evaluation_list().await.unwrap();
 
         let last = list.get(2).unwrap();
 
-        let form = evaluation.get_evaluation_form(last).await.unwrap();
+        let form = tes.get_evaluation_form(last).await.unwrap();
 
         let ans = vec![
             EvaluationAnswer::Choice(1),
@@ -169,7 +169,7 @@ mod tests {
 
         let complete = form.fill(ans);
 
-        let res = evaluation.submit_evaluation(complete).await.unwrap();
+        let res = tes.submit_evaluation(complete).await.unwrap();
 
         println!("{}", res.text().await.unwrap());
 

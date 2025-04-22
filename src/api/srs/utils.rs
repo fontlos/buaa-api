@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize, Serializer};
 // ====================
 
 #[derive(Deserialize)]
-pub(super) struct _ElectiveStatus {
+pub(super) struct _SrsStatus {
     pub code: u16,
     pub msg: String,
 }
@@ -16,11 +16,11 @@ pub(super) struct _ElectiveStatus {
 
 /// # A filter for querying courses
 #[derive(Serialize)]
-pub struct ElectiveFilter {
+pub struct CourseFilter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
-    #[serde(serialize_with = "serialize_elective_range")]
-    range: ElectiveRange,
+    #[serde(serialize_with = "serialize_course_range")]
+    range: CourseRange,
     // 页码
     #[serde(rename = "pageNumber")]
     page: u8,
@@ -34,24 +34,24 @@ pub struct ElectiveFilter {
     conflict: Option<u8>,
     // 课程性质, 可选
     #[serde(rename = "KCXZ")]
-    #[serde(serialize_with = "serialize_elective_nature")]
-    nature: Option<ElectiveNature>,
+    #[serde(serialize_with = "serialize_course_nature")]
+    nature: Option<CourseNature>,
     // 课程类型, 可选
     #[serde(rename = "KCLB")]
-    #[serde(serialize_with = "serialize_elective_type")]
-    r#type: Option<ElectiveType>,
+    #[serde(serialize_with = "serialize_course_type")]
+    r#type: Option<CourseType>,
     // 搜索关键字, 可选
     #[serde(rename = "KEY")]
     key: Option<String>,
 }
 
-impl ElectiveFilter {
+impl CourseFilter {
     /// Create a default course filter
     /// # Warning
-    /// - make sure the campus is correct, or you can use ElectiveAPI.gen_filter() to get the default campus
+    /// - make sure the campus is correct, or you can use SrsAPI.gen_filter() to get the default campus
     pub fn new(campus: u8) -> Self {
-        ElectiveFilter {
-            range: ElectiveRange::SUGGEST,
+        CourseFilter {
+            range: CourseRange::SUGGEST,
             page: 1,
             size: 10,
             campus,
@@ -63,7 +63,7 @@ impl ElectiveFilter {
     }
 
     /// Set up the range of the course query
-    pub fn set_range(&mut self, range: ElectiveRange) {
+    pub fn set_range(&mut self, range: CourseRange) {
         self.range = range;
     }
 
@@ -100,12 +100,12 @@ impl ElectiveFilter {
     }
 
     /// Set up the nature of the course
-    pub fn set_nature(&mut self, nature: Option<ElectiveNature>) {
+    pub fn set_nature(&mut self, nature: Option<CourseNature>) {
         self.nature = nature;
     }
 
     /// Set up the type of the course
-    pub fn set_type(&mut self, r#type: Option<ElectiveType>) {
+    pub fn set_type(&mut self, r#type: Option<CourseType>) {
         self.r#type = r#type;
     }
 
@@ -120,7 +120,7 @@ impl ElectiveFilter {
 // 离谱首字母命名法, 甚至有一个首字母都疑似拼错了
 // TJKC 班级课表推荐课程, FANKC 方案内课程, FAWKC 方案外课程, CXKC 重修课程, 只有重修课程可以选校区
 // YYKC 英语课程, TYKC 体育课程, XGKC 通识选修课程, KYKT 科研课堂, ALLKC 全校课程查询
-pub enum ElectiveRange {
+pub enum CourseRange {
     /// 班级课表推荐课程
     SUGGEST,
     /// 方案内课程
@@ -142,31 +142,31 @@ pub enum ElectiveRange {
 }
 
 // 序列化选课过滤器范围为对应的查询字符
-fn serialize_elective_range<S>(range: &ElectiveRange, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_course_range<S>(range: &CourseRange, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(elective_range_to_str(range))
+    serializer.serialize_str(course_range_to_str(range))
 }
 
 #[inline]
-fn elective_range_to_str(range: &ElectiveRange) -> &str {
+fn course_range_to_str(range: &CourseRange) -> &str {
     match range {
-        ElectiveRange::SUGGEST => "TJKC",
-        ElectiveRange::PLAN => "FANKC",
-        ElectiveRange::EXTRA => "FAWKC",
-        ElectiveRange::RETAKE => "CXKC",
-        ElectiveRange::English => "YYKC",
-        ElectiveRange::PE => "TYKC",
-        ElectiveRange::GENERAL => "XGKC",
-        ElectiveRange::RESEARCH => "KYKT",
-        ElectiveRange::ALL => "ALLKC",
+        CourseRange::SUGGEST => "TJKC",
+        CourseRange::PLAN => "FANKC",
+        CourseRange::EXTRA => "FAWKC",
+        CourseRange::RETAKE => "CXKC",
+        CourseRange::English => "YYKC",
+        CourseRange::PE => "TYKC",
+        CourseRange::GENERAL => "XGKC",
+        CourseRange::RESEARCH => "KYKT",
+        CourseRange::ALL => "ALLKC",
     }
 }
 
 /// # The nature of the course
 /// Be sure to consult the corresponding notes in the document to know the specific type
-pub enum ElectiveNature {
+pub enum CourseNature {
     /// 必修
     Compulsory,
     /// 选修
@@ -178,8 +178,8 @@ pub enum ElectiveNature {
 }
 
 // 序列化选课过滤器性质为对应的查询字符
-fn serialize_elective_nature<S>(
-    nature: &Option<ElectiveNature>,
+fn serialize_course_nature<S>(
+    nature: &Option<CourseNature>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -187,10 +187,10 @@ where
 {
     if let Some(n) = nature {
         match n {
-            ElectiveNature::Compulsory => serializer.serialize_str("01"),
-            ElectiveNature::Elective => serializer.serialize_str("02"),
-            ElectiveNature::Limited => serializer.serialize_str("03"),
-            ElectiveNature::Optional => serializer.serialize_str("04"),
+            CourseNature::Compulsory => serializer.serialize_str("01"),
+            CourseNature::Elective => serializer.serialize_str("02"),
+            CourseNature::Limited => serializer.serialize_str("03"),
+            CourseNature::Optional => serializer.serialize_str("04"),
         }
     } else {
         serializer.serialize_none()
@@ -203,7 +203,7 @@ where
 // A 数学与自然科学类, B 工程基础类, C 外语类, D 思政军理类, E 体育类, FG 素质教育通识限修课, K Office Hours
 // 011 数理基础课, 012 工程基础课, 013 外语课类, 021 思政课, 022 军理课, 023 体育课, 024 素质教育理论必修课
 // 025 素质教育实践必修课, 026 综合素养课, 031 核心专业类, 032 一般专业类, 01 自然科学类课程
-pub enum ElectiveType {
+pub enum CourseType {
     /// 数学与自然科学类
     A,
     /// 工程基础类
@@ -245,8 +245,8 @@ pub enum ElectiveType {
 }
 
 // 序列化选课过滤器类型为对应的查询字符
-fn serialize_elective_type<S>(
-    r#type: &Option<ElectiveType>,
+fn serialize_course_type<S>(
+    r#type: &Option<CourseType>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -254,25 +254,25 @@ where
 {
     if let Some(t) = r#type {
         match t {
-            ElectiveType::A => serializer.serialize_str("A"),
-            ElectiveType::B => serializer.serialize_str("B"),
-            ElectiveType::C => serializer.serialize_str("C"),
-            ElectiveType::D => serializer.serialize_str("D"),
-            ElectiveType::E => serializer.serialize_str("E"),
-            ElectiveType::F => serializer.serialize_str("FG"),
-            ElectiveType::G => serializer.serialize_str("K"),
-            ElectiveType::H => serializer.serialize_str("011"),
-            ElectiveType::I => serializer.serialize_str("012"),
-            ElectiveType::J => serializer.serialize_str("013"),
-            ElectiveType::K => serializer.serialize_str("021"),
-            ElectiveType::L => serializer.serialize_str("022"),
-            ElectiveType::M => serializer.serialize_str("023"),
-            ElectiveType::N => serializer.serialize_str("024"),
-            ElectiveType::O => serializer.serialize_str("025"),
-            ElectiveType::P => serializer.serialize_str("026"),
-            ElectiveType::Q => serializer.serialize_str("031"),
-            ElectiveType::R => serializer.serialize_str("032"),
-            ElectiveType::S => serializer.serialize_str("01"),
+            CourseType::A => serializer.serialize_str("A"),
+            CourseType::B => serializer.serialize_str("B"),
+            CourseType::C => serializer.serialize_str("C"),
+            CourseType::D => serializer.serialize_str("D"),
+            CourseType::E => serializer.serialize_str("E"),
+            CourseType::F => serializer.serialize_str("FG"),
+            CourseType::G => serializer.serialize_str("K"),
+            CourseType::H => serializer.serialize_str("011"),
+            CourseType::I => serializer.serialize_str("012"),
+            CourseType::J => serializer.serialize_str("013"),
+            CourseType::K => serializer.serialize_str("021"),
+            CourseType::L => serializer.serialize_str("022"),
+            CourseType::M => serializer.serialize_str("023"),
+            CourseType::N => serializer.serialize_str("024"),
+            CourseType::O => serializer.serialize_str("025"),
+            CourseType::P => serializer.serialize_str("026"),
+            CourseType::Q => serializer.serialize_str("031"),
+            CourseType::R => serializer.serialize_str("032"),
+            CourseType::S => serializer.serialize_str("01"),
         }
     } else {
         serializer.serialize_none()
@@ -284,20 +284,20 @@ where
 // ====================
 
 #[derive(Deserialize)]
-pub(super) struct _ElectiveRes1 {
-    pub data: ElectiveCourses,
+pub(super) struct _SrsRes1 {
+    pub data: Courses,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ElectiveCourses {
+pub struct Courses {
     #[serde(rename = "total")]
     pub count: u16,
     #[serde(rename = "rows")]
-    pub data: Vec<ElectiveCourse>,
+    pub data: Vec<Course>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ElectiveCourse {
+pub struct Course {
     // 教学班 ID
     #[serde(rename = "JXBID")]
     pub(super) id: String,
@@ -314,7 +314,7 @@ pub struct ElectiveCourse {
     pub name: String,
     // 上课时间表
     #[serde(rename = "SKSJ")]
-    pub schedule: Option<Vec<ElectiveSchedule>>,
+    pub schedule: Option<Vec<CourseSchedule>>,
     // 开课单位
     #[serde(rename = "KKDW")]
     pub department: String,
@@ -353,7 +353,7 @@ pub struct ElectiveCourse {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ElectiveSchedule {
+pub struct CourseSchedule {
     #[serde(rename = "SKZCMC")]
     pub week: String,
     #[serde(rename = "SKXQ")]
@@ -366,10 +366,10 @@ pub struct ElectiveSchedule {
     pub place: String,
 }
 
-impl ElectiveCourse {
-    pub fn to_opt<'a>(&'a self, filter: &'a ElectiveFilter) -> _ElectiveOpt<'a> {
-        _ElectiveOpt {
-            range: elective_range_to_str(&filter.range),
+impl Course {
+    pub fn to_opt<'a>(&'a self, filter: &'a CourseFilter) -> _SrsOpt<'a> {
+        _SrsOpt {
+            range: course_range_to_str(&filter.range),
             id: &self.id,
             sum: &self.sum,
         }
@@ -381,12 +381,12 @@ impl ElectiveCourse {
 // ====================
 
 #[derive(Deserialize)]
-pub(crate) struct _ElectiveRes2 {
-    pub data: Vec<ElectiveSeleted>,
+pub(crate) struct _SrsRes2 {
+    pub data: Vec<CourseSeleted>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ElectiveSeleted {
+pub struct CourseSeleted {
     #[serde(rename = "JXBID")]
     pub id: String,
     #[serde(rename = "teachingClassType")]
@@ -413,7 +413,7 @@ pub struct ElectiveSeleted {
     pub sum: String,
 }
 
-impl ElectiveSeleted {
+impl CourseSeleted {
     pub fn can_drop(&self) -> bool {
         self.can_drop == "1"
     }
@@ -422,8 +422,8 @@ impl ElectiveSeleted {
     /// It can only be used to drop course,
     /// and you need to make sure that `can_drop()` returns true,
     /// otherwise it will fail at 'drop_course' or there will be some other unknown error
-    pub fn to_opt<'a>(&'a self) -> _ElectiveOpt<'a> {
-        _ElectiveOpt {
+    pub fn to_opt<'a>(&'a self) -> _SrsOpt<'a> {
+        _SrsOpt {
             range: self.range.as_deref().unwrap_or(""),
             id: &self.id,
             sum: &self.sum,
@@ -437,7 +437,7 @@ impl ElectiveSeleted {
 
 /// # Structure for course select and drop
 #[derive(Serialize)]
-pub struct _ElectiveOpt<'a> {
+pub struct _SrsOpt<'a> {
     // 类型
     #[serde(rename = "clazzType")]
     range: &'a str,

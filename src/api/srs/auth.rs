@@ -1,6 +1,6 @@
 use crate::Error;
 
-impl super::ElectiveAPI {
+impl super::SrsAPI {
     pub async fn login(&self) -> crate::Result<()> {
         let url = "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fbyxk.buaa.edu.cn%2Fxsxk%2Fauth%2Fcas";
         // 获取 JSESSIONID
@@ -14,7 +14,7 @@ impl super::ElectiveAPI {
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
                 let mut config = self.config.write().unwrap();
-                config.elective_token = Some(t.value().to_string());
+                config.srs_token = Some(t.value().to_string());
                 return Ok(());
             }
             None => return Err(Error::LoginError("No Token".to_string())),

@@ -1,19 +1,19 @@
 use crate::Error;
 
 use super::{
-    _ElectiveOpt, _ElectiveRes1, _ElectiveRes2, _ElectiveStatus, ElectiveCourses, ElectiveFilter,
-    ElectiveSeleted,
+    _SrsOpt, _SrsRes1, _SrsRes2, _SrsStatus, Courses, CourseFilter,
+    CourseSeleted,
 };
 
-impl super::ElectiveAPI {
-    pub async fn gen_filter(&self) -> crate::Result<ElectiveFilter> {
+impl super::SrsAPI {
+    pub async fn gen_filter(&self) -> crate::Result<CourseFilter> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
 
         // 获取 token
         let config = self.config.read().unwrap();
-        let token = match &config.elective_token {
+        let token = match &config.srs_token {
             Some(t) => t,
-            None => return Err(Error::APIError("No Elective Token".to_string())),
+            None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
         let query = [("token", token)];
@@ -28,7 +28,7 @@ impl super::ElectiveAPI {
         let campus = crate::utils::get_value_by_lable(&text, "\"campus\": \"", "\"");
         if let Some(campus) = campus {
             match campus.parse::<u8>() {
-                Ok(campus) => return Ok(ElectiveFilter::new(campus)),
+                Ok(campus) => return Ok(CourseFilter::new(campus)),
                 Err(_) => return Err(Error::APIError("Invalid Campus".to_string())),
             };
         } else {
@@ -36,14 +36,14 @@ impl super::ElectiveAPI {
         }
     }
     /// Query Course
-    pub async fn query_course(&self, filter: &ElectiveFilter) -> Result<ElectiveCourses, Error> {
+    pub async fn query_course(&self, filter: &CourseFilter) -> Result<Courses, Error> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
 
         // 获取 token
         let config = self.config.read().unwrap();
-        let token = match &config.elective_token {
+        let token = match &config.srs_token {
             Some(t) => t,
-            None => return Err(Error::APIError("No Elective Token".to_string())),
+            None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
         let res = self
@@ -53,47 +53,47 @@ impl super::ElectiveAPI {
             .send()
             .await?;
         let text = res.text().await?;
-        let status = serde_json::from_str::<_ElectiveStatus>(&text)?;
+        let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
             return Err(Error::APIError(status.msg));
         }
 
-        let res = serde_json::from_str::<_ElectiveRes1>(&text)?;
+        let res = serde_json::from_str::<_SrsRes1>(&text)?;
         Ok(res.data)
     }
 
     /// Query Selected Course
-    pub async fn query_selected(&self) -> Result<Vec<ElectiveSeleted>, Error> {
+    pub async fn query_selected(&self) -> Result<Vec<CourseSeleted>, Error> {
         // https://byxk.buaa.edu.cn/xsxk/elective/deselect 查询退选记录的 URL, 操作相同, 但感觉没啥用
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
 
         // 获取 token
         let config = self.config.read().unwrap();
-        let token = match &config.elective_token {
+        let token = match &config.srs_token {
             Some(t) => t,
-            None => return Err(Error::APIError("No Elective Token".to_string())),
+            None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
         let res = self.post(url).header("Authorization", token).send().await?;
         let text = res.text().await?;
-        let status = serde_json::from_str::<_ElectiveStatus>(&text)?;
+        let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
             return Err(Error::APIError(status.msg));
         }
-        let res = serde_json::from_str::<_ElectiveRes2>(&text)?;
+        let res = serde_json::from_str::<_SrsRes2>(&text)?;
         Ok(res.data)
     }
 
     /// # Select Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn select_course<'a>(&self, opt: &'a _ElectiveOpt<'a>) -> crate::Result<()> {
+    pub async fn select_course<'a>(&self, opt: &'a _SrsOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
 
         // 获取 token
         let config = self.config.read().unwrap();
-        let token = match &config.elective_token {
+        let token = match &config.srs_token {
             Some(t) => t,
-            None => return Err(Error::APIError("No Elective Token".to_string())),
+            None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
         let res = self
@@ -103,7 +103,7 @@ impl super::ElectiveAPI {
             .send()
             .await?;
         let text = res.text().await?;
-        let status = serde_json::from_str::<_ElectiveStatus>(&text)?;
+        let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
             return Err(Error::APIError(status.msg));
         }
@@ -112,14 +112,14 @@ impl super::ElectiveAPI {
 
     /// # Drop Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn drop_course<'a>(&self, opt: &'a _ElectiveOpt<'a>) -> crate::Result<()> {
+    pub async fn drop_course<'a>(&self, opt: &'a _SrsOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
 
         // 获取 token
         let config = self.config.read().unwrap();
-        let token = match &config.elective_token {
+        let token = match &config.srs_token {
             Some(t) => t,
-            None => return Err(Error::APIError("No Elective Token".to_string())),
+            None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
         let res = self
@@ -129,7 +129,7 @@ impl super::ElectiveAPI {
             .send()
             .await?;
         let text = res.text().await?;
-        let status = serde_json::from_str::<_ElectiveStatus>(&text)?;
+        let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
             return Err(Error::APIError(status.msg));
         }
@@ -144,7 +144,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_elective_gen_filter() {
+    async fn test_srs_gen_filter() {
         let env = env();
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
@@ -154,7 +154,7 @@ mod tests {
         context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
-        let course = context.elective();
+        let course = context.srs();
         course.login().await.unwrap();
 
         let _filter = course.gen_filter().await.unwrap();
@@ -164,7 +164,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_elective_query() {
+    async fn test_srs_query() {
         let env = env();
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
@@ -174,12 +174,12 @@ mod tests {
         context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
-        let elective = context.elective();
-        elective.login().await.unwrap();
+        let srs = context.srs();
+        srs.login().await.unwrap();
 
-        let filter = elective.gen_filter().await.unwrap();
+        let filter = srs.gen_filter().await.unwrap();
 
-        let res = elective.query_course(&filter).await.unwrap();
+        let res = srs.query_course(&filter).await.unwrap();
         println!("{:?}", res);
 
         context.save_cookie("cookie.json");
@@ -187,7 +187,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_elective_query_selete() {
+    async fn test_srs_query_selete() {
         let env = env();
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
@@ -197,7 +197,7 @@ mod tests {
         context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
-        let course = context.elective();
+        let course = context.srs();
         course.login().await.unwrap();
 
         let res = course.query_selected().await.unwrap();

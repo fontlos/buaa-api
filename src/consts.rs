@@ -1,4 +1,4 @@
-/// For Boya generic requests
+/// For Boya Universal requests
 /// From hard-coded in JS
 /// 2025.04.22
 pub const BOYA_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
@@ -13,19 +13,19 @@ Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
 /// 2025.04.22
 pub const CLASS_DES_KEY: &str = "Jyd#351*";
 
-/// For Pan
+/// For Cloud
 /// From https://bhpan.buaa.edu.cn/oauth2/_next/static/chunks/pages/signin-2a57b4f57ddbb54dc27e.js
 /// Changed since v7 (2023.08)
 /// 2025.04.22
 /// RSA encryption password is used for Beihang cloud disk account password login, but we use SSO login, so we don't need this for the time being
 ///
-// const PAN_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
+// const CLOUD_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
 // MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC7JL0DcaMUHumSdhxXTxqiABBC
 // DERhRJIsAPB++zx1INgSEKPGbexDt1ojcNAc0fI+G/yTuQcgH1EW8posgUni0mcT
 // E6CnjkVbv8ILgCuhy+4eu+2lApDwQPD9Tr6J8k21Ruu2sWV5Z1VRuQFqGm/c5vaT
 // OQE5VFOIXPVTaa25mQIDAQAB
 // -----END PUBLIC KEY-----";
-const _PAN_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
+const _CLOUD_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4E+eiWRwffhRIPQYvlXU
 jf0b3HqCmosiCxbFCYI/gdfDBhrTUzbt3fL3o/gRQQBEPf69vhJMFH2ZMtaJM6oh
 E3yQef331liPVM0YvqMOgvoID+zDa1NIZFObSsjOKhvZtv9esO0REeiVEPKNc+Dp
