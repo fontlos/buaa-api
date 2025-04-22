@@ -1,1 +1,1 @@
-//! BUAA Office of Studies (教务) API
+//! BUAA Office of Studies API

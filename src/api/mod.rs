@@ -19,7 +19,8 @@ pub struct Class;
 pub struct Elective;
 /// Marker type for BUAA Teacher Evaluation System API Grouping
 pub struct Evaluation;
-pub struct Office;
+/// Marker type for BUAA Academic Affairs System API Grouping
+pub struct AAS;
 /// Marker type for BUAA Pan API Grouping
 pub struct Pan;
 /// Marker type for BUAA Spoc API Grouping
@@ -49,8 +50,8 @@ impl crate::Context<SSO> {
     pub fn evaluation(&self) -> &crate::Context<Evaluation> {
         self.api::<Evaluation>()
     }
-    pub fn office(&self) -> &crate::Context<Office> {
-        self.api::<Office>()
+    pub fn office(&self) -> &crate::Context<AAS> {
+        self.api::<AAS>()
     }
     pub fn pan(&self) -> &crate::Context<Pan> {
         self.api::<Pan>()

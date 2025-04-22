@@ -1,4 +1,4 @@
-//! BUAA Boya (博雅选课) API
+//! BUAA Boya Course API
 
 mod auth;
 mod opt;
@@ -8,4 +8,18 @@ mod utils;
 
 pub use utils::*;
 
+/// BUAA Boya Course API
+///
+/// Obtain a context view via [`Context.boya()`],
+/// then call specific APIs through this grouping.
+///
+/// # Examples
+/// ```
+/// let ctx = Context::new();
+/// let boya = ctx.boya();
+/// boya.login().await.unwrap();
+/// ```
+///
+/// Note: All API groups share the same underlying context -
+/// modifications will be instantly visible across all groups.
 type BoyaAPI = crate::Context<super::Boya>;

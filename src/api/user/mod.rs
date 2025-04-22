@@ -1,5 +1,19 @@
-//! BUAA User Center (用户中心) API
+//! BUAA User Center API
 
 mod opt;
 
+/// BUAA User Center API Group
+///
+/// Obtain a context view via [`Context.user()`],
+/// then call specific APIs through this grouping.
+///
+/// # Examples
+/// ```
+/// let ctx = Context::new();
+/// let user = ctx.user();
+/// user.login().await.unwrap();
+/// ```
+///
+/// Note: All API groups share the same underlying context -
+/// modifications will be instantly visible across all groups.
 pub type UserAPI = crate::Context<super::User>;
