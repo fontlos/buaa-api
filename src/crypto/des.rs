@@ -1,10 +1,10 @@
 use des::Des;
 use des::cipher::{BlockEncrypt, KeyInit, generic_array::GenericArray};
 
-/// DES encrypt for iclass api, use ECB mode
-pub fn des_encrypt(data: &str) -> String {
-    // 密钥来自对 JS 的逆向分析
-    let key = b"Jyd#351*";
+/// DES encrypt, use ECB mode
+pub fn des_encrypt(data: &str, key: &str) -> String {
+    // 
+    let key = key.as_bytes();
     let cipher = Des::new_from_slice(key).unwrap();
     let mut input = data.as_bytes().to_vec();
     // 计算填充长度

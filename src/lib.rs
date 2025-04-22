@@ -1,6 +1,7 @@
 #![doc = include_str!("../Readme.md")]
 
 pub mod api;
+mod consts;
 mod context;
 mod crypto;
 mod error;
