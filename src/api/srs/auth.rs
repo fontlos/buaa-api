@@ -13,7 +13,7 @@ impl super::SrsAPI {
         let cookie = self.cookies.lock().unwrap();
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
-                let mut config = self.config.write().unwrap();
+                let mut config = self.config.borrow_mut();
                 config.srs_token = Some(t.value().to_string());
                 return Ok(());
             }

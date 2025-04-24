@@ -32,7 +32,7 @@ impl super::SpocAPI {
         //     }
         //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
         // };
-        let mut config = self.config.write().unwrap();
+        let mut config = self.config.borrow_mut();
         config.spoc_token = Some(token.into_owned());
         Ok(())
     }

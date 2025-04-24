@@ -20,7 +20,7 @@ impl super::TesAPI {
     pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
         // 考虑到 rwid 只有这一个地方用到, 所以直接在这里获取
         // 获取账号
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let username = config.username.as_ref().unwrap();
         // 获取 rwid
         // 省略的无用查询参数 &rwmc=&sfyp=0
@@ -122,7 +122,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
         context.login().await.unwrap();
 
         let tes = context.tes();
@@ -141,7 +141,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
         context.login().await.unwrap();
 
         let tes = context.tes();

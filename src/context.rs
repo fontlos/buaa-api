@@ -11,16 +11,17 @@ use std::io::BufReader;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use std::cell::RefCell;
 
 use crate::api::SSO;
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Context<G = SSO> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<CookieStoreMutex>,
-    pub config: Arc<RwLock<Config>>,
+    pub(crate) config: RefCell<Config>,
     _marker: PhantomData<G>,
 }
 
@@ -62,12 +63,10 @@ impl Context {
             .build()
             .unwrap();
 
-        let config = Config::default();
-
         Context {
             client,
             cookies: cookie_store,
-            config: Arc::new(RwLock::new(config)),
+            config: RefCell::new(Config::default()),
             _marker: PhantomData,
         }
     }
@@ -75,39 +74,35 @@ impl Context {
     pub fn set_config(
         &self,
         config: Config,
-    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
-        let mut config_lock = self.config.write()?;
+    ) {
+        let mut config_lock = self.config.borrow_mut();
         *config_lock = config;
-        Ok(())
     }
 
     pub fn set_account(
         &self,
         username: &str,
         password: &str,
-    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
-        let mut config = self.config.write()?;
+    ) {
+        let mut config = self.config.borrow_mut();
         config.username = Some(username.to_string());
         config.password = Some(password.to_string());
-        Ok(())
     }
 
     pub fn set_username(
         &self,
         username: &str,
-    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
-        let mut config = self.config.write()?;
+    ) {
+        let mut config = self.config.borrow_mut();
         config.username = Some(username.to_string());
-        Ok(())
     }
 
     pub fn set_password(
         &self,
         password: &str,
-    ) -> Result<(), std::sync::PoisonError<std::sync::RwLockWriteGuard<'_, Config>>> {
-        let mut config = self.config.write()?;
+    ) {
+        let mut config = self.config.borrow_mut();
         config.password = Some(password.to_string());
-        Ok(())
     }
 
     /// Load config from path, if the path is not exist or parse failed, it will return a default one
@@ -125,7 +120,7 @@ impl Context {
             Config::default()
         };
 
-        let mut config_lock = self.config.write().unwrap();
+        let mut config_lock = self.config.borrow_mut();
         *config_lock = config;
     }
 
@@ -175,7 +170,7 @@ impl Context {
     /// save config manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn save_config<P: AsRef<Path>>(&self, path: P) {
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let file = OpenOptions::new()
             .read(true)
             .write(true)

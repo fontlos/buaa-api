@@ -74,7 +74,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
         context.login().await.unwrap();
 
         let cloud = context.cloud();

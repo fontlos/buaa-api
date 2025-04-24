@@ -15,7 +15,7 @@ impl super::WiFiAPI {
     /// }
     /// ```
     pub async fn login(&self) -> crate::Result<()> {
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let un = match config.username.as_ref() {
             Some(s) => s,
             None => return Err(Error::LoginError("No Username".to_string())),
@@ -136,7 +136,7 @@ impl super::WiFiAPI {
     /// }
     /// ```
     pub async fn logout(&self) -> crate::Result<()> {
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let un = match config.username.as_ref() {
             Some(s) => s,
             None => return Err(Error::LoginError("No Username".to_string())),
@@ -206,7 +206,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
 
         let wifi = context.wifi();
         wifi.login().await.unwrap();
@@ -220,7 +220,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
 
         let wifi = context.wifi();
         wifi.logout().await.unwrap();

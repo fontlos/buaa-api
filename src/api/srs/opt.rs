@@ -7,7 +7,7 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
 
         // 获取 token
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let token = match &config.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
@@ -37,7 +37,7 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
 
         // 获取 token
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let token = match &config.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
@@ -65,7 +65,7 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
 
         // 获取 token
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let token = match &config.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
@@ -87,7 +87,7 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
 
         // 获取 token
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let token = match &config.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
@@ -113,7 +113,7 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
 
         // 获取 token
-        let config = self.config.read().unwrap();
+        let config = self.config.borrow();
         let token = match &config.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
@@ -147,7 +147,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
         context.login().await.unwrap();
 
         let course = context.srs();
@@ -164,7 +164,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
         context.login().await.unwrap();
 
         let srs = context.srs();
@@ -184,7 +184,7 @@ mod tests {
         let password = env.get("PASSWORD").unwrap();
 
         let context = Context::new();
-        context.set_account(username, password).unwrap();
+        context.set_account(username, password);
         context.login().await.unwrap();
 
         let course = context.srs();

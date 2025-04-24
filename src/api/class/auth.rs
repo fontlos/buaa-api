@@ -39,7 +39,7 @@ impl super::ClassAPI {
         let res = res.text().await?;
         match serde_json::from_str::<_ClassLogin>(&res) {
             Ok(res) => {
-                let mut config = self.config.write().unwrap();
+                let mut config = self.config.borrow_mut();
                 config.class_token = Some(res.result.id);
                 Ok(())
             }

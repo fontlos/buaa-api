@@ -16,10 +16,7 @@ impl super::BoyaAPI {
             None => return Err(Error::LoginError("No Token".to_string())),
         };
         if token.0 == "token" {
-            let mut config = match self.config.write() {
-                Ok(c) => c,
-                Err(_) => return Err(Error::LockError),
-            };
+            let mut config = self.config.borrow_mut();
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
@@ -41,10 +38,7 @@ impl super::BoyaAPI {
             None => return Err(Error::LoginError("No Token".to_string())),
         };
         if token.0 == "token" {
-            let mut config = match self.config.write() {
-                Ok(c) => c,
-                Err(_) => return Err(Error::LockError),
-            };
+            let mut config = self.config.borrow_mut();
             config.boya_token = Some(token.1.to_string());
             return Ok(());
         } else {
