@@ -38,12 +38,6 @@ pub struct Config {
     pub srs_token: Option<String>,
 }
 
-impl Config {
-    pub fn new() -> Self {
-        Config::default()
-    }
-}
-
 impl Context {
     /// Initialize the `Context`
     /// ```rust
@@ -68,7 +62,7 @@ impl Context {
             .build()
             .unwrap();
 
-        let config = Config::new();
+        let config = Config::default();
 
         Context {
             client,
@@ -128,7 +122,7 @@ impl Context {
         let config = if let Ok(config) = serde_json::from_reader(file) {
             config
         } else {
-            Config::new()
+            Config::default()
         };
 
         let mut config_lock = self.config.write().unwrap();
@@ -141,7 +135,7 @@ impl Context {
         let path = PathBuf::from(path.as_ref());
         let cookie_store = match File::open(&path) {
             Ok(f) => {
-                CookieStore::load_all(BufReader::new(f), |s| serde_json::from_str::<Cookie>(s))
+                CookieStore::load_all(BufReader::new(f), |s| serde_json::from_str::<Cookie<'_>>(s))
                     .unwrap()
             }
             Err(_) => CookieStore::default(),
