@@ -75,7 +75,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let cloud = context.cloud();
@@ -85,7 +84,5 @@ mod tests {
         let list = cloud.list(&dir).await.unwrap();
 
         println!("list: {list}");
-
-        context.save_cookie("cookie.json");
     }
 }

@@ -148,15 +148,12 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let course = context.srs();
         course.login().await.unwrap();
 
         let _filter = course.gen_filter().await.unwrap();
-
-        context.save_cookie("cookie.json");
     }
 
     #[ignore]
@@ -168,7 +165,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let srs = context.srs();
@@ -178,8 +174,6 @@ mod tests {
 
         let res = srs.query_course(&filter).await.unwrap();
         println!("{:?}", res);
-
-        context.save_cookie("cookie.json");
     }
 
     #[ignore]
@@ -191,7 +185,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let course = context.srs();
@@ -200,7 +193,5 @@ mod tests {
         let res = course.query_selected().await.unwrap();
 
         println!("{:?}", res);
-
-        context.save_cookie("cookie.json");
     }
 }

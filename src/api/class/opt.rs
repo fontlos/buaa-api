@@ -99,7 +99,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let class = context.class();
@@ -107,8 +106,6 @@ mod tests {
 
         let res = class.query_course("202420251").await.unwrap();
         println!("{:#?}", res);
-
-        context.save_cookie("cookie.json");
     }
 
     #[tokio::test]
@@ -119,7 +116,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let class = context.class();
@@ -127,8 +123,6 @@ mod tests {
 
         let res = class.query_schedule("64668").await.unwrap();
         println!("{:#?}", res);
-
-        context.save_cookie("cookie.json");
     }
 
     #[tokio::test]
@@ -139,7 +133,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let class = context.class();
@@ -147,7 +140,5 @@ mod tests {
 
         let res = class.checkin("2090542").await.unwrap();
         println!("{}", res.text().await.unwrap());
-
-        context.save_cookie("cookie.json");
     }
 }

@@ -78,7 +78,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let boya = context.boya();
@@ -92,8 +91,6 @@ mod tests {
             }
         };
         println!("{:?}", res);
-
-        context.save_cookie("cookie.json");
     }
 
     #[ignore]
@@ -105,7 +102,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let boya = context.boya();
@@ -116,8 +112,6 @@ mod tests {
 
         let res = boya.query_selected(start, end).await.unwrap();
         println!("{:?}", res);
-
-        context.save_cookie("cookie.json");
     }
 
     #[ignore]
@@ -129,7 +123,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let boya = context.boya();
@@ -138,7 +131,5 @@ mod tests {
         let res = boya.query_statistic().await.unwrap();
 
         println!("{:?}", res);
-
-        context.save_cookie("cookie.json");
     }
 }

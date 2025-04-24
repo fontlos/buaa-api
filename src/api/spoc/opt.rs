@@ -38,7 +38,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let spoc = context.spoc();
@@ -48,7 +47,5 @@ mod tests {
         println!("{:?}", res);
         let res = spoc.get_week_schedule(&res).await.unwrap();
         println!("{:?}", res);
-
-        context.save_cookie("cookie.json");
     }
 }

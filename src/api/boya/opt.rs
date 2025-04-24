@@ -48,15 +48,12 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let boya = context.boya();
         boya.login().await.unwrap();
         let res = boya.select_course(6637).await.unwrap();
         println!("{}", res);
-
-        context.save_cookie("cookie.json");
     }
 
     #[ignore]
@@ -68,14 +65,11 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let boya = context.boya();
         boya.login().await.unwrap();
         let res = boya.drop_course(6637).await.unwrap();
         println!("{}", res);
-
-        context.save_cookie("cookie.json");
     }
 }

@@ -123,15 +123,12 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let tes = context.tes();
         tes.login().await.unwrap();
         let list = tes.get_evaluation_list().await.unwrap();
         println!("{:?}", list);
-
-        context.save_cookie("cookie.json");
     }
 
     #[ignore]
@@ -145,7 +142,6 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password).unwrap();
-        context.with_cookies("cookie.json").unwrap();
         context.login().await.unwrap();
 
         let tes = context.tes();
@@ -172,7 +168,5 @@ mod tests {
         let res = tes.submit_evaluation(complete).await.unwrap();
 
         println!("{}", res.text().await.unwrap());
-
-        context.save_cookie("cookie.json");
     }
 }
