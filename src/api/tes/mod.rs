@@ -1,4 +1,4 @@
-//! BUAA Teacher Evaluation System API
+//! # BUAA Teacher Evaluation System API
 
 mod opt;
 mod utils;

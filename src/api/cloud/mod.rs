@@ -1,4 +1,4 @@
-//! BUAA Cloud Disk API
+//! # BUAA Cloud Disk API
 
 mod auth;
 mod opt;

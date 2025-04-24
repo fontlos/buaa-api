@@ -1,4 +1,4 @@
-//! BUAA Spoc Platform API
+//! # BUAA Spoc Platform API
 
 mod auth;
 mod opt;

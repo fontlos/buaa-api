@@ -1,4 +1,4 @@
-//! BUAA User Center API
+//! # BUAA User Center API
 
 mod opt;
 

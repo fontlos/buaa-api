@@ -1,4 +1,4 @@
-//! BUAA WiFi API
+//! # BUAA WiFi API
 
 mod auth;
 

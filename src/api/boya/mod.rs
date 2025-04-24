@@ -1,4 +1,4 @@
-//! BUAA Boya Course API
+//! # BUAA Boya Course API
 
 mod auth;
 mod opt;
@@ -22,4 +22,4 @@ pub use utils::*;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-type BoyaAPI = crate::Context<super::Boya>;
+pub type BoyaAPI = crate::Context<super::Boya>;

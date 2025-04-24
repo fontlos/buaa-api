@@ -1,4 +1,4 @@
-//! BUAA Smart Classroom API
+//! # BUAA Smart Classroom API
 //!
 //! It is used for class sign-in and class attendance inquiry
 
@@ -22,4 +22,4 @@ pub use utils::*;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-type ClassAPI = crate::Context<super::Class>;
+pub type ClassAPI = crate::Context<super::Class>;
