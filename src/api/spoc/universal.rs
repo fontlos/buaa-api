@@ -17,8 +17,8 @@ impl super::SpocAPI {
             None => return Err(Error::APIError("No Token".to_string())),
         };
         // 逆向出来的密钥和初始向量, 既然写死了为什么不用 ECB 模式啊
-        let ase_key = "inco12345678ocni";
-        let ase_iv = "ocni12345678inco";
+        let ase_key = crate::consts::SPOC_AES_KEY;
+        let ase_iv = crate::consts::SPOC_AES_IV;
         let body = serde_json::json!({
             "param": crypto::aes::aes_encrypt_cbc(query, ase_key, ase_iv)
         });

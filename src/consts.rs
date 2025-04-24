@@ -34,3 +34,13 @@ iviqiLpgz72IxjF+xN4bRw8I5dD0GwwO8kDoJUGWgTds+VckCwdtZA65oui9Osk5
 t1a4pg6Xu9+HFcEuqwJTDxATvGAz1/YW0oUisjM0ObKTRDVSfnTYeaBsN6L+M+8g
 CwIDAQAB
 -----END PUBLIC KEY-----";
+
+/// For Spoc Universal requests
+/// From hard-coded in JS
+/// 2025.04.22
+pub const SPOC_AES_KEY: &str = "inco12345678ocni";
+
+/// For Spoc Universal requests
+/// From hard-coded in JS
+/// 2025.04.22
+pub const SPOC_AES_IV: &str = "ocni12345678inco";
