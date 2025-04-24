@@ -70,6 +70,7 @@ impl super::WiFiAPI {
             Some(s) => s,
             None => return Err(Error::LoginError("No Challenge Value".to_string())),
         };
+        let token_bytes = token.as_bytes();
 
         // 计算登录信息
         // 注意因为是直接格式化字符串而非通过json库转成标准json, 所以必须保证格式完全正确, 无空格, 键值对都带双引号
@@ -77,10 +78,10 @@ impl super::WiFiAPI {
             r#"{{"username":"{un}","password":"{pw}","ip":"{ip}","acid":"{ac_id}","enc_ver":"srun_bx1"}}"#
         );
         // 自带前缀
-        let info = crypto::xencode::x_encode(&data, &token);
+        let info = crypto::xencode::x_encode(data.as_bytes(), token_bytes);
 
         // 计算加密后的密码, 并且后补前缀
-        let password_md5 = crypto::md5::md5_hmac(pw.as_bytes(), &token);
+        let password_md5 = crypto::md5::md5_hmac(pw.as_bytes(), token_bytes);
 
         // 计算校验和, 参数顺序如下
         //                             token username token password_md5 token ac_id token ip token n token type token info

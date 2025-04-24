@@ -182,8 +182,8 @@ mod light {
         }
     }
 
-    pub fn md5_hmac(data: &[u8], key: &str) -> String {
-        let hmac = HMACMD5::new(key.as_bytes());
+    pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
+        let hmac = HMACMD5::new(key);
         let digest = hmac.compute(data);
         bytes_to_hex_fast(&digest)
     }
@@ -194,11 +194,11 @@ pub use light::*;
 
 #[cfg(feature = "crypto")]
 mod fast {
-    pub fn md5_hmac(data: &str, key: &str) -> String {
+    pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
         use hmac::{Hmac, Mac};
         use md5::Md5;
-        let mut hmac = Hmac::<Md5>::new_from_slice(key.as_bytes()).unwrap();
-        hmac.update(data.as_bytes());
+        let mut hmac = Hmac::<Md5>::new_from_slice(key).unwrap();
+        hmac.update(data);
         let res = hmac.finalize().into_bytes();
         hex::encode(&res)
     }

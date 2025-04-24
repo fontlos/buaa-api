@@ -3,13 +3,13 @@ use aes::cipher::{BlockDecrypt, BlockEncrypt, KeyInit, generic_array::GenericArr
 use base64::{Engine as _, engine::general_purpose};
 
 /// AES encrypt, use Base64, ECB mode, PKCS5Padding
-pub fn aes_encrypt_ecb(data: &str, key: &str) -> String {
+pub fn aes_encrypt_ecb(data: &[u8], key: &[u8]) -> String {
     // 将密钥转换为字节数组
-    let key_bytes = key.as_bytes();
+    let key_bytes = key;
     // 创建 AES 加密器
     let cipher = Aes128::new_from_slice(key_bytes).unwrap();
     // 将输入数据转换为字节数组
-    let mut data_bytes = data.as_bytes().to_vec();
+    let mut data_bytes = data.to_vec();
     // 计算填充长度
     let padding_len = 16 - (data_bytes.len() % 16);
     // 添加 PKCS5Padding
@@ -29,16 +29,16 @@ pub fn aes_encrypt_ecb(data: &str, key: &str) -> String {
 }
 
 /// AES encrypt, use Base64, CBC mode, ZeroPadding
-pub fn aes_encrypt_cbc(data: &str, key: &str, iv: &str) -> String {
+pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> String {
     // 将密钥和初始向量转换为字节数组
-    let key_bytes = key.as_bytes();
-    let iv_bytes = iv.as_bytes();
+    // let key_bytes = key.as_bytes();
+    // let iv_bytes = iv.as_bytes();
 
     // 创建 AES 加密器
-    let cipher = Aes128::new_from_slice(key_bytes).unwrap();
+    let cipher = Aes128::new_from_slice(key).unwrap();
 
     // 将输入数据转换为字节数组
-    let mut data_bytes = data.as_bytes().to_vec();
+    let mut data_bytes = data.to_vec();
 
     // 计算填充长度
     let padding_len = 16 - (data_bytes.len() % 16);
@@ -53,7 +53,7 @@ pub fn aes_encrypt_cbc(data: &str, key: &str, iv: &str) -> String {
 
     // 初始块使用初始向量进行加密
     let mut block = GenericArray::from_mut_slice(&mut output[..16]);
-    block.copy_from_slice(iv_bytes);
+    block.copy_from_slice(iv);
     cipher.encrypt_block(&mut block);
 
     // 逐块加密数据
@@ -65,7 +65,7 @@ pub fn aes_encrypt_cbc(data: &str, key: &str, iv: &str) -> String {
         if i == 0 {
             // 第一个块使用初始向量进行异或操作
             for j in 0..16 {
-                block[j] = chunk[j] ^ iv_bytes[j];
+                block[j] = chunk[j] ^ iv[j];
             }
         } else {
             // 后续块使用前一个块的加密结果进行异或操作
@@ -83,13 +83,11 @@ pub fn aes_encrypt_cbc(data: &str, key: &str, iv: &str) -> String {
 }
 
 /// AES decrypt, use Base64, ECB mode, PKCS5Padding
-pub fn aes_decrypt(data: &str, key: &str) -> String {
+pub fn aes_decrypt(data: &str, key: &[u8]) -> String {
     // 将 Base64 编码的加密数据解码为字节数组
     let encrypted_bytes = general_purpose::STANDARD.decode(data).unwrap();
-    // 将密钥转换为字节数组
-    let key_bytes = key.as_bytes();
     // 创建 AES 解密器
-    let cipher = Aes128::new_from_slice(key_bytes).unwrap();
+    let cipher = Aes128::new_from_slice(key).unwrap();
     // 创建输出缓冲区
     let mut output = vec![0u8; encrypted_bytes.len()];
     // 逐块解密数据

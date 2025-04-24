@@ -20,7 +20,7 @@ impl super::SpocAPI {
         let ase_key = crate::consts::SPOC_AES_KEY;
         let ase_iv = crate::consts::SPOC_AES_IV;
         let body = serde_json::json!({
-            "param": crypto::aes::aes_encrypt_cbc(query, ase_key, ase_iv)
+            "param": crypto::aes::aes_encrypt_cbc(query.as_bytes(), ase_key, ase_iv)
         });
         let token = format!("Inco-{}", token);
         let mut header = HeaderMap::new();

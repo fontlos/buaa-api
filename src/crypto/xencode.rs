@@ -2,22 +2,22 @@ use base64::alphabet::Alphabet;
 use base64::engine::{Engine, GeneralPurpose, GeneralPurposeConfig};
 
 /// Convert the string byte array every four bits and merge it into a new array
-fn str2vec(a: &str) -> Vec<u32> {
+fn str2vec(a: &[u8]) -> Vec<u32> {
     let c = a.len();
     let mut v = Vec::new();
     for i in (0..c).step_by(4) {
         let mut value: u32 = 0;
         if i < c {
-            value |= a.as_bytes()[i] as u32;
+            value |= a[i] as u32;
         }
         if i + 1 < c {
-            value |= (a.as_bytes()[i + 1] as u32) << 8;
+            value |= (a[i + 1] as u32) << 8;
         }
         if i + 2 < c {
-            value |= (a.as_bytes()[i + 2] as u32) << 16;
+            value |= (a[i + 2] as u32) << 16;
         }
         if i + 3 < c {
-            value |= (a.as_bytes()[i + 3] as u32) << 24;
+            value |= (a[i + 3] as u32) << 24;
         }
         v.push(value);
     }
@@ -27,7 +27,7 @@ fn str2vec(a: &str) -> Vec<u32> {
 
 /// XEncode for gw api</br>
 /// A custom encoding, the last step is Base64 encoding
-pub fn x_encode(str: &str, key: &str) -> String {
+pub fn x_encode(str: &[u8], key: &[u8]) -> String {
     if str.is_empty() {
         return String::new();
     }
@@ -80,7 +80,7 @@ pub fn x_encode(str: &str, key: &str) -> String {
         bytes.push((i >> 24 & 0xff) as u8);
     }
     let alphabet =
-        Alphabet::new("LVoJPiCN2R8G90yg+hmFHuacZ1OWMnrsSTXkYpUq/3dlbfKwv6xztjI7DeBE45QA").unwrap();
+        Alphabet::new(crate::consts::WIFI_XENCODE_BASE64_ALPHABET).unwrap();
     let engine = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
     format!("{{SRBX1}}{}", engine.encode(bytes))
 }

@@ -2,11 +2,9 @@ use des::Des;
 use des::cipher::{BlockEncrypt, KeyInit, generic_array::GenericArray};
 
 /// DES encrypt, use ECB mode
-pub fn des_encrypt(data: &str, key: &str) -> String {
-    //
-    let key = key.as_bytes();
+pub fn des_encrypt(data: &[u8], key: &[u8]) -> String {
     let cipher = Des::new_from_slice(key).unwrap();
-    let mut input = data.as_bytes().to_vec();
+    let mut input = data.to_vec();
     // 计算填充长度
     let padding_len = 8 - input.len() % 8;
     for _ in 0..padding_len {

@@ -79,11 +79,12 @@ impl super::BoyaAPI {
 
         // AES Key, 使用十六位随机字符
         let aes_key = gen_rand_str(16);
+        let aes_key = aes_key.as_bytes();
         // ak 参数, rsa aes_key
-        let ak = rsa.encrypt_to_string(&aes_key.as_bytes());
+        let ak = rsa.encrypt_to_string(&aes_key);
 
         // 请求的负载, 是使用 AES 加密的查询参数
-        let body = crypto::aes::aes_encrypt_ecb(query, &aes_key);
+        let body = crypto::aes::aes_encrypt_ecb(query.as_bytes(), aes_key);
         let time = utils::get_time();
 
         // 生成请求头
@@ -115,7 +116,7 @@ impl super::BoyaAPI {
         // 响应体被 AES 加密了, 并且两端有引号需要去掉
         let res = res.text().await?;
         let res = res.trim_matches('"');
-        let res = crypto::aes::aes_decrypt(&res, &aes_key);
+        let res = crypto::aes::aes_decrypt(&res, aes_key);
 
         // 检查状态
         let status = serde_json::from_str::<BoyaStatus>(&res)?;
