@@ -1,10 +1,11 @@
 pub mod aas;
+pub mod app;
 pub mod boya;
 pub mod class;
 pub mod cloud;
 pub mod spoc;
 pub mod srs;
-mod sso;
+pub mod sso;
 pub mod tes;
 pub mod user;
 #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
@@ -14,6 +15,8 @@ pub mod wifi;
 pub struct SSO;
 /// Marker type for BUAA Academic Affairs System API Grouping
 pub struct Aas;
+/// Marker type for BUAA App API Grouping
+pub struct App;
 /// Marker type for BUAA Boya Course API Grouping
 pub struct Boya;
 /// Marker type for BUAA Smart Classroom API Grouping
@@ -52,6 +55,10 @@ impl crate::Context<SSO> {
     /// Get BUAA Academic Affairs System API Group
     pub fn aas(&self) -> &crate::Context<Aas> {
         self.api::<Aas>()
+    }
+    /// Get BUAA App API Group
+    pub fn app(&self) -> &crate::Context<App> {
+        self.api::<App>()
     }
     /// Get BUAA Boya Course API Group
     pub fn boya(&self) -> &crate::Context<Boya> {
