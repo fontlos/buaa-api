@@ -20,7 +20,7 @@ impl super::TesAPI {
     pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
         // 考虑到 rwid 只有这一个地方用到, 所以直接在这里获取
         // 获取账号
-        let config = self.config.borrow();
+        let config = self.config.load();
         let username = config.username.as_ref().unwrap();
         // 获取 rwid
         // 省略的无用查询参数 &rwmc=&sfyp=0

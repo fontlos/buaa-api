@@ -13,8 +13,9 @@ impl super::SrsAPI {
         let cookie = self.cookies.lock().unwrap();
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
-                let mut config = self.config.borrow_mut();
-                config.srs_token = Some(t.value().to_string());
+                self.config.update(|c| {
+                    c.srs_token = Some(t.to_string());
+                });
                 return Ok(());
             }
             None => return Err(Error::LoginError("No Token".to_string())),

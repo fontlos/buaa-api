@@ -12,16 +12,16 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::cell::RefCell;
+
+use crate::cell::AtomicCell;
 
 use crate::api::SSO;
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
-#[derive(Debug)]
 pub struct Context<G = SSO> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<CookieStoreMutex>,
-    pub(crate) config: RefCell<Config>,
+    pub(crate) config: AtomicCell<Config>,
     _marker: PhantomData<G>,
 }
 
@@ -66,7 +66,7 @@ impl Context {
         Context {
             client,
             cookies: cookie_store,
-            config: RefCell::new(Config::default()),
+            config: AtomicCell::new(Config::default()),
             _marker: PhantomData,
         }
     }
@@ -75,8 +75,7 @@ impl Context {
         &self,
         config: Config,
     ) {
-        let mut config_lock = self.config.borrow_mut();
-        *config_lock = config;
+        self.config.store(config);
     }
 
     pub fn set_account(
@@ -84,25 +83,28 @@ impl Context {
         username: &str,
         password: &str,
     ) {
-        let mut config = self.config.borrow_mut();
-        config.username = Some(username.to_string());
-        config.password = Some(password.to_string());
+        self.config.update(|c| {
+            c.username = Some(username.to_string());
+            c.password = Some(password.to_string());
+        });
     }
 
     pub fn set_username(
         &self,
         username: &str,
     ) {
-        let mut config = self.config.borrow_mut();
-        config.username = Some(username.to_string());
+        self.config.update(|c| {
+            c.username = Some(username.to_string());
+        });
     }
 
     pub fn set_password(
         &self,
         password: &str,
     ) {
-        let mut config = self.config.borrow_mut();
-        config.password = Some(password.to_string());
+        self.config.update(|c| {
+            c.password = Some(password.to_string());
+        });
     }
 
     /// Load config from path, if the path is not exist or parse failed, it will return a default one
@@ -120,8 +122,7 @@ impl Context {
             Config::default()
         };
 
-        let mut config_lock = self.config.borrow_mut();
-        *config_lock = config;
+        self.config.store(config);
     }
 
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
@@ -170,7 +171,7 @@ impl Context {
     /// save config manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn save_config<P: AsRef<Path>>(&self, path: P) {
-        let config = self.config.borrow();
+        let config = self.config.load();
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -178,7 +179,7 @@ impl Context {
             .truncate(true)
             .open(path)
             .unwrap();
-        serde_json::to_writer(file, &*config).unwrap();
+        serde_json::to_writer(file, config).unwrap();
     }
 }
 
