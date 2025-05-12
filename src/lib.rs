@@ -6,7 +6,8 @@ mod consts;
 mod context;
 mod crypto;
 mod error;
+mod store;
 pub mod utils;
 
-pub use context::{CredentialStore, Context};
+pub use context::{Context, CredentialStore};
 pub use error::{Error, Result};

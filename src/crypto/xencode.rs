@@ -79,8 +79,7 @@ pub fn x_encode(str: &[u8], key: &[u8]) -> String {
         bytes.push((i >> 16 & 0xff) as u8);
         bytes.push((i >> 24 & 0xff) as u8);
     }
-    let alphabet =
-        Alphabet::new(crate::consts::WIFI_XENCODE_BASE64_ALPHABET).unwrap();
+    let alphabet = Alphabet::new(crate::consts::WIFI_XENCODE_BASE64_ALPHABET).unwrap();
     let engine = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
     format!("{{SRBX1}}{}", engine.encode(bytes))
 }

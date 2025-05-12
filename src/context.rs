@@ -71,37 +71,24 @@ impl Context {
         }
     }
 
-    pub fn set_cred(
-        &self,
-        cred: CredentialStore,
-    ) {
+    pub fn set_cred(&self, cred: CredentialStore) {
         self.cred.store(cred);
     }
 
-    pub fn set_account(
-        &self,
-        username: &str,
-        password: &str,
-    ) {
+    pub fn set_account(&self, username: &str, password: &str) {
         self.cred.update(|c| {
             c.username = Some(username.to_string());
             c.password = Some(password.to_string());
         });
     }
 
-    pub fn set_username(
-        &self,
-        username: &str,
-    ) {
+    pub fn set_username(&self, username: &str) {
         self.cred.update(|c| {
             c.username = Some(username.to_string());
         });
     }
 
-    pub fn set_password(
-        &self,
-        password: &str,
-    ) {
+    pub fn set_password(&self, password: &str) {
         self.cred.update(|c| {
             c.password = Some(password.to_string());
         });
