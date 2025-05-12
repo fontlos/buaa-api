@@ -70,7 +70,7 @@ impl super::ClassAPI {
                 ));
             }
         };
-        let time = utils::get_time();
+        let time = utils::get_time_millis();
         let res = self.post(
             format!(
                     "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={}&timestamp={}&id={}",

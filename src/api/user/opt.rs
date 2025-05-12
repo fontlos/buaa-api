@@ -3,7 +3,7 @@ use crate::utils;
 impl super::UserAPI {
     /// # User Center Login
     pub async fn login(&self) -> crate::Result<()> {
-        let time = utils::get_time();
+        let time = utils::get_time_millis();
         // 获取 JSESSIONID
         self.get(format!(
             "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={}",
@@ -22,7 +22,7 @@ impl super::UserAPI {
     /// # Get User Center state
     /// - Output: `String`, JSON includes name and username, etc
     pub async fn get_state(&self) -> crate::Result<String> {
-        let time = utils::get_time();
+        let time = utils::get_time_millis();
         // 获取登录状态
         let res = self
             .get(format!(
