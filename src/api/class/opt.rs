@@ -9,8 +9,8 @@ impl super::ClassAPI {
     /// - Input: Term ID
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
-        let config = self.config.load();
-        let token = match &config.class_token {
+        let cred = self.cred.load();
+        let token = match &cred.class_token {
             Some(t) => t,
             None => {
                 return Err(Error::LoginError(
@@ -35,8 +35,8 @@ impl super::ClassAPI {
     /// # Smart Classroom query one course's all schedule
     /// - Input: Course ID, from [ClassCourse]
     pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
-        let config = self.config.load();
-        let token = match &config.class_token {
+        let cred = self.cred.load();
+        let token = match &cred.class_token {
             Some(t) => t,
             None => {
                 return Err(Error::LoginError(
@@ -61,8 +61,8 @@ impl super::ClassAPI {
     /// # Smart Classroom checkin schedule
     /// - Input: Schedule ID, from [ClassSchedule]
     pub async fn checkin(&self, id: &str) -> crate::Result<Response> {
-        let config = self.config.load();
-        let token = match &config.class_token {
+        let cred = self.cred.load();
+        let token = match &cred.class_token {
             Some(t) => t,
             None => {
                 return Err(Error::LoginError(

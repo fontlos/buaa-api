@@ -11,8 +11,8 @@ struct SpocState {
 
 impl super::SpocAPI {
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
-        let config = self.config.load();
-        let token = match &config.spoc_token {
+        let cred = self.cred.load();
+        let token = match &cred.spoc_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Token".to_string())),
         };

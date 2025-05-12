@@ -63,8 +63,8 @@ impl super::BoyaAPI {
     /// - Query: `{}`
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
         // 首先尝试获取 token, 如果没有就可以直接返回了
-        let config = self.config.load();
-        let token = match &config.boya_token {
+        let cred = self.cred.load();
+        let token = match &cred.boya_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Boya Token".to_string())),
         };

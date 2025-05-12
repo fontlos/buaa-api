@@ -13,7 +13,7 @@ impl super::SrsAPI {
         let cookie = self.cookies.lock().unwrap();
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
-                self.config.update(|c| {
+                self.cred.update(|c| {
                     c.srs_token = Some(t.to_string());
                 });
                 return Ok(());

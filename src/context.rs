@@ -21,12 +21,12 @@ use crate::api::SSO;
 pub struct Context<G = SSO> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<CookieStoreMutex>,
-    pub(crate) config: AtomicCell<Config>,
+    pub(crate) cred: AtomicCell<CredentialStore>,
     _marker: PhantomData<G>,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub struct Config {
+pub struct CredentialStore {
     pub username: Option<String>,
     pub password: Option<String>,
     /// Token for Boya API
@@ -66,16 +66,16 @@ impl Context {
         Context {
             client,
             cookies: cookie_store,
-            config: AtomicCell::new(Config::default()),
+            cred: AtomicCell::new(CredentialStore::default()),
             _marker: PhantomData,
         }
     }
 
-    pub fn set_config(
+    pub fn set_cred(
         &self,
-        config: Config,
+        cred: CredentialStore,
     ) {
-        self.config.store(config);
+        self.cred.store(cred);
     }
 
     pub fn set_account(
@@ -83,7 +83,7 @@ impl Context {
         username: &str,
         password: &str,
     ) {
-        self.config.update(|c| {
+        self.cred.update(|c| {
             c.username = Some(username.to_string());
             c.password = Some(password.to_string());
         });
@@ -93,7 +93,7 @@ impl Context {
         &self,
         username: &str,
     ) {
-        self.config.update(|c| {
+        self.cred.update(|c| {
             c.username = Some(username.to_string());
         });
     }
@@ -102,7 +102,7 @@ impl Context {
         &self,
         password: &str,
     ) {
-        self.config.update(|c| {
+        self.cred.update(|c| {
             c.password = Some(password.to_string());
         });
     }
@@ -119,10 +119,10 @@ impl Context {
         let config = if let Ok(config) = serde_json::from_reader(file) {
             config
         } else {
-            Config::default()
+            CredentialStore::default()
         };
 
-        self.config.store(config);
+        self.cred.store(config);
     }
 
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
@@ -170,8 +170,8 @@ impl Context {
 
     /// save config manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn save_config<P: AsRef<Path>>(&self, path: P) {
-        let config = self.config.load();
+    pub fn save_cred<P: AsRef<Path>>(&self, path: P) {
+        let cred = self.cred.load();
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -179,7 +179,7 @@ impl Context {
             .truncate(true)
             .open(path)
             .unwrap();
-        serde_json::to_writer(file, config).unwrap();
+        serde_json::to_writer(file, cred).unwrap();
     }
 }
 

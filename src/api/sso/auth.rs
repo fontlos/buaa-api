@@ -33,12 +33,12 @@ impl crate::Context {
     }
 
     async fn sso_login_internal(&self, login_url: &str, verify_url: &str) -> crate::Result<()> {
-        let config = self.config.load();
-        let un = match config.username.as_ref() {
+        let cred = self.cred.load();
+        let un = match cred.username.as_ref() {
             Some(s) => s,
             None => return Err(Error::LoginError("No Username".to_string()))?,
         };
-        let pw = match config.password.as_ref() {
+        let pw = match cred.password.as_ref() {
             Some(s) => s,
             None => return Err(Error::LoginError("No Password".to_string()))?,
         };

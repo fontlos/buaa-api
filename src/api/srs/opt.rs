@@ -7,8 +7,8 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
 
         // 获取 token
-        let config = self.config.load();
-        let token = match &config.srs_token {
+        let cred = self.cred.load();
+        let token = match &cred.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
@@ -37,8 +37,8 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
 
         // 获取 token
-        let config = self.config.load();
-        let token = match &config.srs_token {
+        let cred = self.cred.load();
+        let token = match &cred.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
@@ -65,8 +65,8 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
 
         // 获取 token
-        let config = self.config.load();
-        let token = match &config.srs_token {
+        let cred = self.cred.load();
+        let token = match &cred.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
@@ -87,8 +87,8 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
 
         // 获取 token
-        let config = self.config.load();
-        let token = match &config.srs_token {
+        let cred = self.cred.load();
+        let token = match &cred.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
@@ -113,8 +113,8 @@ impl super::SrsAPI {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
 
         // 获取 token
-        let config = self.config.load();
-        let token = match &config.srs_token {
+        let cred = self.cred.load();
+        let token = match &cred.srs_token {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };

@@ -39,7 +39,7 @@ impl super::ClassAPI {
         let res = res.text().await?;
         match serde_json::from_str::<_ClassLogin>(&res) {
             Ok(res) => {
-                self.config.update(|c| {
+                self.cred.update(|c| {
                     c.class_token = Some(res.result.id);
                 });
                 Ok(())

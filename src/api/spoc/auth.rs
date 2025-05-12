@@ -32,7 +32,7 @@ impl super::SpocAPI {
         //     }
         //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
         // };
-        self.config.update(|c| {
+        self.cred.update(|c| {
             c.spoc_token = Some(token.to_string());
         });
         Ok(())
