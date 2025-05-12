@@ -48,4 +48,5 @@ pub const SPOC_AES_IV: &[u8] = b"ocni12345678inco";
 /// For WIFI login in xencode function
 /// From hard-coded in JS
 /// 2025.04.22
-pub const WIFI_XENCODE_BASE64_ALPHABET: &str = "LVoJPiCN2R8G90yg+hmFHuacZ1OWMnrsSTXkYpUq/3dlbfKwv6xztjI7DeBE45QA";
+pub const WIFI_XENCODE_BASE64_ALPHABET: &str =
+    "LVoJPiCN2R8G90yg+hmFHuacZ1OWMnrsSTXkYpUq/3dlbfKwv6xztjI7DeBE45QA";

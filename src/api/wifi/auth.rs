@@ -48,7 +48,7 @@ impl super::WiFiAPI {
         };
 
         // 获取 Challenge Token
-        let time = &utils::get_time().to_string()[..];
+        let time = &utils::get_time_millis().to_string()[..];
         let params = [
             ("callback", time),
             ("username", un),
@@ -164,7 +164,7 @@ impl super::WiFiAPI {
             None => return Err(Error::LoginError("No AC ID".to_string())),
         };
 
-        let time = &utils::get_time().to_string()[..];
+        let time = &utils::get_time_millis().to_string()[..];
 
         // 构造登出 URL 并登录
         // 暂时不知道后面五个参数有无修改必要

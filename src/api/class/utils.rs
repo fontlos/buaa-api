@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-use crate::utils::deserialize_time;
+use crate::utils::deserialize_datatime;
 
 #[derive(Deserialize)]
 pub(super) struct _ClassLogin {
@@ -56,7 +56,7 @@ pub(super) struct _ClassSchedules {
 pub struct ClassSchedule {
     #[serde(rename = "courseSchedId")]
     pub id: String,
-    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "classBeginTime")]
     pub time: time::PrimitiveDateTime,
     #[serde(rename = "signStatus")]

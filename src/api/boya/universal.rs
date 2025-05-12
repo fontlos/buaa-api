@@ -85,7 +85,7 @@ impl super::BoyaAPI {
 
         // 请求的负载, 是使用 AES 加密的查询参数
         let body = crypto::aes::aes_encrypt_ecb(query.as_bytes(), aes_key);
-        let time = utils::get_time();
+        let time = utils::get_time_millis();
 
         // 生成请求头
         let mut header = HeaderMap::new();
@@ -95,11 +95,11 @@ impl super::BoyaAPI {
         );
         header.insert(
             HeaderName::from_bytes(b"Auth_token").unwrap(),
-            HeaderValue::from_str(token).unwrap(),
+            HeaderValue::from_str(&token.value).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Authtoken").unwrap(),
-            HeaderValue::from_str(token).unwrap(),
+            HeaderValue::from_str(&token.value).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Sk").unwrap(),

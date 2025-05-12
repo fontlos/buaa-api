@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::PrimitiveDateTime;
 
-use crate::utils::deserialize_time;
+use crate::utils::deserialize_datatime;
 
 // ====================
 // 用于 query_course
@@ -58,19 +58,19 @@ pub struct BoyaCourse {
 /// Boya course's start, end, pre-selection and cancellation times
 #[derive(Debug, Deserialize)]
 pub struct BoyaTime {
-    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseStartDate")]
     pub course_start: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseEndDate")]
     pub course_end: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseSelectStartDate")]
     pub select_start: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseSelectEndDate")]
     pub select_end: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_time")]
+    #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseCancelEndDate")]
     pub cancel_end: PrimitiveDateTime,
 }

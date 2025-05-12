@@ -1,7 +1,7 @@
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicPtr, Ordering};
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicPtr, Ordering};
 
 /// A conditional thread-safe cell optimized for frequent reads, some guarded updates, and rare atomic replacements.
 ///
@@ -73,7 +73,9 @@ where
         let cell = Box::new(UnsafeCell::new(new_value));
         let new_ptr = Box::into_raw(cell);
         let old_ptr = self.data.swap(new_ptr, Ordering::Release);
-        unsafe { drop(Box::from_raw(old_ptr)); }
+        unsafe {
+            drop(Box::from_raw(old_ptr));
+        }
     }
 
     /// Updates the value in-place with mutex protection.
@@ -94,7 +96,9 @@ impl<T> Drop for AtomicCell<T> {
     fn drop(&mut self) {
         let ptr = self.data.load(Ordering::Relaxed);
         if !ptr.is_null() {
-            unsafe { drop(Box::from_raw(ptr)); }
+            unsafe {
+                drop(Box::from_raw(ptr));
+            }
         }
     }
 }
