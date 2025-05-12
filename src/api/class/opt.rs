@@ -21,7 +21,7 @@ impl super::ClassAPI {
         let res = self.post(
             format!(
                     "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={}&xq_code={}",
-                    token,
+                    token.value,
                     id
                 )
             )
@@ -47,7 +47,7 @@ impl super::ClassAPI {
         let res = self.post(
             format!(
                     "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={}&courseId={}",
-                    token,
+                    token.value,
                     id
                 )
             )
@@ -76,7 +76,7 @@ impl super::ClassAPI {
                     "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={}&timestamp={}&id={}",
                     id,
                     time,
-                    token
+                    token.value
                 )
             )
             .send()

@@ -95,11 +95,11 @@ impl super::BoyaAPI {
         );
         header.insert(
             HeaderName::from_bytes(b"Auth_token").unwrap(),
-            HeaderValue::from_str(token).unwrap(),
+            HeaderValue::from_str(&token.value).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Authtoken").unwrap(),
-            HeaderValue::from_str(token).unwrap(),
+            HeaderValue::from_str(&token.value).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Sk").unwrap(),

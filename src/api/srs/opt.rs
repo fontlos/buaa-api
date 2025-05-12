@@ -13,11 +13,11 @@ impl super::SrsAPI {
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
-        let query = [("token", token)];
+        let query = [("token", &token.value)];
 
         let res = self
             .post(url)
-            .header("Authorization", token)
+            .header("Authorization", &token.value)
             .query(&query)
             .send()
             .await?;
@@ -46,7 +46,7 @@ impl super::SrsAPI {
         let res = self
             .post(url)
             .json(&filter)
-            .header("Authorization", token)
+            .header("Authorization", &token.value)
             .send()
             .await?;
         let text = res.text().await?;
@@ -71,7 +71,7 @@ impl super::SrsAPI {
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
-        let res = self.post(url).header("Authorization", token).send().await?;
+        let res = self.post(url).header("Authorization", &token.value).send().await?;
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
@@ -96,7 +96,7 @@ impl super::SrsAPI {
         let res = self
             .post(url)
             .form(&opt)
-            .header("Authorization", token)
+            .header("Authorization", &token.value)
             .send()
             .await?;
         let text = res.text().await?;
@@ -122,7 +122,7 @@ impl super::SrsAPI {
         let res = self
             .post(url)
             .form(&opt)
-            .header("Authorization", token)
+            .header("Authorization", &token.value)
             .send()
             .await?;
         let text = res.text().await?;

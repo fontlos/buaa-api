@@ -9,5 +9,5 @@ mod error;
 mod store;
 pub mod utils;
 
-pub use context::{Context, CredentialStore};
+pub use context::Context;
 pub use error::{Error, Result};

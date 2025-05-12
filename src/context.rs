@@ -4,7 +4,6 @@ use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
 };
 use reqwest_cookie_store::CookieStoreMutex;
-use serde::{Deserialize, Serialize};
 
 use std::fs::{self, File, OpenOptions};
 use std::io::BufReader;
@@ -13,9 +12,7 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use crate::cell::AtomicCell;
-
-use crate::api::SSO;
+use crate::{api::SSO, cell::AtomicCell, store::cred::CredentialStore};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
 pub struct Context<G = SSO> {
@@ -23,20 +20,6 @@ pub struct Context<G = SSO> {
     pub(crate) cookies: Arc<CookieStoreMutex>,
     pub(crate) cred: AtomicCell<CredentialStore>,
     _marker: PhantomData<G>,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct CredentialStore {
-    pub username: Option<String>,
-    pub password: Option<String>,
-    /// Token for Boya API
-    pub boya_token: Option<String>,
-    /// User ID for SmartClass API
-    pub class_token: Option<String>,
-    /// User ID for Spoc API
-    pub spoc_token: Option<String>,
-    /// Token for Srs API
-    pub srs_token: Option<String>,
 }
 
 impl Context {
