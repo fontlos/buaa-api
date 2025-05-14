@@ -12,13 +12,11 @@ impl super::CloudAPI {
     ) -> crate::Result<String> {
         // 首先尝试获取 token, 如果没有就可以直接返回了
         // 这个 token 在 Cookie 里, 直接从中心 Cookie 拿就好了
-        let cookie = self.cookies.lock().unwrap();
+        let cookie = self.cookies.load();
         let token = match cookie.get("bhpan.buaa.edu.cn", "/", "client.oauth2_token") {
             Some(t) => t.value().to_string(),
             None => return Err(Error::APIError("No Cloud Token".to_string())),
         };
-        // 释放锁
-        drop(cookie);
 
         let res = match method {
             Method::GET => self.get(url).bearer_auth(token).send().await?,

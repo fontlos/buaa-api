@@ -1,0 +1,61 @@
+use bytes::Bytes;
+use cookie_store::{CookieStore, RawCookie, RawCookieParseError};
+use reqwest::header::HeaderValue;
+
+use crate::cell::AtomicCell;
+
+pub struct AtomicCookieStore(AtomicCell<CookieStore>);
+
+impl Default for AtomicCookieStore {
+    fn default() -> Self {
+        AtomicCookieStore::new(CookieStore::default())
+    }
+}
+
+impl AtomicCookieStore {
+    pub fn new(cookie_store: CookieStore) -> AtomicCookieStore {
+        AtomicCookieStore(AtomicCell::new(cookie_store))
+    }
+
+    pub fn load(&self) -> &CookieStore {
+        self.0.load()
+    }
+
+    pub fn update<F>(&self, f: F)
+    where
+        F: FnOnce(&mut CookieStore),
+    {
+        self.0.update(f);
+    }
+}
+
+impl reqwest::cookie::CookieStore for AtomicCookieStore {
+    fn set_cookies(&self, cookie_headers: &mut dyn Iterator<Item = &HeaderValue>, url: &url::Url) {
+        let cookies = cookie_headers.filter_map(|val| {
+            std::str::from_utf8(val.as_bytes())
+                .map_err(RawCookieParseError::from)
+                .and_then(RawCookie::parse)
+                .map(|c| c.into_owned())
+                .ok()
+        });
+        self.0.update(|store| {
+            store.store_response_cookies(cookies, url);
+        });
+    }
+
+    fn cookies(&self, url: &url::Url) -> Option<HeaderValue> {
+        let s = self
+            .0
+            .load()
+            .get_request_values(url)
+            .map(|(name, value)| format!("{}={}", name, value))
+            .collect::<Vec<_>>()
+            .join("; ");
+
+        if s.is_empty() {
+            return None;
+        }
+
+        HeaderValue::from_maybe_shared(Bytes::from(s)).ok()
+    }
+}
