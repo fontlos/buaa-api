@@ -44,7 +44,7 @@ impl AtomicCookieStore {
         Ok(store)
     }
 
-    pub fn save<P: AsRef<Path>>(&self, path: P) {
+    pub fn to_file<P: AsRef<Path>>(&self, path: P) {
         let mut file = match OpenOptions::new()
             .write(true)
             .create(true)

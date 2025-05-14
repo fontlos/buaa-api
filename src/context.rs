@@ -98,7 +98,7 @@ impl Context {
     /// save cookies manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn save_cookie<P: AsRef<Path>>(&self, path: P) {
-        self.cookies.save(path);
+        self.cookies.to_file(path);
     }
 
     /// save config manually
