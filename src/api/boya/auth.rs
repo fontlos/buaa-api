@@ -19,7 +19,7 @@ impl super::BoyaAPI {
             self.cred.update(|c| {
                 c.boya_token = Some(CredentialItem{
                     value: token.1.to_string(),
-                    // TODO: 我们先默认十分钟过期, 待测试
+                    // 经验证十五分钟内过期, 我们这里用十分钟
                     expiration: utils::get_time_secs() + 600,
                 });
             });
@@ -46,7 +46,7 @@ impl super::BoyaAPI {
             self.cred.update(|c| {
                 c.boya_token = Some(CredentialItem{
                     value: token.1.to_string(),
-                    // TODO: 我们先默认十分钟过期, 待测试
+                    // 经验证十五分钟内过期, 我们这里用十分钟
                     expiration: utils::get_time_secs() + 600,
                 });
             });
