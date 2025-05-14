@@ -1,6 +1,10 @@
 use bytes::Bytes;
-use cookie_store::{CookieStore, RawCookie, RawCookieParseError};
+use cookie_store::{CookieStore, RawCookie, RawCookieParseError, Cookie};
 use reqwest::header::HeaderValue;
+
+use std::fs::{File, OpenOptions};
+use std::io::BufReader;
+use std::path::Path;
 
 use crate::cell::AtomicCell;
 
@@ -26,6 +30,39 @@ impl AtomicCookieStore {
         F: FnOnce(&mut CookieStore),
     {
         self.0.update(f);
+    }
+
+    pub fn from_file<P: AsRef<Path>>(path: P) -> crate::Result<CookieStore> {
+        let store = match File::open(&path) {
+            Ok(f) => {
+                CookieStore::load_all(BufReader::new(f), |s| serde_json::from_str::<Cookie<'_>>(s))
+                    .unwrap()
+            }
+            Err(_) => CookieStore::default(),
+        };
+
+        Ok(store)
+    }
+
+    pub fn save<P: AsRef<Path>>(&self, path: P) {
+        let mut file = match OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+        {
+            Ok(f) => f,
+            Err(e) => {
+                eprintln!("Failed to open cookie file: {:?}", e);
+                return;
+            }
+        };
+        let store = self.load();
+        if let Err(e) =
+            store.save_incl_expired_and_nonpersistent(&mut file, |s| serde_json::to_string(s))
+        {
+            eprintln!("Failed to save cookie store: {}", e);
+        }
     }
 }
 
