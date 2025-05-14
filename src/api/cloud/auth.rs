@@ -22,14 +22,12 @@ impl super::CloudAPI {
         .unwrap();
 
         // 这里有一条需要手动添加的 cookie
-        let mut cookie_store = self.cookies.lock().unwrap();
-        cookie_store
-            .insert(
+        self.cookies.update(|store| {
+            store.insert(
                 login_challenge,
                 &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
-            )
-            .unwrap();
-        drop(cookie_store);
+            ).unwrap();
+        });
 
         // 发起登录请求
         let url = "https://sso.buaa.edu.cn/login?service=https://bhpan.buaa.edu.cn/oauth2/signin";

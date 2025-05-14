@@ -10,7 +10,7 @@ impl super::SrsAPI {
             return Err(Error::LoginExpired("SSO Expired".to_string()));
         }
         // 储存 token
-        let cookie = self.cookies.lock().unwrap();
+        let cookie = self.cookies.load();
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
                 self.cred.update(|c| {
