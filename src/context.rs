@@ -34,26 +34,22 @@ impl Context {
     /// }
     /// ```
     pub fn new() -> Context<SSO> {
-        let cookie_store = Arc::new(AtomicCookieStore::default());
+        let cookies = Arc::new(AtomicCookieStore::default());
         let mut header = HeaderMap::new();
         header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
 
         let client = Client::builder()
             .default_headers(header)
-            .cookie_provider(cookie_store.clone())
+            .cookie_provider(cookies.clone())
             .build()
             .unwrap();
 
         Context {
             client,
-            cookies: cookie_store,
+            cookies,
             cred: AtomicCell::new(CredentialStore::default()),
             _marker: PhantomData,
         }
-    }
-
-    pub fn set_cred(&self, cred: CredentialStore) {
-        self.cred.store(cred);
     }
 
     pub fn set_account(&self, username: &str, password: &str) {
@@ -75,24 +71,31 @@ impl Context {
         });
     }
 
+    pub fn set_cookies(&self, cookies: cookie_store::CookieStore) {
+        // 这在理论上是安全的
+        // 因为没有理由在多线程中频繁切换 cookie
+        // 如果有并发需求应该创建多个 Context 而不是切换这个
+        // 它唯一的作用就是用于切换账号. 这能保证不会有卡在中间执行的请求
+        // 其他 load 方法的生命周期局限在自己的函数中
+        self.cookies.store(cookies);
+    }
+
+    pub fn set_cred(&self, cred: CredentialStore) {
+        self.cred.store(cred);
+    }
+
+    /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
+    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
+    pub fn with_cookies<P: AsRef<Path>>(&self, path: P) {
+        let cookie = AtomicCookieStore::from_file(path);
+        self.set_cookies(cookie);
+    }
+
     /// Load config from path, if the path is not exist or parse failed, it will return a default one
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn with_cred<P: AsRef<Path>>(&self, path: P) {
         let cred = CredentialStore::from_file(path);
         self.set_cred(cred);
-    }
-
-    /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
-    #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn with_cookies<P: AsRef<Path>>(&self, path: P) -> crate::Result<()> {
-        let cookie_store = AtomicCookieStore::from_file(path).unwrap();
-
-        // 也许可以考虑用不安全的 store 方法
-        self.cookies.update(|store| {
-            *store = cookie_store;
-        });
-
-        Ok(())
     }
 
     /// save cookies manually
