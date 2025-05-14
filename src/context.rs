@@ -9,7 +9,7 @@ use std::fs::{self, File, OpenOptions};
 use std::io::BufReader;
 use std::marker::PhantomData;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use crate::{api::SSO, cell::AtomicCell, store::cred::CredentialStore};
@@ -79,7 +79,7 @@ impl Context {
 
     /// Load config from path, if the path is not exist or parse failed, it will return a default one
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn with_config<P: AsRef<Path>>(&self, path: P) {
+    pub fn with_cred<P: AsRef<Path>>(&self, path: P) {
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -98,7 +98,6 @@ impl Context {
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn with_cookies<P: AsRef<Path>>(&self, path: P) -> crate::Result<()> {
-        let path = PathBuf::from(path.as_ref());
         let cookie_store = match File::open(&path) {
             Ok(f) => {
                 CookieStore::load_all(BufReader::new(f), |s| serde_json::from_str::<Cookie<'_>>(s))
