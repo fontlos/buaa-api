@@ -32,19 +32,21 @@ impl AtomicCookieStore {
         self.0.update(f);
     }
 
-    pub fn from_file<P: AsRef<Path>>(path: P) -> crate::Result<CookieStore> {
-        let store = match File::open(&path) {
+    pub fn store(&self, cookie_store: CookieStore) {
+        self.0.store(cookie_store);
+    }
+
+    pub fn from_file<P: AsRef<Path>>(path: P) -> CookieStore {
+        match File::open(&path) {
             Ok(f) => {
                 CookieStore::load_all(BufReader::new(f), |s| serde_json::from_str::<Cookie<'_>>(s))
                     .unwrap()
             }
             Err(_) => CookieStore::default(),
-        };
-
-        Ok(store)
+        }
     }
 
-    pub fn save<P: AsRef<Path>>(&self, path: P) {
+    pub fn to_file<P: AsRef<Path>>(&self, path: P) {
         let mut file = match OpenOptions::new()
             .write(true)
             .create(true)

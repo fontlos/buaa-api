@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+use std::fs::OpenOptions;
+use std::path::Path;
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialStore {
     pub username: Option<String>,
@@ -29,4 +32,31 @@ pub struct CredentialStore {
 pub struct CredentialItem {
     pub value: String,
     pub expiration: u64,
+}
+
+impl CredentialStore {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(path)
+            .unwrap();
+        if let Ok(cred) = serde_json::from_reader(file) {
+            cred
+        } else {
+            CredentialStore::default()
+        }
+    }
+
+    pub fn to_file<P: AsRef<Path>>(&self, path: P) {
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .unwrap();
+        serde_json::to_writer(file, self).unwrap();
+    }
 }
