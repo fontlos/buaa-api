@@ -3,7 +3,6 @@ use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
 };
 
-use std::fs::OpenOptions;
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::path::Path;
@@ -79,19 +78,8 @@ impl Context {
     /// Load config from path, if the path is not exist or parse failed, it will return a default one
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn with_cred<P: AsRef<Path>>(&self, path: P) {
-        let file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .open(path)
-            .unwrap();
-        let config = if let Ok(config) = serde_json::from_reader(file) {
-            config
-        } else {
-            CredentialStore::default()
-        };
-
-        self.set_cred(config);
+        let cred = CredentialStore::from_file(path);
+        self.set_cred(cred);
     }
 
     /// Load cookies file to set Session cookies and set `cookie_path`, if the path is not exist, it will create a new file, but It won't be saved until you call `save` method
@@ -116,15 +104,7 @@ impl Context {
     /// save config manually
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn save_cred<P: AsRef<Path>>(&self, path: P) {
-        let cred = self.cred.load();
-        let file = OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(path)
-            .unwrap();
-        serde_json::to_writer(file, cred).unwrap();
+        self.cred.load().to_file(path);
     }
 }
 
