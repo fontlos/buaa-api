@@ -65,6 +65,10 @@ impl crate::Context {
         ];
         let res = self.post(login_url).form(&form).send().await?;
         if res.status().as_u16() == 200 {
+            self.cred.update(|c| {
+                // 1.5 小时过期
+                c.sso_login = utils::get_time_secs() + 5400;
+            });
             Ok(())
         } else {
             Err(Error::LoginError(String::from(

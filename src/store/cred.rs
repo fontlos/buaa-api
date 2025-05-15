@@ -15,17 +15,8 @@ pub struct CredentialStore {
     pub spoc_token: Option<CredentialItem>,
     /// Token for Srs API
     pub srs_token: Option<CredentialItem>,
-
-    /// Mark expiration time of Boya Login Cookie.
-    pub boya_login: Option<u64>,
-    /// Mark expiration time of SmartClass Login Cookie.
-    pub class_login: Option<u64>,
-    /// Mark expiration time of Spoc Login Cookie.
-    pub spoc_login: Option<u64>,
-    /// Mark expiration time of Srs Login Cookie.
-    pub srs_login: Option<u64>,
     /// Mark expiration time of SSO Login Cookie.
-    pub sso_login: Option<u64>,
+    pub sso_login: u64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
