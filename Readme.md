@@ -10,11 +10,14 @@
 
 - [x] BUAA SSO Login: `login` built in `Context`
 - [ ] BUAA Academic Affairs System
+  - [ ] Login
 - [x] BUAA Boya Course: `boya`
   - [x] Login
-  - [x] Query
-  - [x] Select
-  - [x] Drop
+  - [x] Query course
+  - [x] Query selected
+  - [x] Query statistic information
+  - [x] Select course
+  - [x] Drop course
   - [x] A universal request API for extensions
 - [x] BUAA Smart Classroom: `class`
   - [x] Login
@@ -25,16 +28,27 @@
 - [ ] Spoc Platform: `spoc`
   - [x] Login
   - [x] Query class schedule
-- [ ] BUAA Undergraduate & Graduate Student Course Registration System
+  - [x] A universal request API for extensions
+- [x] BUAA Undergraduate & Graduate Student Course Registration System
   - [x] Login
-- [ ] BUAA Teacher Evaluation System
+  - [x] Get filter
+  - [x] Query with filter
+  - [x] Query selected
+  - [x] Select course
+  - [x] Drop course
+- [x] BUAA Teacher Evaluation System
   - [x] Login
-- [x] User Center: `user`
+  - [x] Get list
+  - [x] Get form
+  - [x] Submit form
+- [ ] User Center: `user`
   - [x] Login
   - [x] Get state
-- [x] BUAA WiFi: `wifi`
+  - [ ] Change password
+- [ ] BUAA WiFi: `wifi`
   - [x] Login
   - [x] Logout
+  - [ ] Recharge
 
 
 APIs not listed above might have been overlooked or deemed unimportant by me, but if you need them, feel free to open an issue or submit a pull request.
@@ -44,14 +58,15 @@ APIs not listed above might have been overlooked or deemed unimportant by me, bu
 The basic process is:
 
 - Initialize the `Context`
-- Set account
-- (Optional) Specifies the file used to read and write cookies and config
+- (Optional) Set account
+- (Optional) Specifies the dictionary for auth
 - Login to SSO (Context)
 - Get the API group you need
 - Login to this group
 - Call API in this group
+- (Optional) Save auth file
 
-There is a simple example:
+There are some simple examples:
 
 ```rust
 use buaa_api::Context;
@@ -62,8 +77,6 @@ async fn main() {
     let context = Context::new();
     // Set account
     context.set_account("username", "password");
-    // Specifies the file used to read and write cookies
-    context.with_cookies("cookie.json");
     // Login to context
     context.login().await.unwrap();
 
@@ -75,22 +88,15 @@ async fn main() {
     // Call API in this group
     let state = user.get_state().await.unwrap();
     println!("{}", state);
-
-    // (Optional) Save cookies to file
-    context.save_cookie("cookie.json");
 }
 ```
-
-A more complex example:
 
 ```rust
 use buaa_api::Context;
 
 #[tokio::main]
 async fn main() {
-    let context = Context::new();
-    context.set_account("username", "password")
-    context.with_cookies("cookie.json");
+    let context = Context::with_auth("./data");
     context.login().await.unwrap();
 
     let boya = context.boya();
@@ -103,7 +109,7 @@ async fn main() {
     let res = boya.select_course(id).await.unwrap();
     println!("{}", res);
 
-    context.save();
+    context.save_auth();
 }
 ```
 
