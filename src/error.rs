@@ -12,13 +12,13 @@ pub enum Error {
     #[error("Login Error: {0}")]
     LoginError(String),
 
-    #[error("Lock Error")]
-    LockError,
-
     /// Crash in Serde
     #[error("Failed Deserialize: {0}")]
     DeserializeError(#[from] serde_json::Error),
     /// Crash in Reqwest
     #[error("Request Error")]
     RequestError(#[from] reqwest::Error),
+
+    #[error(transparent)]
+    Other(#[from] Box<dyn std::error::Error>),
 }
