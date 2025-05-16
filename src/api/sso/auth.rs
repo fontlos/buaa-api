@@ -21,18 +21,11 @@ impl crate::Context {
     /// }
     /// ```
     pub async fn login(&self) -> crate::Result<()> {
+        // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
+        // "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
+        // "https://d.buaa.edu.cn/";
         let login_url = "https://sso.buaa.edu.cn/login";
         let verify_url = "https://uc.buaa.edu.cn/#/user/login";
-        self.sso_login_internal(login_url, verify_url).await
-    }
-
-    pub async fn vpn(&self) -> crate::Result<()> {
-        let login_url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
-        let verify_url = "https://d.buaa.edu.cn/";
-        self.sso_login_internal(login_url, verify_url).await
-    }
-
-    async fn sso_login_internal(&self, login_url: &str, verify_url: &str) -> crate::Result<()> {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
