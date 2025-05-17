@@ -92,10 +92,10 @@ where
     let start_time = format!("{} {}", date_part, time_parts[0]);
     let end_time = format!("{} {}", date_part, time_parts[1]);
 
-    let start = PrimitiveDateTime::parse(&start_time, &format_string)
-        .map_err(serde::de::Error::custom)?;
-    let end = PrimitiveDateTime::parse(&end_time, &format_string)
-        .map_err(serde::de::Error::custom)?;
+    let start =
+        PrimitiveDateTime::parse(&start_time, &format_string).map_err(serde::de::Error::custom)?;
+    let end =
+        PrimitiveDateTime::parse(&end_time, &format_string).map_err(serde::de::Error::custom)?;
 
     Ok(SpocTimeRange { start, end })
 }

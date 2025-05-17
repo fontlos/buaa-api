@@ -60,8 +60,7 @@ impl AtomicCookieStore {
             }
         };
         let store = self.load();
-        if let Err(e) =
-            store.save_incl_expired_and_nonpersistent(&mut file, serde_json::to_string)
+        if let Err(e) = store.save_incl_expired_and_nonpersistent(&mut file, serde_json::to_string)
         {
             eprintln!("Failed to save cookie store: {e}");
         }

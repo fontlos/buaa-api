@@ -19,9 +19,7 @@ impl super::ClassAPI {
             }
         };
         let res = self.post(
-            format!(
-                    "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={token}&xq_code={id}"
-                )
+            format!("https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={token}&xq_code={id}")
             )
             .send()
             .await?;
@@ -43,9 +41,7 @@ impl super::ClassAPI {
             }
         };
         let res = self.post(
-            format!(
-                    "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={token}&courseId={id}"
-                )
+            format!("https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={token}&courseId={id}")
             )
             .send()
             .await?;
@@ -68,9 +64,7 @@ impl super::ClassAPI {
         };
         let time = utils::get_time_millis();
         let res = self.post(
-            format!(
-                    "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={id}&timestamp={time}&id={token}"
-                )
+            format!("http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={id}&timestamp={time}&id={token}")
             )
             .send()
             .await?;

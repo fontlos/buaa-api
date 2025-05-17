@@ -71,11 +71,7 @@ impl super::SrsAPI {
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
-        let res = self
-            .post(url)
-            .header("Authorization", token)
-            .send()
-            .await?;
+        let res = self.post(url).header("Authorization", token).send().await?;
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
