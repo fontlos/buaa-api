@@ -6,7 +6,8 @@ mod consts;
 mod context;
 mod crypto;
 mod error;
-mod store;
+pub mod request;
+pub mod store;
 pub mod utils;
 
 pub use context::Context;

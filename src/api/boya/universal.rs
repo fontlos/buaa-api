@@ -62,9 +62,13 @@ impl super::BoyaAPI {
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
     /// - Query: `{}`
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
+        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
+        if self.policy.load().is_auto() && self.cred.load().boya_token.is_expired() {
+            self.login().await?;
+        }
         // 首先尝试获取 token, 如果没有就可以直接返回了
         let cred = self.cred.load();
-        let token = match &cred.boya_token {
+        let token = match cred.boya_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Boya Token".to_string())),
         };
@@ -75,13 +79,13 @@ impl super::BoyaAPI {
         // 这是查询参数, 然后被 sha1 处理
         let sha1_query = crypto::sha1::sha1(query.as_bytes());
         // sk 参数, rsa sha1_query
-        let sk = rsa.encrypt_to_string(&sha1_query.as_bytes());
+        let sk = rsa.encrypt_to_string(sha1_query.as_bytes());
 
         // AES Key, 使用十六位随机字符
         let aes_key = gen_rand_str(16);
         let aes_key = aes_key.as_bytes();
         // ak 参数, rsa aes_key
-        let ak = rsa.encrypt_to_string(&aes_key);
+        let ak = rsa.encrypt_to_string(aes_key);
 
         // 请求的负载, 是使用 AES 加密的查询参数
         let body = crypto::aes::aes_encrypt_ecb(query.as_bytes(), aes_key);
@@ -95,11 +99,11 @@ impl super::BoyaAPI {
         );
         header.insert(
             HeaderName::from_bytes(b"Auth_token").unwrap(),
-            HeaderValue::from_str(&token.value).unwrap(),
+            HeaderValue::from_str(token).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Authtoken").unwrap(),
-            HeaderValue::from_str(&token.value).unwrap(),
+            HeaderValue::from_str(token).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Sk").unwrap(),
@@ -116,11 +120,12 @@ impl super::BoyaAPI {
         // 响应体被 AES 加密了, 并且两端有引号需要去掉
         let res = res.text().await?;
         let res = res.trim_matches('"');
-        let res = crypto::aes::aes_decrypt(&res, aes_key);
+        let res = crypto::aes::aes_decrypt(res, aes_key);
 
         // 检查状态
         let status = serde_json::from_str::<BoyaStatus>(&res)?;
         if status.status == "98005399" {
+            // 刷新登录 Token 的操作无需在这里执行, 如果上面刷新了, 这里还能报这个状态码那应该不是 Token 的问题
             return Err(Error::LoginExpired("Boya Login Expired".to_string()));
         }
         if status.status == "1" {

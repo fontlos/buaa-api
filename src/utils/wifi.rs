@@ -18,7 +18,7 @@ pub fn get_wifi_ssid() -> Option<String> {
     use std::process::Command;
 
     let output = Command::new("netsh")
-        .args(&["wlan", "show", "interfaces"])
+        .args(["wlan", "show", "interfaces"])
         .output()
         .ok()?;
 

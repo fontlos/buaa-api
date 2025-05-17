@@ -1,23 +1,26 @@
-use reqwest::{
-    Client,
-    header::{HeaderMap, HeaderName, HeaderValue},
-};
-
 use std::marker::PhantomData;
 use std::ops::Deref;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::{api::SSO, cell::AtomicCell};
+use crate::request::{Client, LoginPolicy, client};
 use crate::store::cookies::AtomicCookieStore;
 use crate::store::cred::CredentialStore;
+use crate::{api::SSO, cell::AtomicCell};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
 pub struct Context<G = SSO> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<AtomicCookieStore>,
     pub(crate) cred: AtomicCell<CredentialStore>,
+    pub(crate) policy: AtomicCell<LoginPolicy>,
     _marker: PhantomData<G>,
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Context {
@@ -25,29 +28,21 @@ impl Context {
     /// ```rust
     /// use buaa::Context;
     ///
-    /// fn main() {
-    ///     let mut context = Context::new();
-    ///     // Set account
-    ///     context.set_account("username", "password");
-    ///     // Login to context
-    ///     context.login().await.unwrap();
-    /// }
+    /// let mut context = Context::new();
+    /// // Set account
+    /// context.set_account("username", "password");
+    /// // Login to context
+    /// context.login().await.unwrap();
     /// ```
     pub fn new() -> Context<SSO> {
         let cookies = Arc::new(AtomicCookieStore::default());
-        let mut header = HeaderMap::new();
-        header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
-
-        let client = Client::builder()
-            .default_headers(header)
-            .cookie_provider(cookies.clone())
-            .build()
-            .unwrap();
+        let client = client(cookies.clone());
 
         Context {
             client,
             cookies,
             cred: AtomicCell::new(CredentialStore::default()),
+            policy: AtomicCell::new(LoginPolicy::Auto),
             _marker: PhantomData,
         }
     }
@@ -62,25 +57,19 @@ impl Context {
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn with_auth<P: AsRef<Path>>(dir: P) -> Context<SSO> {
         let cookies_path = dir.as_ref().join("cookies.json");
-        let cookies = Arc::new(AtomicCookieStore::new(
-            AtomicCookieStore::from_file(cookies_path),
-        ));
+        let cookies = Arc::new(AtomicCookieStore::new(AtomicCookieStore::from_file(
+            cookies_path,
+        )));
         let cred_path = dir.as_ref().join("cred.json");
         let cred = CredentialStore::from_file(cred_path);
 
-        let mut header = HeaderMap::new();
-        header.insert(HeaderName::from_bytes(b"User-Agent").unwrap(), HeaderValue::from_bytes(b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0").unwrap());
-
-        let client = Client::builder()
-            .default_headers(header)
-            .cookie_provider(cookies.clone())
-            .build()
-            .unwrap();
+        let client = client(cookies.clone());
 
         Context {
             client,
             cookies,
             cred: AtomicCell::new(cred),
+            policy: AtomicCell::new(LoginPolicy::Auto),
             _marker: PhantomData,
         }
     }
@@ -115,6 +104,10 @@ impl Context {
 
     pub fn set_cred(&self, cred: CredentialStore) {
         self.cred.store(cred);
+    }
+
+    pub fn set_policy(&self, policy: LoginPolicy) {
+        self.policy.store(policy);
     }
 
     pub fn get_cookies(&self) -> &AtomicCookieStore {

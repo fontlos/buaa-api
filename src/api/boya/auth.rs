@@ -1,4 +1,4 @@
-use crate::{store::cred::CredentialItem, Error, utils};
+use crate::Error;
 
 impl super::BoyaAPI {
     /// # Boya Login
@@ -19,15 +19,12 @@ impl super::BoyaAPI {
         };
         if token.0 == "token" {
             self.cred.update(|c| {
-                c.boya_token = Some(CredentialItem{
-                    value: token.1.to_string(),
-                    // 经验证十五分钟内过期, 我们这里用十分钟
-                    expiration: utils::get_time_secs() + 600,
-                });
+                // 经验证十五分钟内过期, 我们这里用十分钟
+                c.boya_token.set(token.1.to_string(), 600);
             });
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::LoginError("No Token".to_string()));
+            Err(Error::LoginError("No Token".to_string()))
         }
     }
 }

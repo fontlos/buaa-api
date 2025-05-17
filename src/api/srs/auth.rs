@@ -1,4 +1,4 @@
-use crate::{store::cred::CredentialItem, Error, utils};
+use crate::Error;
 
 impl super::SrsAPI {
     pub async fn login(&self) -> crate::Result<()> {
@@ -14,15 +14,12 @@ impl super::SrsAPI {
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
                 self.cred.update(|c| {
-                    c.srs_token = Some(CredentialItem {
-                        value: t.to_string(),
-                        // TODO: 我们先默认十分钟过期, 待测试
-                        expiration: utils::get_time_secs() + 600,
-                    });
+                    // TODO: 我们先默认十分钟过期, 待测试
+                    c.srs_token.set(t.to_string(), 600);
                 });
-                return Ok(());
+                Ok(())
             }
-            None => return Err(Error::LoginError("No Token".to_string())),
+            None => Err(Error::LoginError("No Token".to_string())),
         }
     }
 }

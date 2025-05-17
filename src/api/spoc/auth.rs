@@ -1,4 +1,4 @@
-use crate::{store::cred::CredentialItem, Error, utils};
+use crate::Error;
 
 impl super::SpocAPI {
     /// # Spoc Login
@@ -33,11 +33,8 @@ impl super::SpocAPI {
         //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
         // };
         self.cred.update(|c| {
-            c.spoc_token = Some(CredentialItem {
-                value: token.to_string(),
-                // TODO: 我们先默认十分钟过期, 待测试
-                expiration: utils::get_time_secs() + 600,
-            });
+            // TODO: 我们先默认十分钟过期, 待测试
+            c.spoc_token.set(token.to_string(), 600);
         });
         Ok(())
     }

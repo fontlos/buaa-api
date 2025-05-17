@@ -6,8 +6,7 @@ impl super::UserAPI {
         let time = utils::get_time_millis();
         // 获取 JSESSIONID
         self.get(format!(
-            "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={}",
-            time
+            "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={time}"
         ))
         .send()
         .await?;
@@ -26,8 +25,7 @@ impl super::UserAPI {
         // 获取登录状态
         let res = self
             .get(format!(
-                "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={}",
-                time
+                "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={time}"
             ))
             .send()
             .await?;

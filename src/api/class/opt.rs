@@ -10,7 +10,7 @@ impl super::ClassAPI {
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
         let cred = self.cred.load();
-        let token = match &cred.class_token {
+        let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
                 return Err(Error::LoginError(
@@ -19,11 +19,7 @@ impl super::ClassAPI {
             }
         };
         let res = self.post(
-            format!(
-                    "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={}&xq_code={}",
-                    token.value,
-                    id
-                )
+            format!("https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={token}&xq_code={id}")
             )
             .send()
             .await?;
@@ -36,7 +32,7 @@ impl super::ClassAPI {
     /// - Input: Course ID, from [ClassCourse]
     pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
         let cred = self.cred.load();
-        let token = match &cred.class_token {
+        let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
                 return Err(Error::LoginError(
@@ -45,11 +41,7 @@ impl super::ClassAPI {
             }
         };
         let res = self.post(
-            format!(
-                    "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={}&courseId={}",
-                    token.value,
-                    id
-                )
+            format!("https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={token}&courseId={id}")
             )
             .send()
             .await?;
@@ -62,7 +54,7 @@ impl super::ClassAPI {
     /// - Input: Schedule ID, from [ClassSchedule]
     pub async fn checkin(&self, id: &str) -> crate::Result<Response> {
         let cred = self.cred.load();
-        let token = match &cred.class_token {
+        let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
                 return Err(Error::LoginError(
@@ -72,12 +64,7 @@ impl super::ClassAPI {
         };
         let time = utils::get_time_millis();
         let res = self.post(
-            format!(
-                    "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={}&timestamp={}&id={}",
-                    id,
-                    time,
-                    token.value
-                )
+            format!("http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={id}&timestamp={time}&id={token}")
             )
             .send()
             .await?;

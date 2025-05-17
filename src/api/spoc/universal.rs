@@ -12,7 +12,7 @@ struct SpocState {
 impl super::SpocAPI {
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
         let cred = self.cred.load();
-        let token = match &cred.spoc_token {
+        let token = match cred.spoc_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Token".to_string())),
         };
@@ -22,7 +22,7 @@ impl super::SpocAPI {
         let body = serde_json::json!({
             "param": crypto::aes::aes_encrypt_cbc(query.as_bytes(), ase_key, ase_iv)
         });
-        let token = format!("Inco-{}", token.value);
+        let token = format!("Inco-{token}");
         let mut header = HeaderMap::new();
         header.insert(
             HeaderName::from_bytes(b"Token").unwrap(),

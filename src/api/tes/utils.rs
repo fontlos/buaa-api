@@ -201,10 +201,7 @@ impl<'de> Deserialize<'de> for EvaluationForm {
             .into_iter()
             .flat_map(|raw_list| {
                 raw_list.tasklist.into_iter().map(|raw_task| {
-                    let kind = match raw_task.kind.as_str() {
-                        "1" => true,
-                        _ => false,
-                    };
+                    let kind = matches!(raw_task.kind.as_str(), "1");
                     EvaluationQuestion {
                         id: raw_task.id,
                         is_choice: kind,
@@ -244,7 +241,7 @@ impl EvaluationForm {
         let question_len = self.questions.len();
         let ans_len = ans.len();
         if question_len != ans_len {
-            panic!("Question count not match: {} != {}", question_len, ans_len);
+            panic!("Question count not match: {question_len} != {ans_len}");
         }
         let mut score = 0f32;
         let mut completed: Vec<EvaluationCompletedQuestion> = Vec::with_capacity(question_len);
@@ -253,8 +250,7 @@ impl EvaluationForm {
                 EvaluationAnswer::Choice(index) => {
                     let option = question.options.get(index).unwrap();
                     score += option.score;
-                    let mut ans = Vec::with_capacity(1);
-                    ans.push(option.op_id.clone());
+                    let ans = vec![option.op_id.clone()];
                     completed.push(EvaluationCompletedQuestion {
                         sjly: "1".to_string(),
                         stlx: "1".to_string(),
@@ -266,7 +262,7 @@ impl EvaluationForm {
                     });
                 }
                 EvaluationAnswer::Completion(answer) => {
-                    let option = question.options.get(0).unwrap();
+                    let option = question.options.first().unwrap();
                     let mut ans = Vec::with_capacity(1);
                     if !answer.is_empty() {
                         ans.push(answer);
@@ -283,8 +279,7 @@ impl EvaluationForm {
                 }
             };
         }
-        let mut content: Vec<EvaluationCompletedList> = Vec::with_capacity(1);
-        content.push(EvaluationCompletedList {
+        let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
             teacher_id: self.info.teacher_id,
             teacher_name: self.info.teacher_name,
             course_id: self.info.course_id,
@@ -312,7 +307,7 @@ impl EvaluationForm {
             sdrs: None,
             zsxz: self.info.id2,
             sfnm: "1".to_string(),
-        });
+        }];
         EvaluationCompleted {
             pjidlist: Vec::new(),
             content,
