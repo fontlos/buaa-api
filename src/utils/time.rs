@@ -1,13 +1,11 @@
 use serde::{Deserialize, Deserializer};
 use time::{Date, OffsetDateTime, PrimitiveDateTime, UtcOffset, format_description};
 
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[inline]
 pub fn get_timestamp() -> Duration {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
 }
 
 pub fn get_time_secs() -> u64 {

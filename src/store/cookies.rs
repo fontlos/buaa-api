@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use cookie_store::{CookieStore, RawCookie, RawCookieParseError, Cookie};
+use cookie_store::{Cookie, CookieStore, RawCookie, RawCookieParseError};
 use reqwest::header::HeaderValue;
 
 use std::fs::{File, OpenOptions};

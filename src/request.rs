@@ -43,7 +43,7 @@ where
 #[derive(Debug, PartialEq, Eq)]
 pub enum LoginPolicy {
     Manual,
-    Auto
+    Auto,
 }
 
 impl LoginPolicy {

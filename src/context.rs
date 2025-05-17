@@ -3,10 +3,10 @@ use std::ops::Deref;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::{api::SSO, cell::AtomicCell};
 use crate::request::{Client, LoginPolicy, client};
 use crate::store::cookies::AtomicCookieStore;
 use crate::store::cred::CredentialStore;
+use crate::{api::SSO, cell::AtomicCell};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
 pub struct Context<G = SSO> {
@@ -53,9 +53,9 @@ impl Context {
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn with_auth<P: AsRef<Path>>(dir: P) -> Context<SSO> {
         let cookies_path = dir.as_ref().join("cookies.json");
-        let cookies = Arc::new(AtomicCookieStore::new(
-            AtomicCookieStore::from_file(cookies_path),
-        ));
+        let cookies = Arc::new(AtomicCookieStore::new(AtomicCookieStore::from_file(
+            cookies_path,
+        )));
         let cred_path = dir.as_ref().join("cred.json");
         let cred = CredentialStore::from_file(cred_path);
 

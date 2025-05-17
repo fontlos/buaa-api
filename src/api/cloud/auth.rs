@@ -23,10 +23,12 @@ impl super::CloudAPI {
 
         // 这里有一条需要手动添加的 cookie
         self.cookies.update(|store| {
-            store.insert(
-                login_challenge,
-                &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
-            ).unwrap();
+            store
+                .insert(
+                    login_challenge,
+                    &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
+                )
+                .unwrap();
         });
 
         // 发起登录请求
