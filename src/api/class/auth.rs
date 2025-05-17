@@ -1,4 +1,4 @@
-use crate::{Error, crypto, utils, store::cred::CredentialItem};
+use crate::{Error, crypto, utils};
 
 use super::_ClassLogin;
 
@@ -40,11 +40,8 @@ impl super::ClassAPI {
         match serde_json::from_str::<_ClassLogin>(&res) {
             Ok(res) => {
                 self.cred.update(|c| {
-                    c.class_token = Some(CredentialItem {
-                        value: res.result.id,
-                        // TODO: 我们先默认十分钟过期, 待测试
-                        expiration: utils::get_time_secs() + 600,
-                    });
+                    // TODO: 我们先默认十分钟过期, 待测试
+                    c.class_token.set(res.result.id, 600);
                 });
                 Ok(())
             }

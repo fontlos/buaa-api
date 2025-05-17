@@ -10,13 +10,13 @@ pub struct CredentialStore {
     pub username: Option<String>,
     pub password: Option<String>,
     /// Token for Boya API
-    pub boya_token: Option<CredentialItem>,
+    pub boya_token: CredentialItem,
     /// User ID for SmartClass API
-    pub class_token: Option<CredentialItem>,
+    pub class_token: CredentialItem,
     /// User ID for Spoc API
-    pub spoc_token: Option<CredentialItem>,
+    pub spoc_token: CredentialItem,
     /// Token for Srs API
-    pub srs_token: Option<CredentialItem>,
+    pub srs_token: CredentialItem,
     /// Mark expiration time of SSO Login Cookie.
     pub sso_login: u64,
 }
@@ -48,18 +48,41 @@ impl CredentialStore {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CredentialItem {
-    pub value: String,
-    pub expiration: u64,
-}
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct CredentialItem(Option<CredentialItemInner>);
 
 impl CredentialItem {
     pub fn new(value: String, expiration: u64) -> Self {
-        CredentialItem { value, expiration }
+        CredentialItem(Some(CredentialItemInner {
+            value,
+            expiration: utils::get_time_secs() + expiration,
+        }))
+    }
+
+    pub fn value(&self) -> Option<&String> {
+        match &self.0 {
+            Some(item) => Some(&item.value),
+            None => None,
+        }
+    }
+
+    pub fn set(&mut self, value: String, expiration: u64) {
+        self.0 = Some(CredentialItemInner {
+            value,
+            expiration: utils::get_time_secs() + expiration,
+        });
     }
 
     pub fn is_expired(&self) -> bool {
-        self.expiration < utils::get_time_secs()
+        match &self.0 {
+            Some(item) => item.expiration < utils::get_time_secs(),
+            None => true,
+        }
     }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct CredentialItemInner {
+    value: String,
+    expiration: u64,
 }

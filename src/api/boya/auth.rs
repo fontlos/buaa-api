@@ -1,4 +1,4 @@
-use crate::{store::cred::CredentialItem, Error, utils};
+use crate::Error;
 
 impl super::BoyaAPI {
     /// # Boya Login
@@ -19,32 +19,12 @@ impl super::BoyaAPI {
         };
         if token.0 == "token" {
             self.cred.update(|c| {
-                c.boya_token = Some(CredentialItem{
-                    value: token.1.to_string(),
-                    // 经验证十五分钟内过期, 我们这里用十分钟
-                    expiration: utils::get_time_secs() + 600,
-                });
+                // 经验证十五分钟内过期, 我们这里用十分钟
+                c.boya_token.set(token.1.to_string(), 600);
             });
             return Ok(());
         } else {
             return Err(Error::LoginError("No Token".to_string()));
         }
-    }
-
-    // 仅在启用自动刷新策略并且登录过期时才会刷新
-    // 检测是否过期是我们的保守策略, 即超出我们的预期, 并不保证是否一定是登录过期
-    pub(crate) fn need_refresh(&self) -> bool {
-        // 如果根本不启用自动刷新策略, 那么就不需要刷新
-        if !self.policy.load().is_auto() {
-            return false;
-        };
-        // 如果能拿到, 那看看过没过期
-        if let Some(c) = &self.cred.load().boya_token {
-            // 过期了就刷新
-            return c.is_expired()
-        } else {
-            // 如果没有, 那就刷新
-            return true
-        };
     }
 }

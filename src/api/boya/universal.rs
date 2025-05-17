@@ -63,12 +63,12 @@ impl super::BoyaAPI {
     /// - Query: `{}`
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
         // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
-        if self.need_refresh() {
+        if self.policy.load().is_auto() && self.cred.load().boya_token.is_expired() {
             self.login().await?;
         }
         // 首先尝试获取 token, 如果没有就可以直接返回了
         let cred = self.cred.load();
-        let token = match &cred.boya_token {
+        let token = match cred.boya_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Boya Token".to_string())),
         };
@@ -99,11 +99,11 @@ impl super::BoyaAPI {
         );
         header.insert(
             HeaderName::from_bytes(b"Auth_token").unwrap(),
-            HeaderValue::from_str(&token.value).unwrap(),
+            HeaderValue::from_str(&token).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Authtoken").unwrap(),
-            HeaderValue::from_str(&token.value).unwrap(),
+            HeaderValue::from_str(&token).unwrap(),
         );
         header.insert(
             HeaderName::from_bytes(b"Sk").unwrap(),

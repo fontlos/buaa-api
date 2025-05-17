@@ -8,16 +8,16 @@ impl super::SrsAPI {
 
         // 获取 token
         let cred = self.cred.load();
-        let token = match &cred.srs_token {
+        let token = match cred.srs_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
-        let query = [("token", &token.value)];
+        let query = [("token", token)];
 
         let res = self
             .post(url)
-            .header("Authorization", &token.value)
+            .header("Authorization", token)
             .query(&query)
             .send()
             .await?;
@@ -38,7 +38,7 @@ impl super::SrsAPI {
 
         // 获取 token
         let cred = self.cred.load();
-        let token = match &cred.srs_token {
+        let token = match cred.srs_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
@@ -46,7 +46,7 @@ impl super::SrsAPI {
         let res = self
             .post(url)
             .json(&filter)
-            .header("Authorization", &token.value)
+            .header("Authorization", token)
             .send()
             .await?;
         let text = res.text().await?;
@@ -66,12 +66,16 @@ impl super::SrsAPI {
 
         // 获取 token
         let cred = self.cred.load();
-        let token = match &cred.srs_token {
+        let token = match cred.srs_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
 
-        let res = self.post(url).header("Authorization", &token.value).send().await?;
+        let res = self
+            .post(url)
+            .header("Authorization", token)
+            .send()
+            .await?;
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
@@ -88,7 +92,7 @@ impl super::SrsAPI {
 
         // 获取 token
         let cred = self.cred.load();
-        let token = match &cred.srs_token {
+        let token = match cred.srs_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
@@ -96,7 +100,7 @@ impl super::SrsAPI {
         let res = self
             .post(url)
             .form(&opt)
-            .header("Authorization", &token.value)
+            .header("Authorization", token)
             .send()
             .await?;
         let text = res.text().await?;
@@ -114,7 +118,7 @@ impl super::SrsAPI {
 
         // 获取 token
         let cred = self.cred.load();
-        let token = match &cred.srs_token {
+        let token = match cred.srs_token.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Srs Token".to_string())),
         };
@@ -122,7 +126,7 @@ impl super::SrsAPI {
         let res = self
             .post(url)
             .form(&opt)
-            .header("Authorization", &token.value)
+            .header("Authorization", token)
             .send()
             .await?;
         let text = res.text().await?;
