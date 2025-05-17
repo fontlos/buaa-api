@@ -22,7 +22,7 @@ impl super::SpocAPI {
         let body = serde_json::json!({
             "param": crypto::aes::aes_encrypt_cbc(query.as_bytes(), ase_key, ase_iv)
         });
-        let token = format!("Inco-{}", token);
+        let token = format!("Inco-{token}");
         let mut header = HeaderMap::new();
         header.insert(
             HeaderName::from_bytes(b"Token").unwrap(),

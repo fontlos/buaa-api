@@ -44,22 +44,20 @@ pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> String {
     let padding_len = 16 - (data_bytes.len() % 16);
 
     // 添加 ZeroPadding
-    for _ in 0..padding_len {
-        data_bytes.push(0u8);
-    }
+    data_bytes.extend(vec![0u8; padding_len]);
 
     // 创建输出缓冲区
     let mut output = vec![0u8; data_bytes.len()];
 
     // 初始块使用初始向量进行加密
-    let mut block = GenericArray::from_mut_slice(&mut output[..16]);
+    let block = GenericArray::from_mut_slice(&mut output[..16]);
     block.copy_from_slice(iv);
-    cipher.encrypt_block(&mut block);
+    cipher.encrypt_block(block);
 
     // 逐块加密数据
     for (i, chunk) in data_bytes.chunks(16).enumerate() {
         let (prev_block, current_block) = output.split_at_mut(i * 16);
-        let mut block = GenericArray::from_mut_slice(&mut current_block[..16]);
+        let block = GenericArray::from_mut_slice(&mut current_block[..16]);
 
         // 使用前一个块的加密结果与当前块进行异或操作
         if i == 0 {
@@ -75,7 +73,7 @@ pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> String {
         }
 
         // 加密当前块
-        cipher.encrypt_block(&mut block);
+        cipher.encrypt_block(block);
     }
 
     // 将加密后的数据进行 Base64 编码

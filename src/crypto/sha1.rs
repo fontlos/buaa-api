@@ -66,8 +66,8 @@ mod light {
         fn transform(&mut self) {
             let mut w = [0u32; 80];
 
-            for i in 0..16 {
-                w[i] = u32::from_be_bytes([
+            for (i, item) in w.iter_mut().enumerate().take(16) {
+                *item = u32::from_be_bytes([
                     self.buffer[i * 4],
                     self.buffer[i * 4 + 1],
                     self.buffer[i * 4 + 2],
@@ -85,7 +85,7 @@ mod light {
             let mut d = self.state[3];
             let mut e = self.state[4];
 
-            for i in 0..80 {
+            for (i, item) in w.iter().enumerate() {
                 let (f, k) = match i {
                     0..=19 => ((b & c) | ((!b) & d), 0x5A827999),
                     20..=39 => (b ^ c ^ d, 0x6ED9EBA1),
@@ -99,7 +99,7 @@ mod light {
                     .wrapping_add(f)
                     .wrapping_add(e)
                     .wrapping_add(k)
-                    .wrapping_add(w[i]);
+                    .wrapping_add(*item);
 
                 e = d;
                 d = c;

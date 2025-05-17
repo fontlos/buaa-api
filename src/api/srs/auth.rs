@@ -17,9 +17,9 @@ impl super::SrsAPI {
                     // TODO: 我们先默认十分钟过期, 待测试
                     c.srs_token.set(t.to_string(), 600);
                 });
-                return Ok(());
+                Ok(())
             }
-            None => return Err(Error::LoginError("No Token".to_string())),
+            None => Err(Error::LoginError("No Token".to_string())),
         }
     }
 }

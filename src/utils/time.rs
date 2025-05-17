@@ -37,5 +37,5 @@ where
 
     let s: String = Deserialize::deserialize(deserializer)?;
 
-    PrimitiveDateTime::parse(&s, &format_string).map_err(|e| serde::de::Error::custom(e))
+    PrimitiveDateTime::parse(&s, &format_string).map_err(serde::de::Error::custom)
 }

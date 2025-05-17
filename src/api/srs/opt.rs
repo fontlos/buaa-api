@@ -25,11 +25,11 @@ impl super::SrsAPI {
         let campus = crate::utils::get_value_by_lable(&text, "\"campus\": \"", "\"");
         if let Some(campus) = campus {
             match campus.parse::<u8>() {
-                Ok(campus) => return Ok(CourseFilter::new(campus)),
-                Err(_) => return Err(Error::APIError("Invalid Campus".to_string())),
-            };
+                Ok(campus) => Ok(CourseFilter::new(campus)),
+                Err(_) => Err(Error::APIError("Invalid Campus".to_string())),
+            }
         } else {
-            return Err(Error::APIError("No Campus".to_string()));
+            Err(Error::APIError("No Campus".to_string()))
         }
     }
     /// Query Course

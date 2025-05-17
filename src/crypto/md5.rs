@@ -86,8 +86,8 @@ mod light {
             ];
 
             let mut m = [0u32; 16];
-            for i in 0..16 {
-                m[i] = u32::from_le_bytes([
+            for (i, item) in m.iter_mut().enumerate() {
+                *item = u32::from_le_bytes([
                     self.buffer[i * 4],
                     self.buffer[i * 4 + 1],
                     self.buffer[i * 4 + 2],

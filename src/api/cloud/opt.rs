@@ -54,7 +54,7 @@ impl super::CloudAPI {
             "sort": "asc",
             "by": "name"
         });
-        let text = self.universal_request(&url, &data, Method::POST).await?;
+        let text = self.universal_request(url, &data, Method::POST).await?;
 
         Ok(text)
     }

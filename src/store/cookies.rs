@@ -55,15 +55,15 @@ impl AtomicCookieStore {
         {
             Ok(f) => f,
             Err(e) => {
-                eprintln!("Failed to open cookie file: {:?}", e);
+                eprintln!("Failed to open cookie file: {e}");
                 return;
             }
         };
         let store = self.load();
         if let Err(e) =
-            store.save_incl_expired_and_nonpersistent(&mut file, |s| serde_json::to_string(s))
+            store.save_incl_expired_and_nonpersistent(&mut file, serde_json::to_string)
         {
-            eprintln!("Failed to save cookie store: {}", e);
+            eprintln!("Failed to save cookie store: {e}");
         }
     }
 }
@@ -87,7 +87,7 @@ impl reqwest::cookie::CookieStore for AtomicCookieStore {
             .0
             .load()
             .get_request_values(url)
-            .map(|(name, value)| format!("{}={}", name, value))
+            .map(|(name, value)| format!("{name}={value}"))
             .collect::<Vec<_>>()
             .join("; ");
 

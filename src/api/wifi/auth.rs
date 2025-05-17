@@ -88,7 +88,7 @@ impl super::WiFiAPI {
         let check_str = format!(
             "{token}{un}{token}{password_md5}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}"
         );
-        let chk_sum = crypto::sha1::sha1(&check_str.as_bytes());
+        let chk_sum = crypto::sha1::sha1(check_str.as_bytes());
 
         // 构造登录 URL 并登录
         // 暂时不知道后面五个参数有无修改必要
@@ -97,7 +97,7 @@ impl super::WiFiAPI {
             ("action", "login"),
             ("username", un),
             ("password", &format!("{{MD5}}{password_md5}")),
-            ("ac_id", &ac_id),
+            ("ac_id", ac_id),
             ("ip", &ip),
             ("chksum", &chk_sum),
             ("info", &info),
@@ -117,9 +117,9 @@ impl super::WiFiAPI {
         // 注意没有考虑免费流量用尽或者全部流量用尽的情况
         // "ploy_msg":"您的免费30G流量已用尽，当前正在使用套餐流量。"
         if res.contains(r#""error":"ok""#) {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::LoginError(format!("Response: {res}")));
+            Err(Error::LoginError(format!("Response: {res}")))
         }
     }
 
@@ -172,7 +172,7 @@ impl super::WiFiAPI {
             ("callback", time),
             ("action", "logout"),
             ("username", un),
-            ("ac_id", &ac_id),
+            ("ac_id", ac_id),
             ("ip", &ip),
         ];
 

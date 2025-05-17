@@ -26,14 +26,11 @@ impl CredentialStore {
         let file = OpenOptions::new()
             .read(true)
             .write(true)
+            .truncate(true)
             .create(true)
             .open(path)
             .unwrap();
-        if let Ok(cred) = serde_json::from_reader(file) {
-            cred
-        } else {
-            CredentialStore::default()
-        }
+        serde_json::from_reader(file).unwrap_or_default()
     }
 
     pub fn to_file<P: AsRef<Path>>(&self, path: P) {

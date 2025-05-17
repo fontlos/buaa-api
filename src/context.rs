@@ -17,18 +17,22 @@ pub struct Context<G = SSO> {
     _marker: PhantomData<G>,
 }
 
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Context {
     /// Initialize the `Context`
     /// ```rust
     /// use buaa::Context;
     ///
-    /// fn main() {
-    ///     let mut context = Context::new();
-    ///     // Set account
-    ///     context.set_account("username", "password");
-    ///     // Login to context
-    ///     context.login().await.unwrap();
-    /// }
+    /// let mut context = Context::new();
+    /// // Set account
+    /// context.set_account("username", "password");
+    /// // Login to context
+    /// context.login().await.unwrap();
     /// ```
     pub fn new() -> Context<SSO> {
         let cookies = Arc::new(AtomicCookieStore::default());

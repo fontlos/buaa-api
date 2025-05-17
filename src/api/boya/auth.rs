@@ -22,9 +22,9 @@ impl super::BoyaAPI {
                 // 经验证十五分钟内过期, 我们这里用十分钟
                 c.boya_token.set(token.1.to_string(), 600);
             });
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::LoginError("No Token".to_string()));
+            Err(Error::LoginError("No Token".to_string()))
         }
     }
 }
