@@ -30,4 +30,15 @@ impl super::BoyaAPI {
             return Err(Error::LoginError("No Token".to_string()));
         }
     }
+
+    pub fn need_refresh(&self) -> bool {
+        let is_auto = self.policy.load().is_auto();
+        let is_expired = if let Some(c) = &self.cred.load().boya_token {
+            c.is_expired()
+        } else {
+            true
+        };
+
+        is_auto && is_expired
+    }
 }

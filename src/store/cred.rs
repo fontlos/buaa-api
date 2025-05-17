@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::path::Path;
 
+use crate::utils;
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialStore {
     pub username: Option<String>,
@@ -17,12 +19,6 @@ pub struct CredentialStore {
     pub srs_token: Option<CredentialItem>,
     /// Mark expiration time of SSO Login Cookie.
     pub sso_login: u64,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct CredentialItem {
-    pub value: String,
-    pub expiration: u64,
 }
 
 impl CredentialStore {
@@ -49,5 +45,21 @@ impl CredentialStore {
             .open(path)
             .unwrap();
         serde_json::to_writer(file, self).unwrap();
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct CredentialItem {
+    pub value: String,
+    pub expiration: u64,
+}
+
+impl CredentialItem {
+    pub fn new(value: String, expiration: u64) -> Self {
+        CredentialItem { value, expiration }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        self.expiration < utils::get_time_secs()
     }
 }
