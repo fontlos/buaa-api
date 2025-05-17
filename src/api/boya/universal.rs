@@ -62,6 +62,10 @@ impl super::BoyaAPI {
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
     /// - Query: `{}`
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
+        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
+        if self.need_refresh() {
+            self.login().await?;
+        }
         // 首先尝试获取 token, 如果没有就可以直接返回了
         let cred = self.cred.load();
         let token = match &cred.boya_token {
@@ -121,6 +125,7 @@ impl super::BoyaAPI {
         // 检查状态
         let status = serde_json::from_str::<BoyaStatus>(&res)?;
         if status.status == "98005399" {
+            // 刷新登录 Token 的操作无需在这里执行, 如果上面刷新了, 这里还能报这个状态码那应该不是 Token 的问题
             return Err(Error::LoginExpired("Boya Login Expired".to_string()));
         }
         if status.status == "1" {

@@ -81,7 +81,8 @@ mod tests {
         context.login().await.unwrap();
 
         let boya = context.boya();
-        boya.login().await.unwrap();
+        // 现在至少 Boya 的 API 是支持自动刷新的
+        // boya.login().await.unwrap();
 
         let res = match boya.query_course().await {
             Ok(s) => s,

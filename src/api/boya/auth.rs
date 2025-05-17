@@ -31,14 +31,20 @@ impl super::BoyaAPI {
         }
     }
 
-    pub fn need_refresh(&self) -> bool {
-        let is_auto = self.policy.load().is_auto();
-        let is_expired = if let Some(c) = &self.cred.load().boya_token {
-            c.is_expired()
-        } else {
-            true
+    // 仅在启用自动刷新策略并且登录过期时才会刷新
+    // 检测是否过期是我们的保守策略, 即超出我们的预期, 并不保证是否一定是登录过期
+    pub(crate) fn need_refresh(&self) -> bool {
+        // 如果根本不启用自动刷新策略, 那么就不需要刷新
+        if !self.policy.load().is_auto() {
+            return false;
         };
-
-        is_auto && is_expired
+        // 如果能拿到, 那看看过没过期
+        if let Some(c) = &self.cred.load().boya_token {
+            // 过期了就刷新
+            return c.is_expired()
+        } else {
+            // 如果没有, 那就刷新
+            return true
+        };
     }
 }
