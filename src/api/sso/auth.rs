@@ -1,25 +1,7 @@
 use crate::{Error, utils};
 
-impl crate::Context {
+impl super::SSOAPI {
     /// # SSO Login
-    /// This is the most important method and should be called first <br>
-    /// This method is used to login to the SSO system, and the login information will be saved in the cookie <br>
-    /// If your login information expires, you should also re-call this function to refresh the cookie
-    /// ```rust
-    /// use buaa::Context;
-    ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let context = Context::new();
-    ///     context.set_account("username", "password")
-    ///     context.with_cookies("cookie.json");
-    ///     context.login().await.unwrap();
-    ///
-    ///     // do something
-    ///
-    ///     context.save();
-    /// }
-    /// ```
     pub async fn login(&self) -> crate::Result<()> {
         // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
         // "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
