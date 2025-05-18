@@ -1,5 +1,6 @@
 //! # BUAA User Center API
 
+mod auth;
 mod opt;
 
 /// BUAA User Center API Group

@@ -78,10 +78,12 @@ mod tests {
 
         let context = Context::new();
         context.set_account(username, password);
-        context.login().await.unwrap();
+        // 2025.5.18 3pm 我们也成功支持 SSO 的自动刷新了
+        // 现在真正可以直接调用 API 无需预处理了
+        // context.login().await.unwrap();
 
         let boya = context.boya();
-        // 现在至少 Boya 的 API 是支持自动刷新的
+        // 2025.5.17 2pm 现在至少 Boya 的 API 是支持自动刷新的
         // boya.login().await.unwrap();
 
         let res = match boya.query_course().await {

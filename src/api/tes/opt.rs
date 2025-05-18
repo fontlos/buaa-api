@@ -3,18 +3,6 @@ use crate::{Error, utils};
 use super::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
 
 impl super::TesAPI {
-    /// Teacher Evaluation System Login
-    pub async fn login(&self) -> crate::Result<()> {
-        // 登录
-        let login_url =
-            "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fspoc.buaa.edu.cn%2Fpjxt%2Fcas";
-        let res = self.get(login_url).send().await?;
-        if res.url().as_str() == login_url {
-            return Err(Error::LoginExpired("SSO Expired".to_string()));
-        }
-        Ok(())
-    }
-
     /// Get a list of the ones that need to beevaluated <br>
     /// The method has made multiple requests inside it, and the speed is slow
     pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {

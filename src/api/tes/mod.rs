@@ -1,5 +1,6 @@
 //! # BUAA Teacher Evaluation System API
 
+mod auth;
 mod opt;
 mod utils;
 

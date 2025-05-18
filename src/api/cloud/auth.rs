@@ -2,6 +2,11 @@ use crate::Error;
 
 impl super::CloudAPI {
     pub async fn login(&self) -> crate::Result<()> {
+        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
+        if self.policy.load().is_auto() && self.cred.load().sso.is_expired() {
+            self.api::<crate::api::Core>().login().await?;
+        }
+
         // 获取登录参数, 302 后可解析出 login_challenge
         let url =
             "https://bhpan.buaa.edu.cn/anyshare/oauth2/login?redirect=%2Fanyshare%2Fzh-cn%2Fportal";
@@ -39,6 +44,11 @@ impl super::CloudAPI {
         if res.url().path() == "/anyshare/oauth2/login/callback" {
             // is_previous_login_3rd_party=true 和 oauth2.isSkip=true 两个 cookie 似乎没有用, 这里就不添加了
             // 至于用于操作的 client.oauth2_token 既然已经在 cookie 中了, 就不单独复制一份到 config 里了
+            // TODO: 由于新的更高效的原子 Cell, 这里还是存一下 Token
+            self.cred.update(|c| {
+                // 刷新 SSO 时效
+                c.sso.refresh(5400);
+            });
             Ok(())
         } else {
             Err(Error::LoginError("Login failed".to_string()))

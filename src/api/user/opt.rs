@@ -1,23 +1,6 @@
 use crate::utils;
 
 impl super::UserAPI {
-    /// # User Center Login
-    pub async fn login(&self) -> crate::Result<()> {
-        let time = utils::get_time_millis();
-        // 获取 JSESSIONID
-        self.get(format!(
-            "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={time}"
-        ))
-        .send()
-        .await?;
-        // 验证  JSESSIONID
-        // 会经历 4 次重定向
-        self.get("https://uc.buaa.edu.cn/api/login?target=https://uc.buaa.edu.cn/#/user/login")
-            .send()
-            .await?;
-        Ok(())
-    }
-
     /// # Get User Center state
     /// - Output: `String`, JSON includes name and username, etc
     pub async fn get_state(&self) -> crate::Result<String> {

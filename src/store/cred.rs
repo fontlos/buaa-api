@@ -17,8 +17,8 @@ pub struct CredentialStore {
     pub spoc_token: CredentialItem,
     /// Token for Srs API
     pub srs_token: CredentialItem,
-    /// Mark expiration time of SSO Login Cookie.
-    pub sso_login: u64,
+    /// Mark expiration time of SSO Login
+    pub sso: Expiration,
 }
 
 impl CredentialStore {
@@ -46,40 +46,46 @@ impl CredentialStore {
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
-pub struct CredentialItem(Option<CredentialItemInner>);
+pub struct CredentialItem {
+    value: Option<String>,
+    expiration: u64,
+}
 
 impl CredentialItem {
     pub fn new(value: String, expiration: u64) -> Self {
-        CredentialItem(Some(CredentialItemInner {
-            value,
-            expiration: utils::get_time_secs() + expiration,
-        }))
+        CredentialItem {
+            value: Some(value),
+            expiration: expiration,
+        }
     }
 
     pub fn value(&self) -> Option<&String> {
-        match &self.0 {
-            Some(item) => Some(&item.value),
-            None => None,
-        }
+        self.value.as_ref()
     }
 
     pub fn set(&mut self, value: String, expiration: u64) {
-        self.0 = Some(CredentialItemInner {
-            value,
-            expiration: utils::get_time_secs() + expiration,
-        });
+        self.value = Some(value);
+        self.expiration = utils::get_time_secs() + expiration;
+    }
+
+    pub fn refresh(&mut self, expiration: u64) {
+        self.expiration = expiration;
     }
 
     pub fn is_expired(&self) -> bool {
-        match &self.0 {
-            Some(item) => item.expiration < utils::get_time_secs(),
-            None => true,
-        }
+        self.expiration < utils::get_time_secs()
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-struct CredentialItemInner {
-    value: String,
-    expiration: u64,
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct Expiration(u64);
+
+impl Expiration {
+    pub fn is_expired(&self) -> bool {
+        self.0 < utils::get_time_secs()
+    }
+
+    pub fn refresh(&mut self, expiration: u64) {
+        self.0 = utils::get_time_secs() + expiration;
+    }
 }

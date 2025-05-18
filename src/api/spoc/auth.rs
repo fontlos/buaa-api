@@ -3,6 +3,11 @@ use crate::Error;
 impl super::SpocAPI {
     /// # Spoc Login
     pub async fn login(&self) -> crate::Result<()> {
+        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
+        if self.policy.load().is_auto() && self.cred.load().sso.is_expired() {
+            self.api::<crate::api::Core>().login().await?;
+        }
+
         let res = self
             .get("https://spoc.buaa.edu.cn/spocnewht/cas")
             .send()
@@ -35,6 +40,8 @@ impl super::SpocAPI {
         self.cred.update(|c| {
             // TODO: 我们先默认十分钟过期, 待测试
             c.spoc_token.set(token.to_string(), 600);
+            // 刷新 SSO 时效
+            c.sso.refresh(5400);
         });
         Ok(())
     }
