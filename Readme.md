@@ -60,9 +60,9 @@ The basic process is:
 - Initialize the `Context`
 - (Optional) Set account
 - (Optional) Specifies the dictionary for auth
-- Login to SSO (Context)
+- (Auto default) Login to SSO (Context)
 - Get the API group you need
-- Login to this group
+- (Auto default) Login to this group
 - Call API in this group
 - (Optional) Save auth file
 
@@ -77,13 +77,13 @@ async fn main() {
     let context = Context::new();
     // Set account
     context.set_account("username", "password");
-    // Login to context
-    context.login().await.unwrap();
+    // Login to context, and it will auto refresh by default
+    // context.login().await.unwrap();
 
     // Get an API Group
     let user = context.user();
-    // Login to this group
-    user.login().await.unwrap();
+    // Login to this group, and it will auto refresh by default
+    // user.login().await.unwrap();
 
     // Call API in this group
     let state = user.get_state().await.unwrap();

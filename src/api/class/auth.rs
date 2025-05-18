@@ -5,6 +5,11 @@ use super::_ClassLogin;
 impl super::ClassAPI {
     /// # Smart Classroom Login
     pub async fn login(&self) -> crate::Result<()> {
+        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
+        if self.policy.load().is_auto() && self.cred.load().sso.is_expired() {
+            self.api::<crate::api::Core>().login().await?;
+        }
+
         // 获取 JSESSIONID
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
 
@@ -42,6 +47,8 @@ impl super::ClassAPI {
                 self.cred.update(|c| {
                     // TODO: 我们先默认十分钟过期, 待测试
                     c.class_token.set(res.result.id, 600);
+                    // 刷新 SSO 时效
+                    c.sso.refresh(5400);
                 });
                 Ok(())
             }
