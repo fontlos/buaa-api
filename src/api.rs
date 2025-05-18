@@ -11,8 +11,8 @@ pub mod user;
 #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
 pub mod wifi;
 
-/// Marker type for BUAA SSO API Grouping, and it is the default API Group
-pub struct SSO;
+/// Marker type for Core Context, and it is the default API Group
+pub struct Core;
 /// Marker type for BUAA Academic Affairs System API Grouping
 pub struct Aas;
 /// Marker type for BUAA App API Grouping
@@ -27,6 +27,8 @@ pub struct Cloud;
 pub struct Spoc;
 /// Marker type for BUAA Undergraduate & Graduate Student Course Registration System API Grouping
 pub struct Srs;
+/// Marker type for BUAA SSO API Grouping
+pub struct SSO;
 /// Marker type for BUAA Teacher Evaluation System API Grouping
 pub struct Tes;
 /// Marker type for BUAA User Center API Grouping
@@ -34,7 +36,7 @@ pub struct User;
 /// Marker type for BUAA WiFi API Grouping
 pub struct WiFi;
 
-impl crate::Context<SSO> {
+impl<G> crate::Context<G> {
     /// Obtains a type-state view for the specified API group
     ///
     /// This zero-cost conversion provides access to group-specific APIs
@@ -46,12 +48,15 @@ impl crate::Context<SSO> {
     /// 2. All context data is stored in `Arc`-wrapped fields
     /// 3. The original context remains accessible
     #[inline]
-    pub fn api<G>(&self) -> &crate::Context<G> {
+    pub fn api<N>(&self) -> &crate::Context<N> {
         unsafe {
             // Safety: PhantomData 不改变实际内存布局
-            &*(self as *const crate::Context<SSO> as *const crate::Context<G>)
+            &*(self as *const crate::Context<G> as *const crate::Context<N>)
         }
     }
+}
+
+impl crate::Context<Core> {
     /// Get BUAA Academic Affairs System API Group
     pub fn aas(&self) -> &crate::Context<Aas> {
         self.api::<Aas>()
@@ -83,6 +88,10 @@ impl crate::Context<SSO> {
     /// Get BUAA Undergraduate & Graduate Student Course Registration System API Group
     pub fn srs(&self) -> &crate::Context<Srs> {
         self.api::<Srs>()
+    }
+    /// Get BUAA SSO API Group
+    pub fn sso(&self) -> &crate::Context<SSO> {
+        self.api::<SSO>()
     }
     /// Get BUAA Teacher Evaluation System API Group
     pub fn tes(&self) -> &crate::Context<Tes> {

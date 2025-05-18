@@ -6,10 +6,10 @@ use std::sync::Arc;
 use crate::request::{Client, LoginPolicy, client};
 use crate::store::cookies::AtomicCookieStore;
 use crate::store::cred::CredentialStore;
-use crate::{api::SSO, cell::AtomicCell};
+use crate::{api::Core, cell::AtomicCell};
 
 /// This is the core of this crate, it is used to store cookies and send requests <br>
-pub struct Context<G = SSO> {
+pub struct Context<G = Core> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<AtomicCookieStore>,
     pub(crate) cred: AtomicCell<CredentialStore>,
@@ -34,7 +34,7 @@ impl Context {
     /// // Login to context
     /// context.login().await.unwrap();
     /// ```
-    pub fn new() -> Context<SSO> {
+    pub fn new() -> Context {
         let cookies = Arc::new(AtomicCookieStore::default());
         let client = client(cookies.clone());
 
@@ -55,7 +55,7 @@ impl Context {
     ///
     /// If either file doesn't exist or fails to load, default values will be used instead.
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn with_auth<P: AsRef<Path>>(dir: P) -> Context<SSO> {
+    pub fn with_auth<P: AsRef<Path>>(dir: P) -> Context {
         let cookies_path = dir.as_ref().join("cookies.json");
         let cookies = Arc::new(AtomicCookieStore::new(AtomicCookieStore::from_file(
             cookies_path,
@@ -72,6 +72,27 @@ impl Context {
             policy: AtomicCell::new(LoginPolicy::Auto),
             _marker: PhantomData,
         }
+    }
+
+    /// # Context Login
+    /// This is the most important method and should be called first <br>
+    /// This method is used to login to the SSO system, and the login information will be saved in the cookie <br>
+    /// If your login information expires, you should also re-call this function to refresh the cookie
+    /// ```rust
+    /// use buaa::Context;
+    ///
+    /// #[tokio::main]
+    /// async fn main() {
+    ///     let context = Context::new();
+    ///     context.set_account("username", "password")
+    ///     context.login().await.unwrap();
+    ///
+    ///     // do something
+    /// }
+    /// ```
+    /// In fact, this is a wrapper of `login()` in `SSO` API
+    pub async fn login(&self) -> crate::Result<()> {
+        self.sso().login().await
     }
 
     pub fn set_account(&self, username: &str, password: &str) {
