@@ -13,6 +13,8 @@ pub struct CredentialStore {
     pub boya_token: CredentialItem,
     /// User ID for SmartClass API
     pub class_token: CredentialItem,
+    /// Token for Cloud API
+    pub cloud_token: CredentialItem,
     /// User ID for Spoc API
     pub spoc_token: CredentialItem,
     /// Token for Srs API
