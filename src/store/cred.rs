@@ -57,7 +57,7 @@ impl CredentialItem {
     pub fn new(value: String, expiration: u64) -> Self {
         CredentialItem {
             value: Some(value),
-            expiration: expiration,
+            expiration,
         }
     }
 
