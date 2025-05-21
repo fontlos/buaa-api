@@ -18,8 +18,7 @@ impl super::BoyaAPI {
     ///
     /// Other Boya APIs don't need to be implemented, if you need to, you can extend it with this universal request API. <br>
     /// You can find JS code like the following by intercepting all XHR requests in the browser, via stack calls. <br>
-    /// Locate the following sections in the `app.js` with breakpoint debugging.
-    ///
+    /// Locate the following sections in the `app.js`(Windows UA)/`main.js`(Android UA) by search `setPublicKey` and set breakpoint to debug.
     /// # JS Code
     ///  ```js
     /// var y = new h.default;

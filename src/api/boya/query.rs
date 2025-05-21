@@ -1,7 +1,8 @@
 use time::Date;
 
 use super::{
-    _BoyaCourses, _BoyaSelecteds, _BoyaStatistics, BoyaCourse, BoyaSelected, BoyaStatistic,
+    _BoyaCourses, _BoyaDetail, _BoyaSelecteds, _BoyaStatistics, BoyaCourse, BoyaDetail,
+    BoyaSelected, BoyaStatistic,
 };
 
 impl super::BoyaAPI {
@@ -13,6 +14,14 @@ impl super::BoyaAPI {
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
         let res = self.universal_request(query, url).await?;
         let res = serde_json::from_str::<_BoyaCourses>(&res)?;
+        Ok(res.data)
+    }
+
+    pub async fn query_detail(&self, id: u32) -> crate::Result<BoyaDetail> {
+        let query = format!("{{\"id\":{id}}}");
+        let url = "https://bykc.buaa.edu.cn/sscv/queryCourseById";
+        let res = self.universal_request(&query, url).await?;
+        let res = serde_json::from_str::<_BoyaDetail>(&res)?;
         Ok(res.data)
     }
 
@@ -70,6 +79,22 @@ mod tests {
                 return;
             }
         };
+        println!("{:?}", res);
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_boya_query_detail() {
+        let env = env();
+        let username = env.get("USERNAME").unwrap();
+        let password = env.get("PASSWORD").unwrap();
+
+        let context = Context::new();
+        context.set_account(username, password);
+
+        let boya = context.boya();
+
+        let res = boya.query_detail(7882).await.unwrap();
         println!("{:?}", res);
     }
 
