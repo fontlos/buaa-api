@@ -43,10 +43,15 @@ impl super::CloudAPI {
         // 来到回调地址证明登陆成功
         if res.url().path() == "/anyshare/oauth2/login/callback" {
             // is_previous_login_3rd_party=true 和 oauth2.isSkip=true 两个 cookie 似乎没有用, 这里就不添加了
-            let token = match self.cookies.load().get("bhpan.buaa.edu.cn", "/", "client.oauth2_token") {
-                Some(t) => t.value().to_string(),
-                None => return Err(Error::APIError("No Cloud Token".to_string())),
-            };
+            let token =
+                match self
+                    .cookies
+                    .load()
+                    .get("bhpan.buaa.edu.cn", "/", "client.oauth2_token")
+                {
+                    Some(t) => t.value().to_string(),
+                    None => return Err(Error::APIError("No Cloud Token".to_string())),
+                };
             self.cred.update(|c| {
                 // TODO: 我们先默认十分钟过期, 待测试
                 c.cloud_token.set(token, 600);
