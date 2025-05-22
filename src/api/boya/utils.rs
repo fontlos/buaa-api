@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::PrimitiveDateTime;
 
-use crate::utils::{self, deserialize_datatime};
+use crate::utils::deserialize_datatime;
 
 // ====================
 // 用于 query_courses
@@ -133,104 +133,17 @@ where
     match value {
         "[1]" => Ok(BoyaCampus::XueYuanLu),
         "[2]" => Ok(BoyaCampus::ShaHe),
-        "ALL" => Ok(BoyaCampus::All),
+        // 那我问你, 你一共就俩校区, 你这 ALL 和 [1]|[2] 有**区别啊
+        "ALL" | "[1]|[2]" => Ok(BoyaCampus::All),
         _ => Ok(BoyaCampus::Other),
     }
-}
-
-// ====================
-// 用于 query_courses
-// ====================
-
-#[derive(Deserialize)]
-pub(super) struct _BoyaDetail {
-    pub data: BoyaDetail,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct BoyaDetail {
-    #[serde(deserialize_with = "deserialize_boya_description")]
-    #[serde(rename = "courseDesc")]
-    pub description: String,
-    #[serde(deserialize_with = "deserialize_boya_sign_config")]
-    #[serde(rename = "courseSignConfig")]
-    pub sign: Option<SignConfig>,
-}
-
-fn deserialize_boya_description<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value: &str = Deserialize::deserialize(deserializer)?;
-    match utils::get_value_by_lable(value, "<p>", "</p>") {
-        Some(value) => Ok(value.to_owned()),
-        // TODO: 也许可以返回一个空字符串, 这个错误并不重要
-        None => Err(serde::de::Error::custom("missing field `description`")),
-    }
-}
-
-fn deserialize_boya_sign_config<'de, D>(deserializer: D) -> Result<Option<SignConfig>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value: String = Deserialize::deserialize(deserializer)?;
-    if value.is_empty() {
-        return Ok(None);
-    }
-    let value = value.replace("\\\"", "\"");
-    match serde_json::from_str::<SignConfig>(&value) {
-        Ok(config) => Ok(Some(config)),
-        Err(_) => Ok(None),
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct SignConfig {
-    #[serde(deserialize_with = "deserialize_datatime")]
-    #[serde(rename = "signStartDate")]
-    pub checkin_start: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_datatime")]
-    #[serde(rename = "signEndDate")]
-    pub checkin_end: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_datatime")]
-    #[serde(rename = "signOutStartDate")]
-    pub checkout_start: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_datatime")]
-    #[serde(rename = "signOutEndDate")]
-    pub checkout_end: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_boya_sign_coordinate")]
-    #[serde(rename = "signPointList")]
-    pub coordinate: Coordinate,
-}
-
-fn deserialize_boya_sign_coordinate<'de, D>(deserializer: D) -> Result<Coordinate, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value: Vec<Coordinate> = Deserialize::deserialize(deserializer)?;
-    // 似乎实际上只用到了半径等于 50 的坐标
-    for coordinate in value {
-        if coordinate.radius == 50 {
-            return Ok(coordinate);
-        }
-    }
-    Err(serde::de::Error::custom("No proper `coordinate`"))
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Coordinate {
-    #[serde(rename = "lng")]
-    pub longitude: f64,
-    #[serde(rename = "lat")]
-    pub latitude: f64,
-    pub radius: i32,
 }
 
 // ====================
 // 用于 query_selected
 // ====================
 
-// 由于学校的抽象设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
+// 由于学校的**设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
 #[derive(Deserialize)]
 pub(super) struct _BoyaSelecteds {
     #[serde(deserialize_with = "deserialize_boya_selecteds")]
@@ -340,35 +253,115 @@ pub struct BoyaAssessment {
 }
 
 // ====================
-// 用于 checkin_course
+// 用于 query_attend_rule
 // ====================
 
 #[derive(Deserialize)]
-pub(super) struct _BoyaCheckin {
-    pub data: _BoyaCheckinData,
+pub(super) struct _BoyaDetail {
+    pub data: _BoyaDetailData,
+}
+
+#[derive(Debug, Deserialize)]
+pub(super) struct _BoyaDetailData {
+    // 这玩意几乎啥信息没有, 主办方瞎**填的, 不解析了
+    // #[serde(rename = "courseDesc")]
+    // pub description: String,
+
+    // 同时用于签到签退的信息
+    #[serde(deserialize_with = "deserialize_boya_attendance_rule")]
+    #[serde(rename = "courseSignConfig")]
+    pub rule: Option<BoyaAttendRule>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BoyaAttendRule {
+    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(rename = "signStartDate")]
+    pub checkin_start: PrimitiveDateTime,
+    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(rename = "signEndDate")]
+    pub checkin_end: PrimitiveDateTime,
+    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(rename = "signOutStartDate")]
+    pub checkout_start: PrimitiveDateTime,
+    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(rename = "signOutEndDate")]
+    pub checkout_end: PrimitiveDateTime,
+    #[serde(deserialize_with = "deserialize_boya_sign_coordinate")]
+    #[serde(rename = "signPointList")]
+    pub coordinate: BoyaCoordinate,
+}
+
+fn deserialize_boya_attendance_rule<'de, D>(
+    deserializer: D,
+) -> Result<Option<BoyaAttendRule>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: String = Deserialize::deserialize(deserializer)?;
+    if value.is_empty() {
+        return Ok(None);
+    }
+    let value = value.replace("\\\"", "\"");
+    match serde_json::from_str::<BoyaAttendRule>(&value) {
+        Ok(config) => Ok(Some(config)),
+        Err(_) => Ok(None),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct BoyaCoordinate {
+    #[serde(rename = "lng")]
+    pub longitude: f64,
+    #[serde(rename = "lat")]
+    pub latitude: f64,
+    pub radius: i32,
+}
+
+fn deserialize_boya_sign_coordinate<'de, D>(deserializer: D) -> Result<BoyaCoordinate, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: Vec<BoyaCoordinate> = Deserialize::deserialize(deserializer)?;
+    // 似乎实际上只用到了半径等于 50 的坐标
+    for coordinate in value {
+        if coordinate.radius == 50 {
+            return Ok(coordinate);
+        }
+    }
+    Err(serde::de::Error::custom("No proper `coordinate`"))
+}
+
+// ====================
+// 用于 attend_course
+// ====================
+
+#[derive(Deserialize)]
+pub(super) struct _BoyaAttend {
+    pub data: _BoyaAttendData,
 }
 
 #[derive(Deserialize)]
-pub(super) struct _BoyaCheckinData {
-    #[serde(deserialize_with = "deserialize_boya_checkin_info")]
+pub(super) struct _BoyaAttendData {
+    #[serde(deserialize_with = "deserialize_boya_attend")]
     #[serde(rename = "signInfo")]
-    pub info: BoyaCheckin,
+    pub info: BoyaAttend,
 }
 
-fn deserialize_boya_checkin_info<'de, D>(deserializer: D) -> Result<BoyaCheckin, D::Error>
+fn deserialize_boya_attend<'de, D>(deserializer: D) -> Result<BoyaAttend, D::Error>
 where
     D: Deserializer<'de>,
 {
     let value: String = Deserialize::deserialize(deserializer)?;
     let value = value.replace("\\\"", "\"");
-    match serde_json::from_str::<BoyaCheckin>(&value) {
+    match serde_json::from_str::<BoyaAttend>(&value) {
         Ok(config) => Ok(config),
         Err(_) => Err(serde::de::Error::custom("failed to deserialize SignInfo")),
     }
 }
 
 #[derive(Debug, Deserialize)]
-pub struct BoyaCheckin {
+pub struct BoyaAttend {
     #[serde(rename = "signIn")]
     pub checkin: SignInfo,
     #[serde(rename = "signOut")]
