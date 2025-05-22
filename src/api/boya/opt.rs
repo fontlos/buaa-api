@@ -1,4 +1,4 @@
-use super::utils::{Coordinate, _BoyaCheckin, BoyaCheckin};
+use super::utils::{_BoyaAttend, BoyaAttend, BoyaCoordinate};
 
 impl super::BoyaAPI {
     /// # Select Course
@@ -27,7 +27,11 @@ impl super::BoyaAPI {
 
     // 这个接口只在 Android UA 时才能找到, 但不妨碍使用, 在浏览器调试时可以尝试修改 UA
     // TODO: 也许我可以考虑全局使用 Android UA 避免一些痕迹
-    pub async fn checkin_course(&self, id: u32, coordinate: Coordinate) -> crate::Result<BoyaCheckin> {
+    pub async fn attend_course(
+        &self,
+        id: u32,
+        coordinate: BoyaCoordinate,
+    ) -> crate::Result<BoyaAttend> {
         use rand::Rng;
         let mut rng = rand::rng();
         let offset = 1e-5;
@@ -43,7 +47,7 @@ impl super::BoyaAPI {
         );
         let url = "https://bykc.buaa.edu.cn/sscv/signCourseByUser";
         let res = self.universal_request(&query, url).await?;
-        let res = serde_json::from_str::<_BoyaCheckin>(&res)?;
+        let res = serde_json::from_str::<_BoyaAttend>(&res)?;
         Ok(res.data.info)
     }
 }
@@ -101,13 +105,12 @@ mod tests {
         let id = 7882;
 
         let coordinate = boya
-            .query_detail(id)
+            .query_attend_rule(id)
             .await
             .unwrap()
-            .sign
             .unwrap()
             .coordinate;
-        let res = boya.checkin_course(id, coordinate).await.unwrap();
+        let res = boya.attend_course(id, coordinate).await.unwrap();
         println!("{:?}", res);
     }
 }
