@@ -1,4 +1,4 @@
-use super::utils::{_BoyaAttend, BoyaAttend, BoyaCoordinate};
+use super::utils::{_BoyaAttend, BoyaAttend, BoyaAttendType, BoyaCoordinate};
 
 impl super::BoyaAPI {
     /// # Select Course
@@ -30,7 +30,8 @@ impl super::BoyaAPI {
     pub async fn attend_course(
         &self,
         id: u32,
-        coordinate: BoyaCoordinate,
+        coordinate: &BoyaCoordinate,
+        attend_type: BoyaAttendType,
     ) -> crate::Result<BoyaAttend> {
         use rand::Rng;
         let mut rng = rand::rng();
@@ -40,15 +41,34 @@ impl super::BoyaAPI {
         let lat_offset = rng.random_range(-offset..offset);
 
         let query = format!(
-            "{{\"courseId\":{},\"signLat\":{},\"signLng\":{},\"signType\":2}}",
+            "{{\"courseId\":{},\"signLat\":{},\"signLng\":{},\"signType\":{}}}",
             id,
             coordinate.latitude + lat_offset,
-            coordinate.longitude + lng_offset
+            coordinate.longitude + lng_offset,
+            attend_type as u8
         );
         let url = "https://bykc.buaa.edu.cn/sscv/signCourseByUser";
         let res = self.universal_request(&query, url).await?;
         let res = serde_json::from_str::<_BoyaAttend>(&res)?;
         Ok(res.data.info)
+    }
+
+    pub async fn checkin_course(
+        &self,
+        id: u32,
+        coordinate: &BoyaCoordinate,
+    ) -> crate::Result<BoyaAttend> {
+        self.attend_course(id, coordinate, BoyaAttendType::Checkin)
+            .await
+    }
+
+    pub async fn checkout_course(
+        &self,
+        id: u32,
+        coordinate: &BoyaCoordinate,
+    ) -> crate::Result<BoyaAttend> {
+        self.attend_course(id, coordinate, BoyaAttendType::Checkout)
+            .await
     }
 }
 
@@ -93,7 +113,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_boya_checkin() {
+    async fn test_boya_checkin_checkout() {
         let env = env();
         let username = env.get("USERNAME").unwrap();
         let password = env.get("PASSWORD").unwrap();
@@ -102,15 +122,22 @@ mod tests {
         context.set_account(username, password);
 
         let boya = context.boya();
-        let id = 7882;
+        let id = 7774;
 
-        let coordinate = boya
-            .query_attend_rule(id)
-            .await
-            .unwrap()
-            .unwrap()
-            .coordinate;
-        let res = boya.attend_course(id, coordinate).await.unwrap();
-        println!("{:?}", res);
+        let rule = boya.query_attend_rule(id).await.unwrap().unwrap();
+        println!("{:?}", rule);
+
+        let time = crate::utils::get_datatime();
+        if rule.checkin_start < time && time < rule.checkin_end {
+            let res = boya.checkin_course(id, &rule.coordinate).await.unwrap();
+            println!("Checkin: {:?}", res);
+            return;
+        }
+
+        if rule.checkout_start < time && time < rule.checkout_end {
+            let res = boya.checkout_course(id, &rule.coordinate).await.unwrap();
+            println!("Checkout: {:?}", res);
+            return;
+        }
     }
 }

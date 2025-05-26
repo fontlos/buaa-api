@@ -322,12 +322,10 @@ fn deserialize_boya_sign_coordinate<'de, D>(deserializer: D) -> Result<BoyaCoord
 where
     D: Deserializer<'de>,
 {
-    let value: Vec<BoyaCoordinate> = Deserialize::deserialize(deserializer)?;
-    // 似乎实际上只用到了半径等于 50 的坐标
-    for coordinate in value {
-        if coordinate.radius == 50 {
-            return Ok(coordinate);
-        }
+    let mut value: Vec<BoyaCoordinate> = Deserialize::deserialize(deserializer)?;
+    // 搞不懂, 但经过两次测试似乎使用的是列表的最后一个值
+    if !value.is_empty() {
+        return Ok(value.pop().unwrap());
     }
     Err(serde::de::Error::custom("No proper `coordinate`"))
 }
@@ -335,6 +333,11 @@ where
 // ====================
 // 用于 attend_course
 // ====================
+
+pub enum BoyaAttendType {
+    Checkin = 1,
+    Checkout = 2,
+}
 
 #[derive(Deserialize)]
 pub(super) struct _BoyaAttend {
