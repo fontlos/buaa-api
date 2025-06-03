@@ -27,9 +27,6 @@ impl CredentialStore {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
         let file = OpenOptions::new()
             .read(true)
-            .write(true)
-            .truncate(true)
-            .create(true)
             .open(path)
             .unwrap();
         serde_json::from_reader(file).unwrap_or_default()
@@ -37,7 +34,6 @@ impl CredentialStore {
 
     pub fn to_file<P: AsRef<Path>>(&self, path: P) {
         let file = OpenOptions::new()
-            .read(true)
             .write(true)
             .create(true)
             .truncate(true)
