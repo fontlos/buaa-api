@@ -75,35 +75,24 @@ impl super::ClassAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]
     async fn test_class_query_course() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let class = context.class();
-        class.login().await.unwrap();
+        // class.login().await.unwrap();
 
-        let res = class.query_course("202420251").await.unwrap();
+        let res = class.query_course("202420252").await.unwrap();
         println!("{:#?}", res);
+
+        // context.save_auth("./data");
     }
 
     #[tokio::test]
     async fn test_class_query_schedule() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let class = context.class();
         class.login().await.unwrap();
@@ -114,13 +103,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_class_checkin() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let class = context.class();
         class.login().await.unwrap();
