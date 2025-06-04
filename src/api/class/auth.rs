@@ -45,8 +45,8 @@ impl super::ClassAPI {
         match serde_json::from_str::<_ClassLogin>(&res) {
             Ok(res) => {
                 self.cred.update(|c| {
-                    // TODO: 我们先默认十分钟过期, 待测试
-                    c.class_token.set(res.result.id, 600);
+                    // TODO: 至少 14 小时, 待测试
+                    c.class_token.set(res.result.id, 50400);
                     // 刷新 SSO 时效
                     c.sso.refresh(5400);
                 });
