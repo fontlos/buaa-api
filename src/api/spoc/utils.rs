@@ -12,7 +12,7 @@ pub(super) struct _SpocRes1 {
 pub struct SpocWeek {
     #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "pjmrrq")]
-    pub time: (String, String),
+    pub date: (String, String),
     #[serde(rename = "mrxq")]
     pub term: String,
 }
@@ -60,7 +60,7 @@ where
         Some("friday") => Ok(Weekday::Friday),
         Some("saturday") => Ok(Weekday::Saturday),
         Some("sunday") => Ok(Weekday::Sunday),
-        _ => Err(serde::de::Error::custom("Unexpected value")),
+        _ => Err(serde::de::Error::custom("Unexpected value in SpocSchedule weekday")),
     }
 }
 

@@ -26,7 +26,7 @@ impl super::SpocAPI {
             }
             None => return Err(Error::LoginError("No Token".to_string())),
         };
-        // 暂时不知道有什么用, 看名字是用来刷新 token 的 token
+        // 用来刷新 Token 的 Refresh Token, 但我们用不着
         // let _refresh_token = match query.next() {
         //     Some((key, value)) => {
         //         if key == "refreshToken" {
@@ -38,8 +38,8 @@ impl super::SpocAPI {
         //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
         // };
         self.cred.update(|c| {
-            // TODO: 我们先默认十分钟过期, 待测试
-            c.spoc_token.set(token.to_string(), 600);
+            // TODO: 至少 14 小时, 待测试
+            c.spoc_token.set(token.to_string(), 50400);
             // 刷新 SSO 时效
             c.sso.refresh(5400);
         });

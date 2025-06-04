@@ -15,7 +15,7 @@ impl super::SpocAPI {
         // 后面三个值分别是开始日期, 结束日期和学年学期
         let query = format!(
             "{{\"sqlid\":\"17138556333937a86d7c38783bc62811e7c6bb5ef955a\",\"zksrq\":\"{}\",\"zjsrq\":\"{}\",\"xnxq\":\"{}\"}}",
-            week.time.0, week.time.1, week.term
+            week.date.0, week.date.1, week.term
         );
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryList";
         let res = self.universal_request(&query, url).await?;
@@ -27,25 +27,19 @@ impl super::SpocAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]
     async fn test_spoc_get_schedule() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let spoc = context.spoc();
-        spoc.login().await.unwrap();
+        // spoc.login().await.unwrap();
 
         let res = spoc.get_week().await.unwrap();
         println!("{:?}", res);
-        let res = spoc.get_week_schedule(&res).await.unwrap();
-        println!("{:?}", res);
+        // let res = spoc.get_week_schedule(&res).await.unwrap();
+        // println!("{:?}", res);
+        // context.save_auth("./data");
     }
 }
