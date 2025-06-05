@@ -38,8 +38,8 @@ impl super::SpocAPI {
         //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
         // };
         self.cred.update(|c| {
-            // TODO: 至少 14 小时, 待测试
-            c.spoc_token.set(token.to_string(), 50400);
+            // 至少 24 小时, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
+            c.spoc_token.set(token.to_string(), 86400);
             // 刷新 SSO 时效
             c.sso.refresh(5400);
         });
