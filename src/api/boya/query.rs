@@ -54,23 +54,18 @@ impl super::BoyaAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::utils::{self, env};
+    use crate::utils;
 
     #[ignore]
     #[tokio::test]
     async fn test_boya_query_course() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        // 2025.5.18 3pm 我们也成功支持 SSO 的自动刷新了
+        let context = Context::with_auth("./data");
+        // 2025.5.18 15:00 我们也成功支持 SSO 的自动刷新了
         // 现在真正可以直接调用 API 无需预处理了
         // context.login().await.unwrap();
 
         let boya = context.boya();
-        // 2025.5.17 2pm 现在至少 Boya 的 API 是支持自动刷新的
+        // 2025.5.17 14:00 现在至少 Boya 的 API 是支持自动刷新的
         // boya.login().await.unwrap();
 
         let res = match boya.query_course().await {
@@ -86,12 +81,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_boya_query_detail() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
+        let context = Context::with_auth("./data");
 
         let boya = context.boya();
 
@@ -102,16 +92,9 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_boya_query_selected() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let boya = context.boya();
-        boya.login().await.unwrap();
 
         let start = utils::parse_date("2024-08-26");
         let end = utils::parse_date("2024-12-29");
@@ -123,16 +106,9 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_boya_query_statistic() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let boya = context.boya();
-        boya.login().await.unwrap();
 
         let res = boya.query_statistic().await.unwrap();
 

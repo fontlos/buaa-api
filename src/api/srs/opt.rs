@@ -137,35 +137,22 @@ impl super::SrsAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]
     async fn test_srs_gen_filter() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
+        let context = Context::with_auth("./data");
 
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let srs = context.srs();
+        srs.login().await.unwrap();
 
-        let course = context.srs();
-        course.login().await.unwrap();
-
-        let _filter = course.gen_filter().await.unwrap();
+        let _filter = srs.gen_filter().await.unwrap();
     }
 
     #[ignore]
     #[tokio::test]
     async fn test_srs_query() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let srs = context.srs();
         srs.login().await.unwrap();
@@ -179,18 +166,12 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_srs_query_selete() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
+        let context = Context::with_auth("./data");
 
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let srs = context.srs();
+        srs.login().await.unwrap();
 
-        let course = context.srs();
-        course.login().await.unwrap();
-
-        let res = course.query_selected().await.unwrap();
+        let res = srs.query_selected().await.unwrap();
 
         println!("{:?}", res);
     }

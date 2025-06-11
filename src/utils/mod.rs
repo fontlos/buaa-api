@@ -1,13 +1,5 @@
-mod byte2hex;
-pub(crate) use byte2hex::bytes_to_hex_fast;
-
-mod env;
-
-#[cfg(test)]
-pub use env::env;
-
-mod parse;
-pub(crate) use parse::{get_value_by_lable, get_values_by_lable};
+mod str;
+pub(crate) use str::{get_value_by_lable, get_values_by_lable};
 
 mod time;
 pub use time::*;

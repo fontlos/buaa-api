@@ -28,12 +28,31 @@ pub fn aes_encrypt_ecb(data: &[u8], key: &[u8]) -> String {
     general_purpose::STANDARD.encode(&output)
 }
 
+/// AES decrypt, use Base64, ECB mode, PKCS5Padding
+pub fn aes_decrypt_ecb(data: &str, key: &[u8]) -> String {
+    // 将 Base64 编码的加密数据解码为字节数组
+    let encrypted_bytes = general_purpose::STANDARD.decode(data).unwrap();
+    // 创建 AES 解密器
+    let cipher = Aes128::new_from_slice(key).unwrap();
+    // 创建输出缓冲区
+    let mut output = vec![0u8; encrypted_bytes.len()];
+    // 逐块解密数据
+    for (i, chunk) in encrypted_bytes.chunks(16).enumerate() {
+        let mut block = *GenericArray::from_slice(chunk);
+        cipher.decrypt_block(&mut block);
+        output[i * 16..(i + 1) * 16].copy_from_slice(&block);
+    }
+    // 移除填充
+    let padding_len = output.last().map(|&x| x as usize).unwrap_or(0);
+    if padding_len <= output.len() {
+        output.truncate(output.len() - padding_len);
+    }
+    // 将解密后的数据转换为字符串
+    String::from_utf8(output).unwrap()
+}
+
 /// AES encrypt, use Base64, CBC mode, ZeroPadding
 pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> String {
-    // 将密钥和初始向量转换为字节数组
-    // let key_bytes = key.as_bytes();
-    // let iv_bytes = iv.as_bytes();
-
     // 创建 AES 加密器
     let cipher = Aes128::new_from_slice(key).unwrap();
 
@@ -78,27 +97,4 @@ pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> String {
 
     // 将加密后的数据进行 Base64 编码
     general_purpose::STANDARD.encode(&output)
-}
-
-/// AES decrypt, use Base64, ECB mode, PKCS5Padding
-pub fn aes_decrypt(data: &str, key: &[u8]) -> String {
-    // 将 Base64 编码的加密数据解码为字节数组
-    let encrypted_bytes = general_purpose::STANDARD.decode(data).unwrap();
-    // 创建 AES 解密器
-    let cipher = Aes128::new_from_slice(key).unwrap();
-    // 创建输出缓冲区
-    let mut output = vec![0u8; encrypted_bytes.len()];
-    // 逐块解密数据
-    for (i, chunk) in encrypted_bytes.chunks(16).enumerate() {
-        let mut block = *GenericArray::from_slice(chunk);
-        cipher.decrypt_block(&mut block);
-        output[i * 16..(i + 1) * 16].copy_from_slice(&block);
-    }
-    // 移除填充
-    let padding_len = output.last().map(|&x| x as usize).unwrap_or(0);
-    if padding_len <= output.len() {
-        output.truncate(output.len() - padding_len);
-    }
-    // 将解密后的数据转换为字符串
-    String::from_utf8(output).unwrap()
 }

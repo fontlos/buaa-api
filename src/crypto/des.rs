@@ -21,5 +21,5 @@ pub fn des_encrypt(data: &[u8], key: &[u8]) -> String {
     #[cfg(feature = "crypto")]
     return hex::encode(&output);
     #[cfg(not(feature = "crypto"))]
-    crate::utils::bytes_to_hex_fast(&output)
+    crate::crypto::bytes2hex(&output)
 }

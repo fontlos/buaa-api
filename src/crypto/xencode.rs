@@ -4,7 +4,7 @@ use base64::engine::{Engine, GeneralPurpose, GeneralPurposeConfig};
 /// Convert the string byte array every four bits and merge it into a new array
 fn str2vec(a: &[u8]) -> Vec<u32> {
     let c = a.len();
-    let mut v = Vec::new();
+    let mut v = Vec::with_capacity((c + 3) / 4); // 预分配
     for i in (0..c).step_by(4) {
         let mut value: u32 = 0;
         if i < c {
@@ -25,9 +25,15 @@ fn str2vec(a: &[u8]) -> Vec<u32> {
     v
 }
 
-/// XEncode for gw api</br>
+/// XEncode for WIFI API
+///
 /// A custom encoding, the last step is Base64 encoding
 pub fn x_encode(str: &[u8], key: &[u8]) -> String {
+    /// From hard-coded in JS
+    /// 2025.04.22
+    const BASE64_ALPHABET: &str =
+        "LVoJPiCN2R8G90yg+hmFHuacZ1OWMnrsSTXkYpUq/3dlbfKwv6xztjI7DeBE45QA";
+
     if str.is_empty() {
         return String::new();
     }
@@ -79,7 +85,7 @@ pub fn x_encode(str: &[u8], key: &[u8]) -> String {
         bytes.push((i >> 16 & 0xff) as u8);
         bytes.push((i >> 24 & 0xff) as u8);
     }
-    let alphabet = Alphabet::new(crate::consts::WIFI_XENCODE_BASE64_ALPHABET).unwrap();
+    let alphabet = Alphabet::new(BASE64_ALPHABET).unwrap();
     let engine = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
     format!("{{SRBX1}}{}", engine.encode(bytes))
 }

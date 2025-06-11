@@ -60,7 +60,9 @@ where
         Some("friday") => Ok(Weekday::Friday),
         Some("saturday") => Ok(Weekday::Saturday),
         Some("sunday") => Ok(Weekday::Sunday),
-        _ => Err(serde::de::Error::custom("Unexpected value in SpocSchedule weekday")),
+        _ => Err(serde::de::Error::custom(
+            "Unexpected value in SpocSchedule weekday",
+        )),
     }
 }
 

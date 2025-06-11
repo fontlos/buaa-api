@@ -2,6 +2,10 @@ use crate::{Error, crypto, utils};
 
 use super::_ClassLogin;
 
+/// From the reverse analysis of JS
+/// 2025.04.22
+pub const CLASS_DES_KEY: &[u8] = b"Jyd#351*";
+
 impl super::ClassAPI {
     /// # Smart Classroom Login
     pub async fn login(&self) -> crate::Result<()> {
@@ -22,7 +26,7 @@ impl super::ClassAPI {
         };
         let url = &url[..url.len() - 2];
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
-        let url = crypto::des::des_encrypt(url.as_bytes(), crate::consts::CLASS_DES_KEY);
+        let url = crypto::des::des_encrypt(url.as_bytes(), CLASS_DES_KEY);
         let params = [("method", "html5GetPrivateUserInfo"), ("url", &url)];
         self.get("https://iclass.buaa.edu.cn:8346/wc/auth/html5GetPrivateUserInfo")
             .query(&params)
