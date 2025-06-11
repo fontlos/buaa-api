@@ -3,42 +3,24 @@ mod tests {
     use crate::crypto::*;
 
     #[test]
-    fn test_aes_encrypt_ecb() {
-        let raw = b"{\"pageNumber\":1,\"pageSize\":20}";
-        let key = b"SenQBA8xn6CQGNJs";
-        let encrypted = aes::aes_encrypt_ecb(raw, key);
-        assert_eq!("RdzgYtkdw+V1Y5t4ieLoqjLJDIll1yDnqV4R1I+E/yM=", encrypted);
+    fn test_aes_ecb() {
+        let encrypted = aes::aes_encrypt_ecb(b"HelloWorld", b"SenQBA8xn6CQGNJs");
+        assert_eq!("Kn2AACfzhA8YPsPPH3SgdA==", encrypted);
+        let decrypted = aes::aes_decrypt_ecb(&encrypted, b"SenQBA8xn6CQGNJs");
+        assert_eq!("HelloWorld", decrypted);
     }
 
     #[test]
     fn test_aes_encrypt_cbc() {
-        let raw = r#"{"sqlid":"171256358365871757581efaed47d8396a4dd1336548d4","yhlx":"2"}"#;
-        let key = crate::consts::SPOC_AES_KEY;
-        let iv = crate::consts::SPOC_AES_IV;
-        let encrypted = aes::aes_encrypt_cbc(raw.as_bytes(), key, iv);
-        assert_eq!(
-            "sjMMi2wbmqqFOAChr9uGQhPMjU9aXylfswLzenO+ne0BUNGx9zPP0sbOPO3dlds6yQp7lejz7U99uiYPjfcRWjCa/peJWOEvc+MljRS4x3k=",
-            encrypted
-        );
-    }
-
-    #[test]
-    fn test_aes_decrypt() {
-        let env = crate::utils::env();
-        let raw = env.get("AES_RAW").unwrap();
-        let key = b"B55Ya5Y7FRa4CJm3";
-        let decrypted = aes::aes_decrypt(&raw, key);
-        println!("{}", decrypted);
+        let encrypted =
+            aes::aes_encrypt_cbc(b"HelloWorld", b"inco12345678ocni", b"ocni12345678inco");
+        assert_eq!("Qb5wy8PdDSUs6EgTzMX6Gw==", encrypted);
     }
 
     #[test]
     fn test_des() {
-        let data = b"https://iclass.buaa.edu.cn:8346/?loginName=18993F6FB7040240CF299C45D4C0468A";
-        let encrypted = des::des_encrypt(data, crate::consts::CLASS_DES_KEY);
-        assert_eq!(
-            &encrypted,
-            "d537020cd453a15ebbffa0be36acca5884015c4080bc2a5a275535579bc762354bdc69f8f17ee785e0c0996e915c3f3ea32b27c24246612d04496dfb291ec4d5825fa1b89b4d45c6dffc650b31ae2338"
-        );
+        let encrypted = des::des_encrypt(b"HelloWorld", b"Jyd#351*");
+        assert_eq!(&encrypted, "e8c2f09cbf46cb0a70f11196330b1657");
     }
 
     #[test]
@@ -50,35 +32,22 @@ mod tests {
 
     #[test]
     fn test_md5_hmac() {
-        let data = b"HelloWorld";
-        let key = b"Key";
-        let hmac = md5::md5_hmac(data, key);
+        let hmac = md5::md5_hmac(b"HelloWorld", b"Key");
         assert_eq!(&hmac, "219e14bef981f117479a7695dacb10c7");
     }
 
     #[test]
     fn test_sha1() {
-        let data = b"HelloWorld";
-        let sha1 = sha1::sha1(data);
+        let sha1 = sha1::sha1(b"HelloWorld");
         assert_eq!(&sha1, "db8ac1c259eb89d4a131b253bacfca5f319d54f2");
     }
 
     #[test]
     fn test_xencoder() {
-        let env = crate::utils::env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-        let ip = env.get("IP").unwrap();
-        let data = format!(
-            "{{\"username\":\"{username}\",\"password\":\"{password}\",\"ip\":\"{ip}\",\"acid\":\"62\",\"enc_ver\":\"srun_bx1\"}}"
-        );
         let res = xencode::x_encode(
-            data.as_bytes(),
+            b"HelloWorld",
             b"8e4e83f094924913acc6a9d5149015aafc898bd38ba8f45be6bd0f9edd450403",
         );
-        assert_eq!(
-            &res,
-            "{SRBX1}p00873sYXXqOdVgJGG3pnnRbF99gDX6b03gBghCUqOXfT9du5GeouZ+H/uR78LqlLg+LJm9XZet3JZYnyZGQciC5GtboAz1QQVvkx07f/pht93EBRF9fdqNYRJIiWE3KzRWQozPndYgz1GTkUpzph+=="
-        );
+        assert_eq!(&res, "{SRBX1}9GAfJJT7wdSzFKeNohuv6+==");
     }
 }
