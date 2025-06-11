@@ -100,21 +100,15 @@ impl super::TesAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]
     async fn test_get_evaluation_list() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let tes = context.tes();
         tes.login().await.unwrap();
+
         let list = tes.get_evaluation_list().await.unwrap();
         println!("{:?}", list);
     }
@@ -124,13 +118,7 @@ mod tests {
     async fn test_submit_evaluation() {
         use crate::api::tes::utils::EvaluationAnswer;
 
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let tes = context.tes();
         tes.login().await.unwrap();

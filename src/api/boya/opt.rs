@@ -75,21 +75,14 @@ impl super::BoyaAPI {
 #[cfg(test)]
 mod tests {
     use crate::Context;
-    use crate::utils::env;
 
     #[ignore]
     #[tokio::test]
     async fn test_boya_select() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let boya = context.boya();
-        boya.login().await.unwrap();
+
         let res = boya.select_course(6637).await.unwrap();
         println!("{}", res);
     }
@@ -97,16 +90,10 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_boya_drop() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
-        context.login().await.unwrap();
+        let context = Context::with_auth("./data");
 
         let boya = context.boya();
-        boya.login().await.unwrap();
+
         let res = boya.drop_course(6637).await.unwrap();
         println!("{}", res);
     }
@@ -114,12 +101,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_boya_checkin_checkout() {
-        let env = env();
-        let username = env.get("USERNAME").unwrap();
-        let password = env.get("PASSWORD").unwrap();
-
-        let context = Context::new();
-        context.set_account(username, password);
+        let context = Context::with_auth("./data");
 
         let boya = context.boya();
         let id = 7774;
