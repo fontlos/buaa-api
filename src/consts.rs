@@ -8,11 +8,6 @@ Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
 0jbxfDVBBNtyltIsDQIDAQAB
 -----END PUBLIC KEY-----";
 
-/// For Class login
-/// From the reverse analysis of JS
-/// 2025.04.22
-pub const CLASS_DES_KEY: &[u8] = b"Jyd#351*";
-
 /// For Cloud
 /// From https://bhpan.buaa.edu.cn/oauth2/_next/static/chunks/pages/signin-2a57b4f57ddbb54dc27e.js
 /// Changed since v7 (2023.08)
@@ -44,9 +39,3 @@ pub const SPOC_AES_KEY: &[u8] = b"inco12345678ocni";
 /// From hard-coded in JS
 /// 2025.04.22
 pub const SPOC_AES_IV: &[u8] = b"ocni12345678inco";
-
-/// For WIFI login in xencode function
-/// From hard-coded in JS
-/// 2025.04.22
-pub const WIFI_XENCODE_BASE64_ALPHABET: &str =
-    "LVoJPiCN2R8G90yg+hmFHuacZ1OWMnrsSTXkYpUq/3dlbfKwv6xztjI7DeBE45QA";
