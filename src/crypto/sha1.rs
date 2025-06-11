@@ -1,7 +1,7 @@
 #[cfg(not(feature = "crypto"))]
 mod light {
     //! Self-implemented SHA1, use to make dependencies minimize, and the performance gap is negligible for the small amount of data we pass on
-    use crate::utils::bytes_to_hex_fast;
+    use crate::crypto::bytes2hex;
     struct SHA1 {
         state: [u32; 5],
         count: [u64; 2],
@@ -120,7 +120,7 @@ mod light {
         let mut hasher = SHA1::new();
         hasher.update(data);
         let result = hasher.finalize();
-        bytes_to_hex_fast(&result)
+        bytes2hex(&result)
     }
 }
 

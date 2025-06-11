@@ -1,7 +1,7 @@
 #[cfg(not(feature = "crypto"))]
 mod light {
     //! Self-implemented MD5, use to make dependencies minimize, and the performance gap is negligible for the small amount of data we pass on
-    use crate::utils::bytes_to_hex_fast;
+    use crate::crypto::bytes2hex;
 
     struct MD5 {
         state: [u32; 4],
@@ -130,7 +130,7 @@ mod light {
         let mut hasher = MD5::new();
         hasher.update(data);
         let result = hasher.finalize();
-        bytes_to_hex_fast(&result)
+        bytes2hex(&result)
     }
 
     struct HMACMD5 {
@@ -185,7 +185,7 @@ mod light {
     pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
         let hmac = HMACMD5::new(key);
         let digest = hmac.compute(data);
-        bytes_to_hex_fast(&digest)
+        bytes2hex(&digest)
     }
 }
 
