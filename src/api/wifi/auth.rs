@@ -1,3 +1,5 @@
+use std::error::Error as StdError;
+
 use crate::{Error, crypto, utils};
 
 impl super::WiFiAPI {
@@ -25,7 +27,7 @@ impl super::WiFiAPI {
             None => return Err(Error::LoginError("No Password".to_string())),
         };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
-        // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
+        // 但是手机上不知道怎么获取, 所以如果无法获取到 SSID 那么也尝试连接
         if let Some(s) = utils::get_wifi_ssid() {
             if s != "BUAA-WiFi" {
                 return Ok(());
@@ -38,9 +40,26 @@ impl super::WiFiAPI {
             None => return Err(Error::LoginError(String::from("Cannot get IP address"))),
         };
 
-        // 从重定向 URL 中获取 ACID
-        // 接入点, 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
-        let res = self.get("http://gw.buaa.edu.cn").send().await?;
+        // 从重定向 URL 中获取 ACID 接入点
+        // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
+        // 这里检查一下有无 DNS 错误, 如果有那证明我们没有链接到目标网络
+        let res = match self.get("http://gw.buaa.edu.cn").send().await {
+            Ok(res) => res,
+            Err(e) => {
+                let err = e
+                    .source()
+                    .and_then(|e1| e1.source())
+                    .map(|e2| e2.to_string())
+                    .unwrap_or_else(|| e.to_string());
+
+                if err == "dns error" {
+                    return Err(Error::LoginError("Not connect to BUAA-WiFi".to_string()));
+                } else {
+                    return Err(Error::LoginError(err));
+                }
+            }
+        };
+
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
@@ -83,8 +102,7 @@ impl super::WiFiAPI {
         // 计算加密后的密码, 并且后补前缀
         let password_md5 = crypto::md5::md5_hmac(pw.as_bytes(), token_bytes);
 
-        // 计算校验和, 参数顺序如下
-        //                             token username token password_md5 token ac_id token ip token n token type token info
+        // 计算校验和, 参数顺序如下, 剩下的两个是 n 和 type, 固定为 200 和 1
         let check_str = format!(
             "{token}{un}{token}{password_md5}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}"
         );
@@ -131,8 +149,9 @@ impl super::WiFiAPI {
     /// #[tokio::main]
     /// async fn main() {
     ///     let context = Context::new();
+    ///     context.set_username("username");
     ///     let wifi = context.wifi();
-    ///     wifi.logout("username").await.unwrap();
+    ///     wifi.logout().await.unwrap();
     /// }
     /// ```
     pub async fn logout(&self) -> crate::Result<()> {
@@ -155,9 +174,26 @@ impl super::WiFiAPI {
             None => return Err(Error::LoginError(String::from("Cannot get IP address"))),
         };
 
-        // 从重定向 URL 中获取 ACID
-        // 接入点, 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
-        let res = self.get("http://gw.buaa.edu.cn").send().await?;
+        // 从重定向 URL 中获取 ACID 接入点
+        // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
+        // 这里检查一下有无 DNS 错误, 如果有那证明我们没有链接到目标网络
+        let res = match self.get("http://gw.buaa.edu.cn").send().await {
+            Ok(res) => res,
+            Err(e) => {
+                let err = e
+                    .source()
+                    .and_then(|e1| e1.source())
+                    .map(|e2| e2.to_string())
+                    .unwrap_or_else(|| e.to_string());
+
+                if err == "dns error" {
+                    return Err(Error::LoginError("Not connect to BUAA-WiFi".to_string()));
+                } else {
+                    return Err(Error::LoginError(err));
+                }
+            }
+        };
+
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
