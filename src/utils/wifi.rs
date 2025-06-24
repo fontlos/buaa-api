@@ -1,16 +1,7 @@
 pub fn get_wifi_ip() -> Option<String> {
-    let socket = match std::net::UdpSocket::bind("0.0.0.0:0") {
-        Ok(s) => s,
-        Err(_) => return None,
-    };
-    match socket.connect("8.8.8.8:80") {
-        Ok(()) => (),
-        Err(_) => return None,
-    }
-    match socket.local_addr() {
-        Ok(a) => Some(a.ip().to_string()),
-        Err(_) => None,
-    }
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
+    socket.connect("1.1.1.1:80").ok()?;
+    socket.local_addr().ok().map(|a| a.ip().to_string())
 }
 
 #[cfg(target_os = "windows")]
@@ -86,8 +77,19 @@ pub fn get_wifi_ssid() -> Option<String> {
     None
 }
 
-#[test]
-fn test_get_wifi_ssid() {
-    let s = get_wifi_ssid().unwrap();
-    println!("{}", s);
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_wifi_ip() {
+        let ip = get_wifi_ip().unwrap();
+        println!("{}", ip);
+    }
+
+    #[test]
+    fn test_get_wifi_ssid() {
+        let s = get_wifi_ssid().unwrap();
+        println!("{}", s);
+    }
 }
