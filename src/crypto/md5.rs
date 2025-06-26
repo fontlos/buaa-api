@@ -1,16 +1,15 @@
+//! Self-implemented MD5, use to make dependencies minimize, and the performance gap is negligible for the small amount of data we pass on
+
 #[cfg(not(feature = "crypto"))]
 mod light {
-    //! Self-implemented MD5, use to make dependencies minimize, and the performance gap is negligible for the small amount of data we pass on
-    use crate::crypto::bytes2hex;
-
-    struct MD5 {
+    pub struct MD5 {
         state: [u32; 4],
         count: [u64; 2],
         buffer: [u8; 64],
     }
 
     impl MD5 {
-        fn new() -> Self {
+        pub fn new() -> Self {
             MD5 {
                 state: [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476],
                 count: [0, 0],
@@ -18,7 +17,7 @@ mod light {
             }
         }
 
-        fn update(&mut self, input: &[u8]) {
+        pub fn update(&mut self, input: &[u8]) {
             let mut index = ((self.count[0] >> 3) & 0x3F) as usize;
             let len = input.len();
 
@@ -42,7 +41,7 @@ mod light {
             }
         }
 
-        fn finalize(mut self) -> [u8; 16] {
+        pub fn finalize(mut self) -> [u8; 16] {
             let mut bits = [0u8; 8];
             bits.copy_from_slice(&(self.count[0].to_le_bytes()));
 
@@ -125,20 +124,12 @@ mod light {
         }
     }
 
-    #[allow(dead_code)]
-    pub fn md5(data: &[u8]) -> String {
-        let mut hasher = MD5::new();
-        hasher.update(data);
-        let result = hasher.finalize();
-        bytes2hex(&result)
-    }
-
-    struct HMACMD5 {
+    pub struct HMACMD5 {
         key_block: [u8; 64],
     }
 
     impl HMACMD5 {
-        fn new(key: &[u8]) -> Self {
+        pub fn new(key: &[u8]) -> Self {
             let mut key_block = [0u8; 64];
 
             // 如果密钥比块大小长，先哈希它，然后补零到块大小
@@ -154,7 +145,7 @@ mod light {
             HMACMD5 { key_block }
         }
 
-        fn compute(&self, message: &[u8]) -> [u8; 16] {
+        pub fn compute(&self, message: &[u8]) -> [u8; 16] {
             let mut k_ipad = [0x36u8; 64];
             let mut k_opad = [0x5cu8; 64];
 
@@ -181,28 +172,30 @@ mod light {
             hash.finalize()
         }
     }
-
-    pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
-        let hmac = HMACMD5::new(key);
-        let digest = hmac.compute(data);
-        bytes2hex(&digest)
-    }
 }
 
 #[cfg(not(feature = "crypto"))]
-pub use light::*;
+#[allow(dead_code)]
+pub fn md5(data: &[u8]) -> String {
+    let mut hasher = light::MD5::new();
+    hasher.update(data);
+    let result = hasher.finalize();
+    crate::crypto::bytes2hex(&result)
+}
 
-#[cfg(feature = "crypto")]
-mod fast {
-    pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
-        use hmac::{Hmac, Mac};
-        use md5::Md5;
-        let mut hmac = Hmac::<Md5>::new_from_slice(key).unwrap();
-        hmac.update(data);
-        let res = hmac.finalize().into_bytes();
-        hex::encode(&res)
-    }
+#[cfg(not(feature = "crypto"))]
+pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
+    let hmac = light::HMACMD5::new(key);
+    let digest = hmac.compute(data);
+    crate::crypto::bytes2hex(&digest)
 }
 
 #[cfg(feature = "crypto")]
-pub use fast::*;
+pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
+    use hmac::{Hmac, Mac};
+    use md5::Md5;
+    let mut hmac = Hmac::<Md5>::new_from_slice(key).unwrap();
+    hmac.update(data);
+    let res = hmac.finalize().into_bytes();
+    hex::encode(&res)
+}

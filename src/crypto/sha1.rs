@@ -1,15 +1,14 @@
 #[cfg(not(feature = "crypto"))]
 mod light {
     //! Self-implemented SHA1, use to make dependencies minimize, and the performance gap is negligible for the small amount of data we pass on
-    use crate::crypto::bytes2hex;
-    struct SHA1 {
+    pub struct SHA1 {
         state: [u32; 5],
         count: [u64; 2],
         buffer: [u8; 64],
     }
 
     impl SHA1 {
-        fn new() -> Self {
+        pub fn new() -> Self {
             SHA1 {
                 state: [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0],
                 count: [0, 0],
@@ -17,7 +16,7 @@ mod light {
             }
         }
 
-        fn update(&mut self, input: &[u8]) {
+        pub fn update(&mut self, input: &[u8]) {
             let mut index = ((self.count[0] >> 3) & 0x3F) as usize;
             let len = input.len();
 
@@ -41,7 +40,7 @@ mod light {
             }
         }
 
-        fn finalize(mut self) -> [u8; 20] {
+        pub fn finalize(mut self) -> [u8; 20] {
             let mut bits = [0u8; 8];
             bits.copy_from_slice(&(self.count[0].to_be_bytes()));
 
@@ -115,26 +114,19 @@ mod light {
             self.state[4] = self.state[4].wrapping_add(e);
         }
     }
-
-    pub fn sha1(data: &[u8]) -> String {
-        let mut hasher = SHA1::new();
-        hasher.update(data);
-        let result = hasher.finalize();
-        bytes2hex(&result)
-    }
 }
 
 #[cfg(not(feature = "crypto"))]
-pub use light::*;
-
-#[cfg(feature = "crypto")]
-mod fast {
-    pub fn sha1(data: &str) -> String {
-        use sha1::{Digest, Sha1};
-        let hasher = Sha1::digest(data.as_bytes());
-        hex::encode(&hasher)
-    }
+pub fn sha1(data: &[u8]) -> String {
+    let mut hasher = light::SHA1::new();
+    hasher.update(data);
+    let result = hasher.finalize();
+    crate::crypto::bytes2hex(&result)
 }
 
 #[cfg(feature = "crypto")]
-pub use fast::*;
+pub fn sha1(data: &str) -> String {
+    use sha1::{Digest, Sha1};
+    let hasher = Sha1::digest(data.as_bytes());
+    hex::encode(&hasher)
+}
