@@ -98,6 +98,26 @@ impl RsaPkcs1v15 {
         len
     }
 
+    fn pkcs1v15_pad(&self, data: &[u8]) -> Vec<u8> {
+        // PKCS#1 v1.5 加密填充
+        let k = (self.n.bits() / 8) as usize;
+        let mut padded = vec![0u8; k];
+        // 第一个字节是 0x00
+        // 第二个字节是 0x02 (加密块)
+        padded[1] = 0x02;
+        // 填充随机非零字节
+        let ps_len = k - data.len() - 3;
+        let mut rng = rand::rng();
+        for i in 0..ps_len {
+            padded[2 + i] = rng.random_range(1..=255);
+        }
+        // 分隔符 0x00
+        padded[2 + ps_len] = 0x00;
+        // 复制原始数据
+        padded[3 + ps_len..].copy_from_slice(data);
+        padded
+    }
+
     pub fn encrypt(&self, data: &[u8]) -> Vec<u8> {
         // RSA 加密: ciphertext = plaintext^e mod n
 
@@ -127,29 +147,9 @@ impl RsaPkcs1v15 {
         let enc_data = self.encrypt(data);
         general_purpose::STANDARD.encode(&enc_data)
     }
-
-    fn pkcs1v15_pad(&self, data: &[u8]) -> Vec<u8> {
-        // PKCS#1 v1.5 加密填充
-        let k = (self.n.bits() / 8) as usize;
-        let mut padded = vec![0u8; k];
-        // 第一个字节是 0x00
-        // 第二个字节是 0x02 (加密块)
-        padded[1] = 0x02;
-        // 填充随机非零字节
-        let ps_len = k - data.len() - 3;
-        let mut rng = rand::rng();
-        for i in 0..ps_len {
-            padded[2 + i] = rng.random_range(1..=255);
-        }
-        // 分隔符 0x00
-        padded[2 + ps_len] = 0x00;
-        // 复制原始数据
-        padded[3 + ps_len..].copy_from_slice(data);
-        padded
-    }
 }
 
-// 原版实现. 如果未来 RSA 更新可能会换回原实现
+// RSA Crate 有一个安全问题, 所以我们暂时不使用
 // use rsa::pkcs8::DecodePublicKey;
 // use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
 
