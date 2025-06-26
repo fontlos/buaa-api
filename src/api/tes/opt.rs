@@ -1,6 +1,8 @@
 use crate::{Error, utils};
 
-use super::{EvaluationCompleted, EvaluationForm, _EvaluationList, EvaluationListItem};
+use super::{
+    _EvaluationForm, _EvaluationList, EvaluationCompleted, EvaluationForm, EvaluationListItem,
+};
 
 impl super::TesAPI {
     /// Get a list of the ones that need to be evaluated <br>
@@ -67,8 +69,8 @@ impl super::TesAPI {
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
         let res = self.get(url).query(&query).send().await?;
         let text = res.text().await?;
-        let form: EvaluationForm = serde_json::from_str(&text)?;
-        Ok(form)
+        let form: _EvaluationForm = serde_json::from_str(&text)?;
+        Ok(form.result)
     }
 
     pub async fn submit_evaluation(
@@ -112,7 +114,9 @@ mod tests {
         tes.login().await.unwrap();
 
         let list = tes.get_evaluation_list().await.unwrap();
-        println!("{:#?}", list);
+
+        let form = tes.get_evaluation_form(&list[0]).await.unwrap();
+        println!("{:#?}", form);
     }
 
     #[ignore]

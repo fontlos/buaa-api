@@ -44,21 +44,78 @@ where
     D: Deserializer<'de>,
 {
     let value: u8 = Deserialize::deserialize(deserializer)?;
-    match value {
-        1 => Ok(true),
-        _ => Ok(false),
-    }
+    Ok(matches!(value, 1))
 }
 
 // ====================
 // 用于解析评教表单返回 Json
 // ====================
 
-#[derive(Debug)]
+#[derive(Deserialize)]
+pub(super) struct _EvaluationForm {
+    #[serde(deserialize_with = "deserialize_evaluation_form")]
+    pub result: EvaluationForm,
+}
+
+fn deserialize_evaluation_form<'de, D>(deserializer: D) -> Result<EvaluationForm, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: Vec<EvaluationForm> = Deserialize::deserialize(deserializer)?;
+    value
+        .into_iter()
+        .next()
+        .ok_or_else(|| serde::de::Error::custom("Expected at least one EvaluationForm"))
+}
+
+#[derive(Debug, Deserialize)]
 pub struct EvaluationForm {
+    #[serde(deserialize_with = "deserialize_evaluation_info")]
+    #[serde(rename = "pjxtPjjgPjjgckb")]
     pub(super) info: EvaluationInfo,
+    #[serde(deserialize_with = "deserialize_evaluation_question")]
+    #[serde(rename = "pjxtWjWjbReturnEntity")]
     pub questions: Vec<EvaluationQuestion>,
+    #[serde(rename = "pjmap")]
     map: EvaluationMap,
+}
+
+fn deserialize_evaluation_info<'de, D>(deserializer: D) -> Result<EvaluationInfo, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: Vec<EvaluationInfo> = Deserialize::deserialize(deserializer)?;
+    value
+        .into_iter()
+        .next()
+        .ok_or_else(|| serde::de::Error::custom("Expected at least one EvaluationInfo"))
+}
+
+fn deserialize_evaluation_question<'de, D>(
+    deserializer: D,
+) -> Result<Vec<EvaluationQuestion>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    struct Wrapper {
+        #[serde(rename = "wjzblist")]
+        // 只有一个元素
+        data: Vec<RawList>,
+    }
+
+    #[derive(Deserialize)]
+    struct RawList {
+        #[serde(rename = "tklist")]
+        tasklist: Vec<EvaluationQuestion>,
+    }
+    let value: Wrapper = Deserialize::deserialize(deserializer)?;
+    value
+        .data
+        .into_iter()
+        .next()
+        .map(|raw| raw.tasklist)
+        .ok_or_else(|| serde::de::Error::custom("Expected at least one EvaluationQuestion list"))
 }
 
 #[derive(Debug, Deserialize)]
@@ -100,131 +157,39 @@ struct EvaluationMap {
     pj2: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct EvaluationQuestion {
     /// 题目 id
+    #[serde(rename = "tmid")]
     pub id: String,
     /// 题目类型
+    #[serde(deserialize_with = "deserialize_evaluation_question_kind")]
+    #[serde(rename = "tmlx")]
     pub is_choice: bool,
     /// 题目名称
+    #[serde(rename = "tgmc")]
     pub name: String,
     /// 选项列表
+    #[serde(rename = "tmxxlist")]
     pub options: Vec<EvaluationOption>,
 }
 
-#[derive(Debug)]
-pub struct EvaluationOption {
-    // 选项 id
-    pub op_id: String,
-    // 折算分数
-    pub score: f32,
+fn deserialize_evaluation_question_kind<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: &str = Deserialize::deserialize(deserializer)?;
+    Ok(matches!(value, "1"))
 }
 
-impl<'de> Deserialize<'de> for EvaluationForm {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct OuterResponse {
-            result: Vec<RawResponse>,
-        }
-
-        #[derive(Deserialize)]
-        struct RawResponse {
-            #[serde(rename = "pjxtPjjgPjjgckb")]
-            info: Vec<EvaluationInfo>,
-            #[serde(rename = "pjxtWjWjbReturnEntity")]
-            entity: RawEntity,
-            #[serde(rename = "pjmap")]
-            map: EvaluationMap,
-        }
-
-        #[derive(Deserialize)]
-        struct RawEntity {
-            #[serde(rename = "wjzblist")]
-            list: Vec<RawList>,
-        }
-
-        #[derive(Deserialize)]
-        struct RawList {
-            #[serde(rename = "tklist")]
-            tasklist: Vec<RawTask>,
-        }
-
-        #[derive(Deserialize)]
-        struct RawTask {
-            // 题目 id
-            #[serde(rename = "tmid")]
-            id: String,
-            #[serde(rename = "tmlx")]
-            kind: String,
-            // 题目名称
-            #[serde(rename = "tgmc")]
-            name: String,
-            // 选项列表
-            #[serde(rename = "tmxxlist")]
-            optionlist: Vec<RawOption>,
-        }
-
-        #[derive(Deserialize)]
-        struct RawOption {
-            // 选项 id
-            #[serde(rename = "tmxxid")]
-            id: String,
-            // 折算分数
-            #[serde(rename = "xxfz")]
-            score: f32,
-        }
-
-        // 第一步解析整个结构
-        let outer_response = OuterResponse::deserialize(deserializer)?;
-        // 获得 result 对应的数组, 其中只含一个对象
-        let raw_response = outer_response
-            .result
-            .into_iter()
-            .next()
-            .ok_or_else(|| serde::de::Error::custom("Expected at least one result"))?;
-        // 再拿到里面的 info 数组, 其中同样只含一个对象, 取出, 映射到 EvaluationInfo
-        let info = raw_response
-            .info
-            .into_iter()
-            .next()
-            .ok_or_else(|| serde::de::Error::custom("Expected at least one info"))?;
-
-        let map = raw_response.map;
-
-        // 最后拿到 entity 里面的原始 list 数组, 其中包含了所有的题目的数组, 通过 flat_map 将其展开, 映射到 EvaluationQuestion
-        let questions = raw_response
-            .entity
-            .list
-            .into_iter()
-            .flat_map(|raw_list| {
-                raw_list.tasklist.into_iter().map(|raw_task| {
-                    let kind = matches!(raw_task.kind.as_str(), "1");
-                    EvaluationQuestion {
-                        id: raw_task.id,
-                        is_choice: kind,
-                        name: raw_task.name,
-                        options: raw_task
-                            .optionlist
-                            .into_iter()
-                            .map(|raw_option| EvaluationOption {
-                                op_id: raw_option.id,
-                                score: raw_option.score,
-                            })
-                            .collect(),
-                    }
-                })
-            })
-            .collect();
-
-        Ok(EvaluationForm {
-            info,
-            questions,
-            map,
-        })
-    }
+#[derive(Debug, Deserialize)]
+pub struct EvaluationOption {
+    // 选项 id
+    #[serde(rename = "tmxxid")]
+    pub id: String,
+    // 折算分数
+    #[serde(rename = "xxfz")]
+    pub score: f32,
 }
 
 // ====================
@@ -251,10 +216,10 @@ impl EvaluationForm {
             if q.is_choice {
                 let option = q.options.get(choice).unwrap();
                 score += option.score;
-                let ans = vec![option.op_id.clone()];
+                let ans = vec![option.id.clone()];
                 completed.push(EvaluationCompletedQuestion {
-                    sjly: "1".to_string(),
-                    stlx: "1".to_string(),
+                    sjly: "1",
+                    stlx: "1",
                     wjid: self.info.wjid.clone(),
                     rwid: self.info.rwid.clone(),
                     wjstctid: "".to_string(),
@@ -266,51 +231,18 @@ impl EvaluationForm {
                 let option = q.options.first().unwrap();
                 let ans = vec![];
                 completed.push(EvaluationCompletedQuestion {
-                    sjly: "1".to_string(),
-                    stlx: "6".to_string(),
+                    sjly: "1",
+                    stlx: "6",
                     wjid: self.info.wjid.clone(),
                     rwid: self.info.rwid.clone(),
-                    wjstctid: option.op_id.clone(),
+                    wjstctid: option.id.clone(),
                     question_id: q.id,
                     answer: ans,
                 });
             }
         }
 
-        let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
-            teacher_id: self.info.teacher_id,
-            teacher_name: self.info.teacher_name,
-            course_id: self.info.course_id,
-            course_name: self.info.course_name,
-            score,
-            pjfs: "1".to_string(),
-            id1: self.info.id1,
-            pjlx: "2".to_string(),
-            map: self.map,
-            student_id: self.info.student_id,
-            id2: self.info.id2.clone(),
-            student_name: self.info.student_name,
-            pjsx: 1,
-            questions: completed,
-            rwh: self.info.rwh,
-            stzjid: "xx".to_string(),
-            wjid: self.info.wjid,
-            rwid: self.info.rwid,
-            wtjjy: "".to_string(),
-            xhgs: None,
-            term: self.info.term,
-            sfxxpj: "1".to_string(),
-            sqzt: None,
-            yxfz: None,
-            sdrs: None,
-            zsxz: self.info.id2,
-            sfnm: "1".to_string(),
-        }];
-        EvaluationCompleted {
-            pjidlist: Vec::new(),
-            content,
-            pjzt: "1".to_string(),
-        }
+        EvaluationCompleted::new(score, self.map, self.info, completed)
     }
 
     pub fn fill(self, ans: Vec<EvaluationAnswer>) -> EvaluationCompleted {
@@ -326,10 +258,10 @@ impl EvaluationForm {
                 EvaluationAnswer::Choice(index) => {
                     let option = question.options.get(index).unwrap();
                     score += option.score;
-                    let ans = vec![option.op_id.clone()];
+                    let ans = vec![option.id.clone()];
                     completed.push(EvaluationCompletedQuestion {
-                        sjly: "1".to_string(),
-                        stlx: "1".to_string(),
+                        sjly: "1",
+                        stlx: "1",
                         wjid: self.info.wjid.clone(),
                         rwid: self.info.rwid.clone(),
                         wjstctid: "".to_string(),
@@ -344,60 +276,67 @@ impl EvaluationForm {
                         ans.push(answer);
                     }
                     completed.push(EvaluationCompletedQuestion {
-                        sjly: "1".to_string(),
-                        stlx: "6".to_string(),
+                        sjly: "1",
+                        stlx: "6",
                         wjid: self.info.wjid.clone(),
                         rwid: self.info.rwid.clone(),
-                        wjstctid: option.op_id.clone(),
+                        wjstctid: option.id.clone(),
                         question_id: question.id,
                         answer: ans,
                     });
                 }
             };
         }
-        let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
-            teacher_id: self.info.teacher_id,
-            teacher_name: self.info.teacher_name,
-            course_id: self.info.course_id,
-            course_name: self.info.course_name,
-            score,
-            pjfs: "1".to_string(),
-            id1: self.info.id1,
-            pjlx: "2".to_string(),
-            map: self.map,
-            student_id: self.info.student_id,
-            id2: self.info.id2.clone(),
-            student_name: self.info.student_name,
-            pjsx: 1,
-            questions: completed,
-            rwh: self.info.rwh,
-            stzjid: "xx".to_string(),
-            wjid: self.info.wjid,
-            rwid: self.info.rwid,
-            wtjjy: "".to_string(),
-            xhgs: None,
-            term: self.info.term,
-            sfxxpj: "1".to_string(),
-            sqzt: None,
-            yxfz: None,
-            sdrs: None,
-            zsxz: self.info.id2,
-            sfnm: "1".to_string(),
-        }];
-        EvaluationCompleted {
-            pjidlist: Vec::new(),
-            content,
-            pjzt: "1".to_string(),
-        }
+
+        EvaluationCompleted::new(score, self.map, self.info, completed)
     }
 }
 
 #[derive(Debug, Serialize)]
 pub struct EvaluationCompleted {
-    pjidlist: Vec<bool>,
+    pjidlist: Vec<()>,
     #[serde(rename = "pjjglist")]
     content: Vec<EvaluationCompletedList>,
-    pjzt: String,
+    pjzt: &'static str,
+}
+
+impl EvaluationCompleted {
+    fn new(score: f32, map: EvaluationMap, info: EvaluationInfo, completed: Vec<EvaluationCompletedQuestion>) -> Self {
+        let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
+            teacher_id: info.teacher_id,
+            teacher_name: info.teacher_name,
+            course_id: info.course_id,
+            course_name: info.course_name,
+            score,
+            pjfs: "1",
+            id1: info.id1,
+            pjlx: "2",
+            map,
+            student_id: info.student_id,
+            id2: info.id2.clone(),
+            student_name: info.student_name,
+            pjsx: 1,
+            questions: completed,
+            rwh: info.rwh,
+            stzjid: "xx",
+            wjid: info.wjid,
+            rwid: info.rwid,
+            wtjjy: "",
+            xhgs: None,
+            term: info.term,
+            sfxxpj: "1",
+            sqzt: None,
+            yxfz: None,
+            sdrs: None,
+            zsxz: info.id2,
+            sfnm: "1",
+        }];
+        Self {
+            pjidlist: Vec::new(),
+            content,
+            pjzt: "1",
+        }
+    }
 }
 
 impl EvaluationCompleted {
@@ -424,10 +363,10 @@ struct EvaluationCompletedList {
     course_name: String,
     #[serde(rename = "pjdf")]
     score: f32,
-    pjfs: String,
+    pjfs: &'static str,
     #[serde(rename = "pjid")]
     id1: String,
-    pjlx: String,
+    pjlx: &'static str,
     #[serde(rename = "pjmap")]
     map: EvaluationMap,
     #[serde(rename = "pjrdm")]
@@ -440,26 +379,27 @@ struct EvaluationCompletedList {
     #[serde(rename = "pjxxlist")]
     questions: Vec<EvaluationCompletedQuestion>,
     rwh: String,
-    stzjid: String,
+    stzjid: &'static str,
     wjid: String,
     #[serde(rename = "wjssrwid")]
     rwid: String,
-    wtjjy: String,
-    xhgs: Option<bool>,
+    wtjjy: &'static str,
+    xhgs: Option<()>,
     #[serde(rename = "xnxq")]
     term: String,
-    sfxxpj: String,
-    sqzt: Option<bool>,
-    yxfz: Option<bool>,
-    sdrs: Option<bool>,
+    sfxxpj: &'static str,
+    sqzt: Option<()>,
+    yxfz: Option<()>,
+    sdrs: Option<()>,
     zsxz: String,
-    sfnm: String,
+    // 是否匿名??
+    sfnm: &'static str,
 }
 
 #[derive(Debug, Serialize)]
 struct EvaluationCompletedQuestion {
-    sjly: String,
-    stlx: String,
+    sjly: &'static str,
+    stlx: &'static str,
     wjid: String,
     #[serde(rename = "wjssrwid")]
     rwid: String,
