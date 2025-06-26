@@ -5,9 +5,9 @@ use serde::{Deserialize, Deserializer, Serialize};
 // ====================
 
 #[derive(Debug, Deserialize)]
-pub struct EvaluationList {
+pub(super) struct _EvaluationList {
     #[serde(rename = "result")]
-    pub list: Vec<EvaluationListItem>,
+    pub(super) list: Vec<EvaluationListItem>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -237,6 +237,82 @@ pub enum EvaluationAnswer {
 }
 
 impl EvaluationForm {
+    pub fn default(self) -> EvaluationCompleted {
+        // 首先, 我们获取题目数量
+        let len = self.questions.len();
+        // 用于计算总分
+        let mut score = 0f32;
+        // 新建一个固定容量的空的完成列表
+        let mut completed: Vec<EvaluationCompletedQuestion> = Vec::with_capacity(len);
+        // 除了第一个题目选择第二个, 其他都选第一个
+        let mut choice = 1;
+
+        for q in self.questions {
+            if q.is_choice {
+                let option = q.options.get(choice).unwrap();
+                score += option.score;
+                let ans = vec![option.op_id.clone()];
+                completed.push(EvaluationCompletedQuestion {
+                    sjly: "1".to_string(),
+                    stlx: "1".to_string(),
+                    wjid: self.info.wjid.clone(),
+                    rwid: self.info.rwid.clone(),
+                    wjstctid: "".to_string(),
+                    question_id: q.id,
+                    answer: ans,
+                });
+                choice = 0; // 只在第一个题目选择第二个选项, 其他都选择第一个
+            } else {
+                let option = q.options.first().unwrap();
+                let ans = vec![];
+                completed.push(EvaluationCompletedQuestion {
+                    sjly: "1".to_string(),
+                    stlx: "6".to_string(),
+                    wjid: self.info.wjid.clone(),
+                    rwid: self.info.rwid.clone(),
+                    wjstctid: option.op_id.clone(),
+                    question_id: q.id,
+                    answer: ans,
+                });
+            }
+        }
+
+        let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
+            teacher_id: self.info.teacher_id,
+            teacher_name: self.info.teacher_name,
+            course_id: self.info.course_id,
+            course_name: self.info.course_name,
+            score,
+            pjfs: "1".to_string(),
+            id1: self.info.id1,
+            pjlx: "2".to_string(),
+            map: self.map,
+            student_id: self.info.student_id,
+            id2: self.info.id2.clone(),
+            student_name: self.info.student_name,
+            pjsx: 1,
+            questions: completed,
+            rwh: self.info.rwh,
+            stzjid: "xx".to_string(),
+            wjid: self.info.wjid,
+            rwid: self.info.rwid,
+            wtjjy: "".to_string(),
+            xhgs: None,
+            term: self.info.term,
+            sfxxpj: "1".to_string(),
+            sqzt: None,
+            yxfz: None,
+            sdrs: None,
+            zsxz: self.info.id2,
+            sfnm: "1".to_string(),
+        }];
+        EvaluationCompleted {
+            pjidlist: Vec::new(),
+            content,
+            pjzt: "1".to_string(),
+        }
+    }
+
     pub fn fill(self, ans: Vec<EvaluationAnswer>) -> EvaluationCompleted {
         let question_len = self.questions.len();
         let ans_len = ans.len();

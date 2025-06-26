@@ -1,9 +1,9 @@
 use crate::{Error, utils};
 
-use super::{EvaluationCompleted, EvaluationForm, EvaluationList, EvaluationListItem};
+use super::{EvaluationCompleted, EvaluationForm, _EvaluationList, EvaluationListItem};
 
 impl super::TesAPI {
-    /// Get a list of the ones that need to beevaluated <br>
+    /// Get a list of the ones that need to be evaluated <br>
     /// The method has made multiple requests inside it, and the speed is slow
     pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {
         // 考虑到 rwid 只有这一个地方用到, 所以直接在这里获取
@@ -31,7 +31,8 @@ impl super::TesAPI {
         let text = list.text().await?;
         let wjids = utils::get_values_by_lable(&text, r#""wjid":""#, "\"");
 
-        let mut list = Vec::<EvaluationListItem>::with_capacity(20);
+        // 考虑到一个课可能有很多老师, 需要评多次, 但 30 位应该足够多数人了
+        let mut list = Vec::<EvaluationListItem>::with_capacity(30);
         for wjid in wjids {
             // 省略的无用查询参数 &sfyp=0&xnxq=2024-20251&pageNum=1&pageSize=999
             let url = format!(
@@ -39,7 +40,7 @@ impl super::TesAPI {
             );
             let res = self.get(url).send().await?;
             let text = res.text().await?;
-            let new_list: EvaluationList = serde_json::from_str(&text)?;
+            let new_list: _EvaluationList = serde_json::from_str(&text)?;
             list.extend(new_list.list);
         }
 
@@ -93,6 +94,7 @@ impl super::TesAPI {
             .await
             .unwrap();
 
+        // {"code":"200","msg":"成功","msg_en":"Operation is successful","result":[{"pjid":"","pjbm":"","sfnm":"1"}]} 是否匿名??
         Ok(res)
     }
 }
@@ -110,7 +112,7 @@ mod tests {
         tes.login().await.unwrap();
 
         let list = tes.get_evaluation_list().await.unwrap();
-        println!("{:?}", list);
+        println!("{:#?}", list);
     }
 
     #[ignore]
@@ -124,25 +126,32 @@ mod tests {
         tes.login().await.unwrap();
         let list = tes.get_evaluation_list().await.unwrap();
 
-        let last = list.get(2).unwrap();
+        for i in list {
+            if i.state == true {
+                continue;
+            }
 
-        let form = tes.get_evaluation_form(last).await.unwrap();
+            let form = tes.get_evaluation_form(&i).await.unwrap();
 
-        let ans = vec![
-            EvaluationAnswer::Choice(1),
-            EvaluationAnswer::Choice(0),
-            EvaluationAnswer::Choice(0),
-            EvaluationAnswer::Choice(0),
-            EvaluationAnswer::Choice(0),
-            EvaluationAnswer::Choice(0),
-            EvaluationAnswer::Completion("".to_string()),
-            EvaluationAnswer::Completion("".to_string()),
-        ];
+            let ans = vec![
+                EvaluationAnswer::Choice(1),
+                EvaluationAnswer::Choice(0),
+                EvaluationAnswer::Choice(0),
+                EvaluationAnswer::Choice(0),
+                EvaluationAnswer::Choice(0),
+                EvaluationAnswer::Choice(0),
+                EvaluationAnswer::Completion("".to_string()),
+                EvaluationAnswer::Completion("".to_string()),
+            ];
 
-        let complete = form.fill(ans);
+            let complete = form.fill(ans);
 
-        let res = tes.submit_evaluation(complete).await.unwrap();
+            let res = tes.submit_evaluation(complete).await.unwrap();
 
-        println!("{}", res.text().await.unwrap());
+            println!("{}", res.text().await.unwrap());
+
+            // 休眠一秒, 防止请求过快被服务器拒绝
+            tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        }
     }
 }
