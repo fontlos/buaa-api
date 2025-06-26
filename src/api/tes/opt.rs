@@ -75,7 +75,7 @@ impl super::TesAPI {
 
     pub async fn submit_evaluation(
         &self,
-        complete: EvaluationCompleted,
+        complete: EvaluationCompleted<'_, '_>,
     ) -> crate::Result<reqwest::Response> {
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/submitSaveEvaluation";
         let res = self.post(url).json(&complete).send().await?;
@@ -144,8 +144,8 @@ mod tests {
                 EvaluationAnswer::Choice(0),
                 EvaluationAnswer::Choice(0),
                 EvaluationAnswer::Choice(0),
-                EvaluationAnswer::Completion("".to_string()),
-                EvaluationAnswer::Completion("".to_string()),
+                EvaluationAnswer::Completion(""),
+                EvaluationAnswer::Completion(""),
             ];
 
             let complete = form.fill(ans);

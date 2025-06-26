@@ -196,13 +196,16 @@ pub struct EvaluationOption {
 // 用于构造请求 Json
 // ====================
 
-pub enum EvaluationAnswer {
+pub enum EvaluationAnswer<'a> {
     Choice(usize),
-    Completion(String),
+    Completion(&'a str),
 }
 
 impl EvaluationForm {
-    pub fn default(self) -> EvaluationCompleted {
+    pub fn default<'a, 'b>(&'a self) -> EvaluationCompleted<'a, 'b>
+    where
+        'a: 'b,
+    {
         // 首先, 我们获取题目数量
         let len = self.questions.len();
         // 用于计算总分
@@ -212,18 +215,18 @@ impl EvaluationForm {
         // 除了第一个题目选择第二个, 其他都选第一个
         let mut choice = 1;
 
-        for q in self.questions {
+        for q in &self.questions {
             if q.is_choice {
                 let option = q.options.get(choice).unwrap();
                 score += option.score;
-                let ans = vec![option.id.clone()];
+                let ans = vec![option.id.as_str()];
                 completed.push(EvaluationCompletedQuestion {
                     sjly: "1",
                     stlx: "1",
-                    wjid: self.info.wjid.clone(),
-                    rwid: self.info.rwid.clone(),
-                    wjstctid: "".to_string(),
-                    question_id: q.id,
+                    wjid: &self.info.wjid,
+                    rwid: &self.info.rwid,
+                    wjstctid: "",
+                    question_id: &q.id,
                     answer: ans,
                 });
                 choice = 0; // 只在第一个题目选择第二个选项, 其他都选择第一个
@@ -233,19 +236,22 @@ impl EvaluationForm {
                 completed.push(EvaluationCompletedQuestion {
                     sjly: "1",
                     stlx: "6",
-                    wjid: self.info.wjid.clone(),
-                    rwid: self.info.rwid.clone(),
-                    wjstctid: option.id.clone(),
-                    question_id: q.id,
+                    wjid: &self.info.wjid,
+                    rwid: &self.info.rwid,
+                    wjstctid: &option.id,
+                    question_id: &q.id,
                     answer: ans,
                 });
             }
         }
 
-        EvaluationCompleted::new(score, self.map, self.info, completed)
+        EvaluationCompleted::new(score, &self.map, &self.info, completed)
     }
 
-    pub fn fill(self, ans: Vec<EvaluationAnswer>) -> EvaluationCompleted {
+    pub fn fill<'a, 'b>(&'a self, ans: Vec<EvaluationAnswer<'b>>) -> EvaluationCompleted<'a, 'b>
+    where
+        'a: 'b,
+    {
         let question_len = self.questions.len();
         let ans_len = ans.len();
         if question_len != ans_len {
@@ -253,82 +259,82 @@ impl EvaluationForm {
         }
         let mut score = 0f32;
         let mut completed: Vec<EvaluationCompletedQuestion> = Vec::with_capacity(question_len);
-        for (question, answer) in self.questions.into_iter().zip(ans.into_iter()) {
+        for (question, answer) in self.questions.iter().zip(ans.into_iter()) {
             match answer {
                 EvaluationAnswer::Choice(index) => {
                     let option = question.options.get(index).unwrap();
                     score += option.score;
-                    let ans = vec![option.id.clone()];
+                    let ans: Vec<&'b str> = vec![option.id.as_str()];
                     completed.push(EvaluationCompletedQuestion {
                         sjly: "1",
                         stlx: "1",
-                        wjid: self.info.wjid.clone(),
-                        rwid: self.info.rwid.clone(),
-                        wjstctid: "".to_string(),
-                        question_id: question.id,
+                        wjid: &self.info.wjid,
+                        rwid: &self.info.rwid,
+                        wjstctid: "",
+                        question_id: &question.id,
                         answer: ans,
                     });
                 }
                 EvaluationAnswer::Completion(answer) => {
                     let option = question.options.first().unwrap();
-                    let mut ans = Vec::with_capacity(1);
+                    let mut ans: Vec<&'b str> = Vec::with_capacity(1);
                     if !answer.is_empty() {
                         ans.push(answer);
                     }
                     completed.push(EvaluationCompletedQuestion {
                         sjly: "1",
                         stlx: "6",
-                        wjid: self.info.wjid.clone(),
-                        rwid: self.info.rwid.clone(),
-                        wjstctid: option.id.clone(),
-                        question_id: question.id,
+                        wjid: &self.info.wjid,
+                        rwid: &self.info.rwid,
+                        wjstctid: &option.id,
+                        question_id: &question.id,
                         answer: ans,
                     });
                 }
             };
         }
 
-        EvaluationCompleted::new(score, self.map, self.info, completed)
+        EvaluationCompleted::new(score, &self.map, &self.info, completed)
     }
 }
 
 #[derive(Debug, Serialize)]
-pub struct EvaluationCompleted {
+pub struct EvaluationCompleted<'a, 'b> {
     pjidlist: Vec<()>,
     #[serde(rename = "pjjglist")]
-    content: Vec<EvaluationCompletedList>,
+    content: Vec<EvaluationCompletedList<'a, 'b>>,
     pjzt: &'static str,
 }
 
-impl EvaluationCompleted {
-    fn new(score: f32, map: EvaluationMap, info: EvaluationInfo, completed: Vec<EvaluationCompletedQuestion>) -> Self {
+impl<'a, 'b> EvaluationCompleted<'a, 'b> {
+    fn new(score: f32, map: &'a EvaluationMap, info: &'a EvaluationInfo, completed: Vec<EvaluationCompletedQuestion<'a, 'b>>) -> Self {
         let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
-            teacher_id: info.teacher_id,
-            teacher_name: info.teacher_name,
-            course_id: info.course_id,
-            course_name: info.course_name,
+            teacher_id: &info.teacher_id,
+            teacher_name: &info.teacher_name,
+            course_id: &info.course_id,
+            course_name: &info.course_name,
             score,
             pjfs: "1",
-            id1: info.id1,
+            id1: &info.id1,
             pjlx: "2",
             map,
-            student_id: info.student_id,
-            id2: info.id2.clone(),
-            student_name: info.student_name,
+            student_id: &info.student_id,
+            id2: &info.id2,
+            student_name: &info.student_name,
             pjsx: 1,
             questions: completed,
-            rwh: info.rwh,
+            rwh: &info.rwh,
             stzjid: "xx",
-            wjid: info.wjid,
-            rwid: info.rwid,
+            wjid: &info.wjid,
+            rwid: &info.rwid,
             wtjjy: "",
             xhgs: None,
-            term: info.term,
+            term: &info.term,
             sfxxpj: "1",
             sqzt: None,
             yxfz: None,
             sdrs: None,
-            zsxz: info.id2,
+            zsxz: &info.id2,
             sfnm: "1",
         }];
         Self {
@@ -339,7 +345,7 @@ impl EvaluationCompleted {
     }
 }
 
-impl EvaluationCompleted {
+impl<'a, 'b> EvaluationCompleted<'a, 'b> {
     pub(super) fn rwid(&self) -> &str {
         &self.content[0].rwid
     }
@@ -352,61 +358,61 @@ impl EvaluationCompleted {
 }
 
 #[derive(Debug, Serialize)]
-struct EvaluationCompletedList {
+struct EvaluationCompletedList<'a, 'b> {
     #[serde(rename = "bprdm")]
-    teacher_id: String,
+    teacher_id: &'a str,
     #[serde(rename = "bprmc")]
-    teacher_name: String,
+    teacher_name: &'a str,
     #[serde(rename = "kcdm")]
-    course_id: String,
+    course_id: &'a str,
     #[serde(rename = "kcmc")]
-    course_name: String,
+    course_name: &'a str,
     #[serde(rename = "pjdf")]
     score: f32,
     pjfs: &'static str,
     #[serde(rename = "pjid")]
-    id1: String,
+    id1: &'a str,
     pjlx: &'static str,
     #[serde(rename = "pjmap")]
-    map: EvaluationMap,
+    map: &'a EvaluationMap,
     #[serde(rename = "pjrdm")]
-    student_id: String,
+    student_id: &'a str,
     #[serde(rename = "pjrjsdm")]
-    id2: String,
+    id2: &'a str,
     #[serde(rename = "pjrxm")]
-    student_name: String,
+    student_name: &'a str,
     pjsx: u8,
     #[serde(rename = "pjxxlist")]
-    questions: Vec<EvaluationCompletedQuestion>,
-    rwh: String,
+    questions: Vec<EvaluationCompletedQuestion<'a, 'b>>,
+    rwh: &'a str,
     stzjid: &'static str,
-    wjid: String,
+    wjid: &'a str,
     #[serde(rename = "wjssrwid")]
-    rwid: String,
+    rwid: &'a str,
     wtjjy: &'static str,
     xhgs: Option<()>,
     #[serde(rename = "xnxq")]
-    term: String,
+    term: &'a str,
     sfxxpj: &'static str,
     sqzt: Option<()>,
     yxfz: Option<()>,
     sdrs: Option<()>,
-    zsxz: String,
+    zsxz: &'a str,
     // 是否匿名??
     sfnm: &'static str,
 }
 
 #[derive(Debug, Serialize)]
-struct EvaluationCompletedQuestion {
+struct EvaluationCompletedQuestion<'a, 'b> {
     sjly: &'static str,
     stlx: &'static str,
-    wjid: String,
+    wjid: &'a str,
     #[serde(rename = "wjssrwid")]
-    rwid: String,
-    wjstctid: String,
+    rwid: &'a str,
+    wjstctid: &'a str,
     #[serde(rename = "wjstid")]
-    question_id: String,
+    question_id: &'a str,
     // 单选题为选项 ID, 简答题为 p 标签包裹的字符串, 但懒得包了
     #[serde(rename = "xxdalist")]
-    answer: Vec<String>,
+    answer: Vec<&'b str>,
 }
