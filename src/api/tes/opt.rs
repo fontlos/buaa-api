@@ -75,7 +75,7 @@ impl super::TesAPI {
 
     pub async fn submit_evaluation(
         &self,
-        complete: EvaluationCompleted<'_, '_>,
+        complete: EvaluationCompleted<'_>,
     ) -> crate::Result<reqwest::Response> {
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/submitSaveEvaluation";
         let res = self.post(url).json(&complete).send().await?;

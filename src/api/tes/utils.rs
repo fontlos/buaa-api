@@ -202,9 +202,7 @@ pub enum EvaluationAnswer<'a> {
 }
 
 impl EvaluationForm {
-    pub fn default<'a, 'b>(&'a self) -> EvaluationCompleted<'a, 'b>
-    where
-        'a: 'b,
+    pub fn default<'a>(&'a self) -> EvaluationCompleted<'a>
     {
         // 首先, 我们获取题目数量
         let len = self.questions.len();
@@ -248,10 +246,7 @@ impl EvaluationForm {
         EvaluationCompleted::new(score, &self.map, &self.info, completed)
     }
 
-    pub fn fill<'a, 'b>(&'a self, ans: Vec<EvaluationAnswer<'b>>) -> EvaluationCompleted<'a, 'b>
-    where
-        'a: 'b,
-    {
+    pub fn fill<'a>(&'a self, ans: Vec<EvaluationAnswer<'a>>) -> EvaluationCompleted<'a> {
         let question_len = self.questions.len();
         let ans_len = ans.len();
         if question_len != ans_len {
@@ -264,7 +259,7 @@ impl EvaluationForm {
                 EvaluationAnswer::Choice(index) => {
                     let option = question.options.get(index).unwrap();
                     score += option.score;
-                    let ans: Vec<&'b str> = vec![option.id.as_str()];
+                    let ans: Vec<&'a str> = vec![option.id.as_str()];
                     completed.push(EvaluationCompletedQuestion {
                         sjly: "1",
                         stlx: "1",
@@ -277,7 +272,7 @@ impl EvaluationForm {
                 }
                 EvaluationAnswer::Completion(answer) => {
                     let option = question.options.first().unwrap();
-                    let mut ans: Vec<&'b str> = Vec::with_capacity(1);
+                    let mut ans: Vec<&'a str> = Vec::with_capacity(1);
                     if !answer.is_empty() {
                         ans.push(answer);
                     }
@@ -299,15 +294,15 @@ impl EvaluationForm {
 }
 
 #[derive(Debug, Serialize)]
-pub struct EvaluationCompleted<'a, 'b> {
+pub struct EvaluationCompleted<'a> {
     pjidlist: Vec<()>,
     #[serde(rename = "pjjglist")]
-    content: Vec<EvaluationCompletedList<'a, 'b>>,
+    content: Vec<EvaluationCompletedList<'a>>,
     pjzt: &'static str,
 }
 
-impl<'a, 'b> EvaluationCompleted<'a, 'b> {
-    fn new(score: f32, map: &'a EvaluationMap, info: &'a EvaluationInfo, completed: Vec<EvaluationCompletedQuestion<'a, 'b>>) -> Self {
+impl<'a> EvaluationCompleted<'a> {
+    fn new(score: f32, map: &'a EvaluationMap, info: &'a EvaluationInfo, completed: Vec<EvaluationCompletedQuestion<'a>>) -> Self {
         let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
             teacher_id: &info.teacher_id,
             teacher_name: &info.teacher_name,
@@ -345,7 +340,7 @@ impl<'a, 'b> EvaluationCompleted<'a, 'b> {
     }
 }
 
-impl<'a, 'b> EvaluationCompleted<'a, 'b> {
+impl<'a> EvaluationCompleted<'a> {
     pub(super) fn rwid(&self) -> &str {
         &self.content[0].rwid
     }
@@ -358,7 +353,7 @@ impl<'a, 'b> EvaluationCompleted<'a, 'b> {
 }
 
 #[derive(Debug, Serialize)]
-struct EvaluationCompletedList<'a, 'b> {
+struct EvaluationCompletedList<'a> {
     #[serde(rename = "bprdm")]
     teacher_id: &'a str,
     #[serde(rename = "bprmc")]
@@ -383,7 +378,7 @@ struct EvaluationCompletedList<'a, 'b> {
     student_name: &'a str,
     pjsx: u8,
     #[serde(rename = "pjxxlist")]
-    questions: Vec<EvaluationCompletedQuestion<'a, 'b>>,
+    questions: Vec<EvaluationCompletedQuestion<'a>>,
     rwh: &'a str,
     stzjid: &'static str,
     wjid: &'a str,
@@ -403,7 +398,7 @@ struct EvaluationCompletedList<'a, 'b> {
 }
 
 #[derive(Debug, Serialize)]
-struct EvaluationCompletedQuestion<'a, 'b> {
+struct EvaluationCompletedQuestion<'a> {
     sjly: &'static str,
     stlx: &'static str,
     wjid: &'a str,
@@ -414,5 +409,5 @@ struct EvaluationCompletedQuestion<'a, 'b> {
     question_id: &'a str,
     // 单选题为选项 ID, 简答题为 p 标签包裹的字符串, 但懒得包了
     #[serde(rename = "xxdalist")]
-    answer: Vec<&'b str>,
+    answer: Vec<&'a str>,
 }
