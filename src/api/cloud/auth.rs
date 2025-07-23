@@ -63,4 +63,13 @@ impl super::CloudAPI {
             Err(Error::LoginError("Login failed".to_string()))
         }
     }
+
+    pub(crate) async fn token(&self) -> crate::Result<&String> {
+        let cred = &self.cred.load().cloud_token;
+        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
+        if self.policy.load().is_auto() && cred.is_expired() {
+            self.login().await?;
+        }
+        cred.value().ok_or_else(|| Error::APIError("No Cloud Token".to_string()))
+    }
 }
