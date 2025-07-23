@@ -1,5 +1,4 @@
 use reqwest::Method;
-use serde_json::Value;
 
 use super::utils::{CloudDir, CloudRootDir};
 
@@ -13,14 +12,12 @@ impl super::CloudAPI {
     pub async fn get_dir(&self, r#type: &str) -> crate::Result<Vec<CloudRootDir>> {
         let token = self.token().await?;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
-        let mut query = vec![
-            ("sort", "doc_lib_name"),
-            ("direction", "asc"),
-        ];
+        let mut query = vec![("sort", "doc_lib_name"), ("direction", "asc")];
         if !r#type.is_empty() {
             query.push(("type", r#type));
         }
-        let res = self.get(url)
+        let res = self
+            .get(url)
             .bearer_auth(token)
             .query(&query)
             .send()
@@ -37,14 +34,13 @@ impl super::CloudAPI {
 
     /// Return User Root directory ID
     pub async fn get_user_dir_id(&self) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib?type=user_doc_lib&sort=doc_lib_name&direction=asc";
-        let text = self
-            .universal_request(url, &Value::Null, Method::GET)
-            .await?;
-        // 一个名为 gns 的字段, 代表了文件夹的 ID
-        let gns = crate::utils::get_value_by_lable(&text, "gns:\\/\\/", "\"").unwrap();
-
-        Ok(format!("gns://{gns}"))
+        let res = self.get_dir("user_doc_lib").await?;
+        let id = res
+            .into_iter()
+            .next()
+            .map(|item| item.id)
+            .ok_or_else(|| crate::Error::APIError("No user dir found".to_string()))?;
+        Ok(id)
     }
 
     pub async fn list_dir(&self, id: &str) -> crate::Result<CloudDir> {
