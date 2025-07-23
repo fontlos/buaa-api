@@ -1,5 +1,3 @@
-use reqwest::Method;
-
 use super::utils::{CloudDir, CloudRootDir};
 
 impl super::CloudAPI {
@@ -50,7 +48,7 @@ impl super::CloudAPI {
             "sort": "asc",
             "by": "name"
         });
-        let text = self.universal_request(url, &data, Method::POST).await?;
+        let text = self.universal_request(url, &data).await?;
         let res = serde_json::from_str::<CloudDir>(&text)?;
 
         Ok(res)
@@ -67,11 +65,9 @@ mod tests {
 
         let cloud = context.cloud();
 
-        let dir = cloud.get_all_dir().await.unwrap();
-        println!("All directories: {dir:?}");
-        // let dir = cloud.get_user_dir().await.unwrap();
-        // let list = cloud.list_dir(&dir).await.unwrap();
+        let dir = cloud.get_user_dir_id().await.unwrap();
+        let list = cloud.list_dir(&dir).await.unwrap();
 
-        // println!("list: {list:?}");
+        println!("list: {list:?}");
     }
 }
