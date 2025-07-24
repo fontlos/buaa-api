@@ -8,9 +8,12 @@
 
 ## TodoList
 
-- [x] BUAA SSO Login: `login` built in `Context`
-- [ ] BUAA Academic Affairs System
+- [x] BUAA SSO: `sso`
+  - [x] Login: built in `Context`
+- [ ] BUAA Academic Affairs System: `aas`
   - [ ] Login
+- [ ] BUAA App: `app`
+  - [x] Login
 - [x] BUAA Boya Course: `boya`
   - [x] Login
   - [x] Query course
@@ -18,6 +21,8 @@
   - [x] Query statistic information
   - [x] Select course
   - [x] Drop course
+  - [x] Checkin course
+  - [x] Checkout course
   - [x] A universal request API for extensions
 - [x] BUAA Smart Classroom: `class`
   - [x] Login
@@ -25,18 +30,21 @@
   - [x] Query
 - [ ] BUAA Cloud Disk: `cloud`
   - [x] Login
+  - [x] Get root dir
+  - [x] List dir
+  - [x] Get download URL
 - [ ] Spoc Platform: `spoc`
   - [x] Login
   - [x] Query class schedule
   - [x] A universal request API for extensions
-- [x] BUAA Undergraduate & Graduate Student Course Registration System
+- [x] BUAA Undergraduate & Graduate Student Course Registration System: `srs`
   - [x] Login
   - [x] Get filter
   - [x] Query with filter
   - [x] Query selected
   - [x] Select course
   - [x] Drop course
-- [x] BUAA Teacher Evaluation System
+- [x] BUAA Teacher Evaluation System: `tes`
   - [x] Login
   - [x] Get list
   - [x] Get form
