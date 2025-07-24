@@ -7,7 +7,7 @@ impl super::CloudAPI {
     /// - `"shared_user_doc_lib"`: Shared directory
     /// - `"department_doc_lib"`: Department directory
     /// - `"custom_doc_lib"`: Other directory
-    pub async fn get_dir(&self, r#type: &str) -> crate::Result<Vec<CloudRootDir>> {
+    pub async fn get_root_dir(&self, r#type: &str) -> crate::Result<Vec<CloudRootDir>> {
         let token = self.token().await?;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let mut query = vec![("sort", "doc_lib_name"), ("direction", "asc")];
@@ -27,12 +27,12 @@ impl super::CloudAPI {
 
     /// Return All Type Root directory
     pub async fn get_all_dir(&self) -> crate::Result<Vec<CloudRootDir>> {
-        Ok(self.get_dir("").await?)
+        Ok(self.get_root_dir("").await?)
     }
 
     /// Return User Root directory ID
     pub async fn get_user_dir_id(&self) -> crate::Result<String> {
-        let res = self.get_dir("user_doc_lib").await?;
+        let res = self.get_root_dir("user_doc_lib").await?;
         let id = res
             .into_iter()
             .next()
