@@ -1,7 +1,7 @@
 //! # BUAA Cloud Disk API
 
 mod auth;
-// mod download;
+mod download;
 mod opt;
 mod universal;
 mod utils;
