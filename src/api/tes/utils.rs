@@ -202,8 +202,7 @@ pub enum EvaluationAnswer<'a> {
 }
 
 impl EvaluationForm {
-    pub fn default<'a>(&'a self) -> EvaluationCompleted<'a>
-    {
+    pub fn default<'a>(&'a self) -> EvaluationCompleted<'a> {
         // 首先, 我们获取题目数量
         let len = self.questions.len();
         // 用于计算总分
@@ -302,7 +301,12 @@ pub struct EvaluationCompleted<'a> {
 }
 
 impl<'a> EvaluationCompleted<'a> {
-    fn new(score: f32, map: &'a EvaluationMap, info: &'a EvaluationInfo, completed: Vec<EvaluationCompletedQuestion<'a>>) -> Self {
+    fn new(
+        score: f32,
+        map: &'a EvaluationMap,
+        info: &'a EvaluationInfo,
+        completed: Vec<EvaluationCompletedQuestion<'a>>,
+    ) -> Self {
         let content: Vec<EvaluationCompletedList> = vec![EvaluationCompletedList {
             teacher_id: &info.teacher_id,
             teacher_name: &info.teacher_name,
