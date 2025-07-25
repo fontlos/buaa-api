@@ -13,7 +13,9 @@ impl super::CloudAPI {
         let text = self.universal_request(&url, &data).await?;
         let res = match utils::get_value_by_lable(&text, ",\"", "\"") {
             Some(url) => url,
-            None => return Err(crate::Error::APIError("Failed to get download url".to_string())),
+            None => {
+                return Err(crate::Error::APIError("No url".to_string()));
+            }
         };
 
         Ok(res.to_string())
@@ -22,15 +24,18 @@ impl super::CloudAPI {
     /// Get a download URL of a zip package for multiple files.
     pub async fn get_muti_download_url(&self, items: &[CloudItem]) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/open-doc/v1/file-download";
-        let ids: Vec<_> = items.iter().map(|item| {
-            // 从文件路径 id 反向找到文件 id, 找不到就用原 id, 这不会引起错误, 只会导致无法下载这个文件
-            // 为什么同样是下载, 单个文件就用完整 id, 多个文件就用文件 id, 那证明文件 id 就够用了, 为什么这样设计
-            let file_id = match item.id.rfind('/') {
-                Some(idx) => &item.id[idx + 1..],
-                None => &item.id,
-            };
-            serde_json::json!({ "id": file_id })
-        }).collect();
+        let ids: Vec<_> = items
+            .iter()
+            .map(|item| {
+                // 从文件路径 id 反向找到文件 id, 找不到就用原 id, 这不会引起错误, 只会导致无法下载这个文件
+                // 为什么同样是下载, 单个文件就用完整 id, 多个文件就用文件 id, 那证明文件 id 就够用了, 为什么这样设计
+                let file_id = match item.id.rfind('/') {
+                    Some(idx) => &item.id[idx + 1..],
+                    None => &item.id,
+                };
+                serde_json::json!({ "id": file_id })
+            })
+            .collect();
         let data = serde_json::json!({
             "name": "download.zip",
             "doc": ids
@@ -38,13 +43,15 @@ impl super::CloudAPI {
         let text = self.universal_request(&url, &data).await?;
         let raw_url = match utils::get_value_by_lable(&text, "address\":\"", "\"") {
             Some(url) => url,
-            None => return Err(crate::Error::APIError("Failed to get multi download url".to_string())),
+            None => {
+                return Err(crate::Error::APIError("No url".to_string()));
+            }
         };
 
         // 在获取下载链接请求发出后获取 cred, 通过其自动刷新机制保证 token 正常情况是存在的
         let cred = match self.cred.load().cloud_token.value() {
             Some(token) => token,
-            None => return Err(crate::Error::APIError("No cloud token found".to_string())),
+            None => return Err(crate::Error::APIError("No cloud token".to_string())),
         };
 
         let url = format!("{}?token={}", raw_url, cred);

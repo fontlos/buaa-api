@@ -70,6 +70,7 @@ impl super::CloudAPI {
         if self.policy.load().is_auto() && cred.is_expired() {
             self.login().await?;
         }
-        cred.value().ok_or_else(|| Error::APIError("No Cloud Token".to_string()))
+        cred.value()
+            .ok_or_else(|| Error::APIError("No Cloud Token".to_string()))
     }
 }
