@@ -61,13 +61,13 @@ impl super::BoyaAPI {
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
     /// - Query: `{}`
     pub async fn universal_request(&self, query: &str, url: &str) -> crate::Result<String> {
+        let cred = &self.cred.load().boya_token;
         // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
-        if self.policy.load().is_auto() && self.cred.load().boya_token.is_expired() {
+        if self.policy.load().is_auto() && cred.is_expired() {
             self.login().await?;
         }
         // 首先尝试获取 token, 如果没有就可以直接返回了
-        let cred = self.cred.load();
-        let token = match cred.boya_token.value() {
+        let token = match cred.value() {
             Some(t) => t,
             None => return Err(Error::APIError("No Boya Token".to_string())),
         };
