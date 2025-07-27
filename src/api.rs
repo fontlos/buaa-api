@@ -48,7 +48,7 @@ impl<G> crate::Context<G> {
     /// 2. All context data is stored in `Arc`-wrapped fields
     /// 3. The original context remains accessible
     #[inline]
-    pub fn api<N>(&self) -> &crate::Context<N> {
+    pub const fn api<N>(&self) -> &crate::Context<N> {
         unsafe {
             // Safety: PhantomData 不改变实际内存布局
             &*(self as *const crate::Context<G> as *const crate::Context<N>)
@@ -58,47 +58,47 @@ impl<G> crate::Context<G> {
 
 impl crate::Context<Core> {
     /// Get BUAA Academic Affairs System API Group
-    pub fn aas(&self) -> &crate::Context<Aas> {
+    pub const fn aas(&self) -> &crate::Context<Aas> {
         self.api::<Aas>()
     }
     /// Get BUAA App API Group
-    pub fn app(&self) -> &crate::Context<App> {
+    pub const fn app(&self) -> &crate::Context<App> {
         self.api::<App>()
     }
     /// Get BUAA Boya Course API Group
-    pub fn boya(&self) -> &crate::Context<Boya> {
+    pub const fn boya(&self) -> &crate::Context<Boya> {
         self.api::<Boya>()
     }
     /// Get BUAA Smart Classroom API Group
-    pub fn class(&self) -> &crate::Context<Class> {
+    pub const fn class(&self) -> &crate::Context<Class> {
         self.api::<Class>()
     }
     /// Get BUAA Cloud Disk API Group
-    pub fn cloud(&self) -> &crate::Context<Cloud> {
+    pub const fn cloud(&self) -> &crate::Context<Cloud> {
         self.api::<Cloud>()
     }
     /// Get BUAA Spoc Platform API Group
-    pub fn spoc(&self) -> &crate::Context<Spoc> {
+    pub const fn spoc(&self) -> &crate::Context<Spoc> {
         self.api::<Spoc>()
     }
     /// Get BUAA User Center API Group
-    pub fn user(&self) -> &crate::Context<User> {
+    pub const fn user(&self) -> &crate::Context<User> {
         self.api::<User>()
     }
     /// Get BUAA Undergraduate & Graduate Student Course Registration System API Group
-    pub fn srs(&self) -> &crate::Context<Srs> {
+    pub const fn srs(&self) -> &crate::Context<Srs> {
         self.api::<Srs>()
     }
     /// Get BUAA SSO API Group
-    pub fn sso(&self) -> &crate::Context<SSO> {
+    pub const fn sso(&self) -> &crate::Context<SSO> {
         self.api::<SSO>()
     }
     /// Get BUAA Teacher Evaluation System API Group
-    pub fn tes(&self) -> &crate::Context<Tes> {
+    pub const fn tes(&self) -> &crate::Context<Tes> {
         self.api::<Tes>()
     }
     /// Get BUAA WiFi API Group
-    pub fn wifi(&self) -> &crate::Context<WiFi> {
+    pub const fn wifi(&self) -> &crate::Context<WiFi> {
         self.api::<WiFi>()
     }
 }
