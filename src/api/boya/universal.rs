@@ -2,7 +2,7 @@ use rand::Rng;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{Error, crypto, utils};
+use crate::{Error, crypto, error::Location, utils};
 
 #[derive(Deserialize)]
 struct BoyaStatus {
@@ -125,7 +125,7 @@ impl super::BoyaAPI {
         let status = serde_json::from_str::<BoyaStatus>(&res)?;
         if status.status == "98005399" {
             // 刷新登录 Token 的操作无需在这里执行, 如果上面刷新了, 这里还能报这个状态码那应该不是 Token 的问题
-            return Err(Error::LoginExpired("Boya Login Expired".to_string()));
+            return Err(Error::LoginExpired(Location::BOYA));
         }
         if status.status == "1" {
             return Err(Error::APIError(status.errmsg));
