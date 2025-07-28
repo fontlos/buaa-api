@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Error, error::Location};
 
 impl super::SrsAPI {
     pub async fn login(&self) -> crate::Result<()> {
@@ -12,7 +12,7 @@ impl super::SrsAPI {
         let res = self.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
-            return Err(Error::LoginExpired("SSO Expired".to_string()));
+            return Err(Error::LoginExpired(Location::SSO));
         }
         // 储存 token
         let cookie = self.cookies.load();

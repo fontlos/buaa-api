@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::{Error, error::Location};
 
 impl super::SpocAPI {
     /// # Spoc Login
@@ -13,7 +13,7 @@ impl super::SpocAPI {
             .send()
             .await?;
         if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
-            return Err(Error::LoginExpired("SSO Expired".to_string()));
+            return Err(Error::LoginExpired(Location::SSO));
         }
         let mut query = res.url().query_pairs();
         let token = match query.next() {

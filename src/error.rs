@@ -7,7 +7,7 @@ pub enum Error {
     APIError(String),
     /// The relevant Cookies or Token expires
     #[error("Login Expired: {0}")]
-    LoginExpired(String),
+    LoginExpired(Location),
     /// Some of the key information used for login is incorrect
     #[error("Login Error: {0}")]
     LoginError(String),
@@ -21,4 +21,25 @@ pub enum Error {
 
     #[error(transparent)]
     Other(#[from] Box<dyn std::error::Error>),
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Location {
+    SSO,
+    ASS,
+    APP,
+    BOYA,
+    CLASS,
+    CLOUD,
+    SPOC,
+    SRS,
+    TES,
+    USER,
+    WIFI,
+}
+
+impl std::fmt::Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }

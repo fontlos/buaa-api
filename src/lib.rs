@@ -5,7 +5,7 @@ mod cell;
 mod consts;
 mod context;
 mod crypto;
-mod error;
+pub mod error;
 pub mod request;
 pub mod store;
 pub mod utils;
