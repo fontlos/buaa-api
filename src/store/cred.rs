@@ -64,7 +64,7 @@ impl CredentialItem {
     }
 
     pub fn refresh(&mut self, expiration: u64) {
-        self.expiration = expiration;
+        self.expiration = utils::get_time_secs() + expiration;
     }
 
     pub fn is_expired(&self) -> bool {
