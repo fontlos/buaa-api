@@ -6,7 +6,7 @@ impl super::SpocAPI {
         // SQL ID 似乎可以是固定值, 应该是用于鉴权的, 不知道是否会过期
         let query = r#"{"sqlid":"17275975753144ed8d6fe15425677f752c936d97de1bab76"}"#;
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryOne";
-        let res = self.universal_request(query, url).await?;
+        let res = self.universal_request(url, query).await?;
         let res = serde_json::from_str::<_SpocRes1>(&res)?;
         Ok(res.content)
     }
@@ -18,7 +18,7 @@ impl super::SpocAPI {
             week.date.0, week.date.1, week.term
         );
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryList";
-        let res = self.universal_request(&query, url).await?;
+        let res = self.universal_request(url, &query).await?;
         let res = serde_json::from_str::<_SpocRes2>(&res)?;
         Ok(res.content)
     }
