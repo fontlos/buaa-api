@@ -1,1 +1,1 @@
-//! # BUAA Office of Studies API
+//! # BUAA Academic Affairs System API
