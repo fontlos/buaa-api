@@ -13,7 +13,7 @@ impl super::TesAPI {
             "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fspoc.buaa.edu.cn%2Fpjxt%2Fcas";
         let res = self.get(login_url).send().await?;
         if res.url().as_str() == login_url {
-            return Err(Error::LoginExpired(Location::SSO));
+            return Err(Error::LoginExpired(Location::Sso));
         }
         self.cred.update(|c| {
             // 刷新 SSO 时效

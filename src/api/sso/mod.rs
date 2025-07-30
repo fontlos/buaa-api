@@ -18,4 +18,4 @@ mod auth;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type SSOAPI = crate::Context<super::SSO>;
+pub type SsoAPI = crate::Context<super::Sso>;

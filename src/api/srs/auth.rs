@@ -12,7 +12,7 @@ impl super::SrsAPI {
         let res = self.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
-            return Err(Error::LoginExpired(Location::SSO));
+            return Err(Error::LoginExpired(Location::Sso));
         }
         // 储存 token
         let cookie = self.cookies.load();
