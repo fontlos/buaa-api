@@ -13,7 +13,7 @@ impl super::SpocAPI {
             .send()
             .await?;
         if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
-            return Err(Error::LoginExpired(Location::SSO));
+            return Err(Error::LoginExpired(Location::Sso));
         }
         let mut query = res.url().query_pairs();
         let token = match query.next() {

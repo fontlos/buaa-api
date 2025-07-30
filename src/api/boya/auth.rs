@@ -15,7 +15,7 @@ impl super::BoyaAPI {
         let res = self.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
-            return Err(Error::LoginExpired(Location::SSO));
+            return Err(Error::LoginExpired(Location::Sso));
         }
         let mut query = res.url().query_pairs();
         let token = match query.next() {

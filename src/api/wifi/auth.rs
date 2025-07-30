@@ -2,7 +2,7 @@ use std::error::Error as StdError;
 
 use crate::{Error, crypto, utils};
 
-impl super::WiFiAPI {
+impl super::WifiAPI {
     /// # BUAA WiFi Login
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
     /// ```rust

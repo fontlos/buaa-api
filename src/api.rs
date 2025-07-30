@@ -28,13 +28,13 @@ pub struct Spoc;
 /// Marker type for BUAA Undergraduate & Graduate Student Course Registration System API Grouping
 pub struct Srs;
 /// Marker type for BUAA SSO API Grouping
-pub struct SSO;
+pub struct Sso;
 /// Marker type for BUAA Teacher Evaluation System API Grouping
 pub struct Tes;
 /// Marker type for BUAA User Center API Grouping
 pub struct User;
 /// Marker type for BUAA WiFi API Grouping
-pub struct WiFi;
+pub struct Wifi;
 
 impl<G> crate::Context<G> {
     /// Obtains a type-state view for the specified API group
@@ -90,15 +90,15 @@ impl crate::Context<Core> {
         self.api::<Srs>()
     }
     /// Get BUAA SSO API Group
-    pub const fn sso(&self) -> &crate::Context<SSO> {
-        self.api::<SSO>()
+    pub const fn sso(&self) -> &crate::Context<Sso> {
+        self.api::<Sso>()
     }
     /// Get BUAA Teacher Evaluation System API Group
     pub const fn tes(&self) -> &crate::Context<Tes> {
         self.api::<Tes>()
     }
     /// Get BUAA WiFi API Group
-    pub const fn wifi(&self) -> &crate::Context<WiFi> {
-        self.api::<WiFi>()
+    pub const fn wifi(&self) -> &crate::Context<Wifi> {
+        self.api::<Wifi>()
     }
 }
