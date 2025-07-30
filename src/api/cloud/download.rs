@@ -2,7 +2,7 @@ use crate::utils;
 
 use super::utils::CloudItem;
 
-impl super::CloudAPI {
+impl super::CloudApi {
     /// Get a download URL for a single file.
     pub async fn get_download_url(&self, item: &CloudItem) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osdownload";

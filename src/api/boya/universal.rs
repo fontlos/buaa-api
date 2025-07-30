@@ -10,7 +10,7 @@ struct BoyaStatus {
     errmsg: String,
 }
 
-impl super::BoyaAPI {
+impl super::BoyaApi {
     /// # Boya Universal Request API
     /// - Input:
     ///     - Query: JSON String for request

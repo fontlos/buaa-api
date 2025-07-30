@@ -1,4 +1,4 @@
-impl super::AppAPI {
+impl super::AppApi {
     pub async fn classtable_get_index(&self) -> crate::Result<String> {
         let res = self
             .get("https://app.buaa.edu.cn/timetable/wap/default/get-index")

@@ -1,6 +1,6 @@
 use crate::{Error, error::Location};
 
-impl super::TesAPI {
+impl super::TesApi {
     /// Teacher Evaluation System Login
     pub async fn login(&self) -> crate::Result<()> {
         // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token

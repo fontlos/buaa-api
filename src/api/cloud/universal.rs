@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::Error;
 
-impl super::CloudAPI {
+impl super::CloudApi {
     pub async fn universal_request(&self, url: &str, data: &Value) -> crate::Result<String> {
         // 首先尝试获取 token, 如果没有就可以直接返回了
         let cred = &self.cred.load().cloud_token;
