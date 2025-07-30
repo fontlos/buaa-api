@@ -20,4 +20,4 @@ mod utils;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type CloudAPI = crate::Context<super::Cloud>;
+pub type CloudApi = crate::Context<super::Cloud>;

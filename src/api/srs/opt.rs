@@ -2,7 +2,7 @@ use crate::Error;
 
 use super::{_SrsOpt, _SrsRes1, _SrsRes2, _SrsStatus, CourseFilter, CourseSeleted, Courses};
 
-impl super::SrsAPI {
+impl super::SrsApi {
     pub async fn gen_filter(&self) -> crate::Result<CourseFilter> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
 

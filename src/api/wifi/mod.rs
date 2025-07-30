@@ -16,4 +16,4 @@ mod auth;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type WifiAPI = crate::Context<super::Wifi>;
+pub type WifiApi = crate::Context<super::Wifi>;

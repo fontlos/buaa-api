@@ -21,4 +21,4 @@ pub use utils::*;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type SpocAPI = crate::Context<super::Spoc>;
+pub type SpocApi = crate::Context<super::Spoc>;

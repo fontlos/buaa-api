@@ -20,4 +20,4 @@ pub use utils::*;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type TesAPI = crate::Context<super::Tes>;
+pub type TesApi = crate::Context<super::Tes>;

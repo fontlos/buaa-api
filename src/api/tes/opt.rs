@@ -4,7 +4,7 @@ use super::{
     _EvaluationForm, _EvaluationList, EvaluationCompleted, EvaluationForm, EvaluationListItem,
 };
 
-impl super::TesAPI {
+impl super::TesApi {
     /// Get a list of the ones that need to be evaluated <br>
     /// The method has made multiple requests inside it, and the speed is slow
     pub async fn get_evaluation_list(&self) -> crate::Result<Vec<EvaluationListItem>> {

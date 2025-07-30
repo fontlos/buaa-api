@@ -22,4 +22,4 @@ pub use utils::*;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type BoyaAPI = crate::Context<super::Boya>;
+pub type BoyaApi = crate::Context<super::Boya>;

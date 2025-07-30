@@ -1,6 +1,6 @@
 use super::utils::{CloudDir, CloudRootDir};
 
-impl super::CloudAPI {
+impl super::CloudApi {
     /// Get directory by type, possible types:
     /// - `""`: All directories
     /// - `"user_doc_lib"`: User's personal directory

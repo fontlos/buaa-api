@@ -20,4 +20,4 @@ pub use utils::*;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type SrsAPI = crate::Context<super::Srs>;
+pub type SrsApi = crate::Context<super::Srs>;

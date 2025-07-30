@@ -1,6 +1,6 @@
 use super::utils::{_BoyaAttend, BoyaAttend, BoyaAttendType, BoyaCoordinate};
 
-impl super::BoyaAPI {
+impl super::BoyaApi {
     /// # Select Course
     /// - Input: Course ID from [`query_course`](#method.query_course)
     /// - Output: Status of the request, like `{"status":"0","errmsg":"请求成功","token":null,"data":{"courseCurrentCount":340}}`

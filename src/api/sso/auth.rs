@@ -1,6 +1,6 @@
 use crate::{Error, utils};
 
-impl super::SsoAPI {
+impl super::SsoApi {
     /// # SSO Login
     pub async fn login(&self) -> crate::Result<()> {
         // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组

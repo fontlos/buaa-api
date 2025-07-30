@@ -1,6 +1,6 @@
 use crate::utils;
 
-impl super::UserAPI {
+impl super::UserApi {
     /// # Get User Center state
     /// - Output: `String`, JSON includes name and username, etc
     pub async fn get_state(&self) -> crate::Result<String> {

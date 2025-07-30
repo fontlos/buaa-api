@@ -17,4 +17,4 @@ mod opt;
 ///
 /// Note: All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
-pub type UserAPI = crate::Context<super::User>;
+pub type UserApi = crate::Context<super::User>;

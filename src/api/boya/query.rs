@@ -5,7 +5,7 @@ use super::{
     BoyaSelected, BoyaStatistic,
 };
 
-impl super::BoyaAPI {
+impl super::BoyaApi {
     /// # Query Course
     pub async fn query_course(&self) -> crate::Result<Vec<BoyaCourse>> {
         let query = "{\"pageNumber\":1,\"pageSize\":10}";

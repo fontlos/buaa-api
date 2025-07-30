@@ -4,7 +4,7 @@ use crate::{Error, utils};
 
 use super::{_ClassCourses, _ClassSchedules, ClassCourse, ClassSchedule};
 
-impl super::ClassAPI {
+impl super::ClassApi {
     /// # Smart Classroom query all course of a term
     /// - Input: Term ID
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
