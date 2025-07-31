@@ -2,6 +2,8 @@ use std::error::Error as StdError;
 
 use crate::{Error, crypto, utils};
 
+use super::utils::{get_wifi_ip, get_wifi_ssid};
+
 impl super::WifiApi {
     /// # BUAA WiFi Login
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
@@ -28,14 +30,14 @@ impl super::WifiApi {
         };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 但是手机上不知道怎么获取, 所以如果无法获取到 SSID 那么也尝试连接
-        if let Some(s) = utils::get_wifi_ssid() {
+        if let Some(s) = get_wifi_ssid() {
             if s != "BUAA-WiFi" {
                 return Ok(());
             }
         }
 
         // 获取本机 IP
-        let ip = match utils::get_wifi_ip() {
+        let ip = match get_wifi_ip() {
             Some(s) => s,
             None => return Err(Error::LoginError(String::from("Cannot get IP address"))),
         };
@@ -162,14 +164,14 @@ impl super::WifiApi {
         };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
-        if let Some(s) = utils::get_wifi_ssid() {
+        if let Some(s) = get_wifi_ssid() {
             if s != "BUAA-WiFi" {
                 return Ok(());
             }
         }
 
         // 获取本机 IP
-        let ip = match utils::get_wifi_ip() {
+        let ip = match get_wifi_ip() {
             Some(s) => s,
             None => return Err(Error::LoginError(String::from("Cannot get IP address"))),
         };
