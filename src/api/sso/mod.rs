@@ -2,20 +2,23 @@
 
 mod auth;
 
-/// BUAA SSO API
+/// # BUAA SSO API
 ///
 /// Obtain a context view via [`Context.sso()`],
 /// then call specific APIs through this grouping.
 ///
-/// # Examples
+/// ## Examples
+///
 /// ```
 /// let ctx = Context::new();
 /// let sso = ctx.sso();
-/// sso.login().await.unwrap();
+/// sso.login().await?;
 /// // In fact, you can call `login` on `Context` directly to do the same
-/// // ctx.login().unwrap()
+/// // ctx.login().await?;
 /// ```
 ///
-/// Note: All API groups share the same underlying context -
+/// ## Note
+///
+/// All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
 pub type SsoApi = crate::Context<super::Sso>;

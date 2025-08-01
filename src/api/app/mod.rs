@@ -7,18 +7,21 @@
 mod auth;
 mod opt;
 
-/// BUAA App API
+/// # BUAA App API
 ///
 /// Obtain a context view via [`Context.app()`],
 /// then call specific APIs through this grouping.
 ///
-/// # Examples
+/// ## Examples
+///
 /// ```
 /// let ctx = Context::new();
 /// let app = ctx.app();
-/// app.login().await.unwrap();
+/// app.login().await?;
 /// ```
 ///
-/// Note: All API groups share the same underlying context -
+/// ## Note
+///
+/// All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
 pub type AppApi = crate::Context<super::App>;

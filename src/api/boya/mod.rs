@@ -8,18 +8,21 @@ mod utils;
 
 pub use utils::*;
 
-/// BUAA Boya Course API
+/// # BUAA Boya Course API
 ///
 /// Obtain a context view via [`Context.boya()`],
 /// then call specific APIs through this grouping.
 ///
-/// # Examples
+/// ## Examples
+///
 /// ```
 /// let ctx = Context::new();
 /// let boya = ctx.boya();
-/// boya.login().await.unwrap();
+/// boya.login().await?;
 /// ```
 ///
-/// Note: All API groups share the same underlying context -
+/// ## Note
+///
+/// All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
 pub type BoyaApi = crate::Context<super::Boya>;
