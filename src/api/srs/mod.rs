@@ -6,18 +6,21 @@ mod utils;
 
 pub use utils::*;
 
-/// BUAA Undergraduate & Graduate Student Course Registration System API
+/// # BUAA Undergraduate & Graduate Student Course Registration System API
 ///
 /// Obtain a context view via [`Context.srs()`],
 /// then call specific APIs through this grouping.
 ///
-/// # Examples
+/// ## Examples
+///
 /// ```
 /// let ctx = Context::new();
 /// let srs = ctx.srs();
-/// srs.login().await.unwrap();
+/// srs.login().await?;
 /// ```
 ///
-/// Note: All API groups share the same underlying context -
+/// ## Note
+///
+/// All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
 pub type SrsApi = crate::Context<super::Srs>;

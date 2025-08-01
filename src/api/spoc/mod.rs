@@ -7,18 +7,21 @@ mod utils;
 
 pub use utils::*;
 
-/// BUAA Spoc Platform API Group
+/// # BUAA Spoc Platform API Group
 ///
 /// Obtain a context view via [`Context.spoc()`],
 /// then call specific APIs through this grouping.
 ///
-/// # Examples
+/// ## Examples
+///
 /// ```
 /// let ctx = Context::new();
 /// let spoc = ctx.spoc();
-/// spoc.login().await.unwrap();
+/// spoc.login().await?;
 /// ```
 ///
-/// Note: All API groups share the same underlying context -
+/// ## Note
+///
+/// All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
 pub type SpocApi = crate::Context<super::Spoc>;

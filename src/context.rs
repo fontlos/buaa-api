@@ -32,7 +32,7 @@ impl Context {
     /// // Set account
     /// context.set_account("username", "password");
     /// // Login to context
-    /// context.login().await.unwrap();
+    /// context.login().await?;
     /// ```
     pub fn new() -> Context {
         let cookies = Arc::new(AtomicCookieStore::default());
@@ -75,22 +75,33 @@ impl Context {
     }
 
     /// # Context Login
-    /// This is the most important method and should be called first <br>
-    /// This method is used to login to the SSO system, and the login information will be saved in the cookie <br>
+    ///
+    /// This is the most important method and should be called first
+    ///
+    /// This method is used to login to the SSO system, and the login information will be saved in the cookie
+    ///
     /// If your login information expires, you should also re-call this function to refresh the cookie
+    ///
+    /// ## Note
+    ///
+    /// In fact, this is a wrapper of `login()` in [`SsoApi`](./api/sso/type.SsoApi.html).
+    ///
+    /// And by default, it will be automatically re-called if the cookie is expired.
+    ///
+    /// ## Example
+    ///
     /// ```rust
     /// use buaa::Context;
     ///
-    /// #[tokio::main]
-    /// async fn main() {
-    ///     let context = Context::new();
-    ///     context.set_account("username", "password")
-    ///     context.login().await.unwrap();
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let context = Context::new();
+    /// context.set_account("username", "password");
+    /// context.login().await?;
     ///
-    ///     // do something
-    /// }
+    /// // do something
+    /// # Ok(())
+    /// # }
     /// ```
-    /// In fact, this is a wrapper of `login()` in `SSO` API
     pub async fn login(&self) -> crate::Result<()> {
         self.sso().login().await
     }
@@ -168,7 +179,7 @@ impl Context {
     /// - Cookies to `./dir/cookies.json`
     /// - Credentials to `./dir/cred.json`
     ///
-    /// For more precise control over loading behavior, you can manually construct and set the auth data:
+    /// For more precise control over saving behavior:
     /// ```
     /// let cookies = context.get_cookies();
     /// cookies.to_file(path);

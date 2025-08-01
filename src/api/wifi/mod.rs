@@ -3,18 +3,21 @@
 mod auth;
 mod utils;
 
-/// BUAA WiFi API Group
+/// # BUAA WiFi API Group
 ///
 /// Obtain a context view via [`Context.wifi()`],
 /// then call specific APIs through this grouping.
 ///
-/// # Examples
+/// ## Examples
+///
 /// ```
 /// let ctx = Context::new();
 /// let wifi = ctx.wifi();
-/// wifi.login().await.unwrap();
+/// wifi.login().await?;
 /// ```
 ///
-/// Note: All API groups share the same underlying context -
+/// ## Note
+///
+/// All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
 pub type WifiApi = crate::Context<super::Wifi>;

@@ -8,18 +8,21 @@ mod utils;
 
 pub use utils::*;
 
-/// BUAA Smart Classroom API
+/// # BUAA Smart Classroom API
 ///
 /// Obtain a context view via [`Context.class()`],
 /// then call specific APIs through this grouping.
 ///
-/// # Examples
+/// ## Examples
+///
 /// ```
 /// let ctx = Context::new();
 /// let class = ctx.class();
-/// class.login().await.unwrap();
+/// class.login().await?;
 /// ```
 ///
-/// Note: All API groups share the same underlying context -
+/// ## Note
+///
+/// All API groups share the same underlying context -
 /// modifications will be instantly visible across all groups.
 pub type ClassApi = crate::Context<super::Class>;
