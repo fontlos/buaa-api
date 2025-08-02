@@ -12,7 +12,7 @@ impl super::CloudApi {
         }
         let token = match cred.value() {
             Some(t) => t,
-            None => return Err(Error::APIError("No Cloud Token".to_string())),
+            None => return Err(Error::ApiError("No Cloud Token".to_string())),
         };
 
         let res = self.post(url).bearer_auth(token).json(data).send().await?;

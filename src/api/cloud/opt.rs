@@ -37,7 +37,7 @@ impl super::CloudApi {
             .into_iter()
             .next()
             .map(|item| item.id)
-            .ok_or_else(|| crate::Error::APIError("No user dir found".to_string()))?;
+            .ok_or_else(|| crate::Error::ApiError("No user dir found".to_string()))?;
         Ok(id)
     }
 

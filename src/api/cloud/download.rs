@@ -14,7 +14,7 @@ impl super::CloudApi {
         let res = match utils::get_value_by_lable(&text, ",\"", "\"") {
             Some(url) => url,
             None => {
-                return Err(crate::Error::APIError("No url".to_string()));
+                return Err(crate::Error::ApiError("No url".to_string()));
             }
         };
 
@@ -44,14 +44,14 @@ impl super::CloudApi {
         let raw_url = match utils::get_value_by_lable(&text, "address\":\"", "\"") {
             Some(url) => url,
             None => {
-                return Err(crate::Error::APIError("No url".to_string()));
+                return Err(crate::Error::ApiError("No url".to_string()));
             }
         };
 
         // 在获取下载链接请求发出后获取 cred, 通过其自动刷新机制保证 token 正常情况是存在的
         let cred = match self.cred.load().cloud_token.value() {
             Some(token) => token,
-            None => return Err(crate::Error::APIError("No cloud token".to_string())),
+            None => return Err(crate::Error::ApiError("No cloud token".to_string())),
         };
 
         let url = format!("{}?token={}", raw_url, cred);

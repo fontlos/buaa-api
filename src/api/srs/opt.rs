@@ -10,7 +10,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::APIError("No Srs Token".to_string())),
+            None => return Err(Error::ApiError("No Srs Token".to_string())),
         };
 
         let query = [("token", token)];
@@ -26,10 +26,10 @@ impl super::SrsApi {
         if let Some(campus) = campus {
             match campus.parse::<u8>() {
                 Ok(campus) => Ok(CourseFilter::new(campus)),
-                Err(_) => Err(Error::APIError("Invalid Campus".to_string())),
+                Err(_) => Err(Error::ApiError("Invalid Campus".to_string())),
             }
         } else {
-            Err(Error::APIError("No Campus".to_string()))
+            Err(Error::ApiError("No Campus".to_string()))
         }
     }
     /// Query Course
@@ -40,7 +40,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::APIError("No Srs Token".to_string())),
+            None => return Err(Error::ApiError("No Srs Token".to_string())),
         };
 
         let res = self
@@ -52,7 +52,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::APIError(status.msg));
+            return Err(Error::ApiError(status.msg));
         }
 
         let res = serde_json::from_str::<_SrsRes1>(&text)?;
@@ -68,14 +68,14 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::APIError("No Srs Token".to_string())),
+            None => return Err(Error::ApiError("No Srs Token".to_string())),
         };
 
         let res = self.post(url).header("Authorization", token).send().await?;
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::APIError(status.msg));
+            return Err(Error::ApiError(status.msg));
         }
         let res = serde_json::from_str::<_SrsRes2>(&text)?;
         Ok(res.data)
@@ -90,7 +90,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::APIError("No Srs Token".to_string())),
+            None => return Err(Error::ApiError("No Srs Token".to_string())),
         };
 
         let res = self
@@ -102,7 +102,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::APIError(status.msg));
+            return Err(Error::ApiError(status.msg));
         }
         Ok(())
     }
@@ -116,7 +116,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::APIError("No Srs Token".to_string())),
+            None => return Err(Error::ApiError("No Srs Token".to_string())),
         };
 
         let res = self
@@ -128,7 +128,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::APIError(status.msg));
+            return Err(Error::ApiError(status.msg));
         }
         Ok(())
     }
