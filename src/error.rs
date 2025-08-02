@@ -4,11 +4,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Server internal error.
     #[error("API Error: {0}")]
-    APIError(String),
-    /// The relevant Cookies or Token expires
+    ApiError(String),
+    /// Relevant Cookies or Token expires
     #[error("Login Expired: {0}")]
     LoginExpired(Location),
-    /// Some of the key information used for login is incorrect
+    /// Key information for login is incorrect
     #[error("Login Error: {0}")]
     LoginError(String),
 
