@@ -50,7 +50,7 @@ impl super::CloudApi {
                     .get("bhpan.buaa.edu.cn", "/", "client.oauth2_token")
                 {
                     Some(t) => t.value().to_string(),
-                    None => return Err(Error::ApiError("No Cloud Token".to_string())),
+                    None => return Err(Error::ServerError("No Cloud Token".to_string())),
                 };
             self.cred.update(|c| {
                 // TODO: 我们先默认十分钟过期, 待测试
@@ -71,6 +71,6 @@ impl super::CloudApi {
             self.login().await?;
         }
         cred.value()
-            .ok_or_else(|| Error::ApiError("No Cloud Token".to_string()))
+            .ok_or_else(|| Error::AuthError("No Cloud Token".to_string()))
     }
 }
