@@ -11,11 +11,11 @@ impl super::SsoApi {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
-            None => return Err(Error::LoginError("No Username".to_string()))?,
+            None => return Err(Error::LoginError("No Username".to_string())),
         };
         let pw = match cred.password.as_ref() {
             Some(s) => s,
-            None => return Err(Error::LoginError("No Password".to_string()))?,
+            None => return Err(Error::LoginError("No Password".to_string())),
         };
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;
