@@ -139,7 +139,7 @@ impl super::WifiApi {
         if res.contains(r#""error":"ok""#) {
             Ok(())
         } else {
-            Err(Error::LoginError(format!("Response: {res}")))
+            Err(Error::ServerError(format!("Response: {res}")))
         }
     }
 
@@ -224,7 +224,7 @@ impl super::WifiApi {
         if res.contains(r#""error":"ok""#) {
             Ok(())
         } else {
-            Err(Error::ApiError(format!(
+            Err(Error::ServerError(format!(
                 "WiFi logout failed. Response: {res}"
             )))
         }

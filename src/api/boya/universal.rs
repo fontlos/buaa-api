@@ -69,7 +69,7 @@ impl super::BoyaApi {
         // 首先尝试获取 token, 如果没有就可以直接返回了
         let token = match cred.value() {
             Some(t) => t,
-            None => return Err(Error::ApiError("No Boya Token".to_string())),
+            None => return Err(Error::AuthError("No Boya Token".to_string())),
         };
 
         // 初始化 RSA, 设置公钥
@@ -128,10 +128,10 @@ impl super::BoyaApi {
             return Err(Error::LoginExpired(Location::Boya));
         }
         if status.status == "1" {
-            return Err(Error::ApiError(status.errmsg));
+            return Err(Error::AuthError(status.errmsg));
         }
         if status.status != "0" {
-            return Err(Error::ApiError(status.errmsg));
+            return Err(Error::ServerError(status.errmsg));
         }
 
         // 刷新 Token 时效
