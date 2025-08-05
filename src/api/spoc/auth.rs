@@ -21,10 +21,10 @@ impl super::SpocApi {
                 if key == "token" {
                     value
                 } else {
-                    return Err(Error::LoginError("No Token".to_string()));
+                    return Err(Error::ServerError("No Token".to_string()));
                 }
             }
-            None => return Err(Error::LoginError("No Token".to_string())),
+            None => return Err(Error::ServerError("No Token".to_string())),
         };
         // 用来刷新 Token 的 Refresh Token, 但我们用不着
         // let _refresh_token = match query.next() {

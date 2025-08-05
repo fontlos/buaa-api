@@ -20,7 +20,7 @@ impl super::BoyaApi {
         let mut query = res.url().query_pairs();
         let token = match query.next() {
             Some(t) => t,
-            None => return Err(Error::LoginError("No Token".to_string())),
+            None => return Err(Error::ServerError("No Token".to_string())),
         };
         if token.0 == "token" {
             self.cred.update(|c| {
@@ -31,7 +31,7 @@ impl super::BoyaApi {
             });
             Ok(())
         } else {
-            Err(Error::LoginError("No Token".to_string()))
+            Err(Error::ServerError("No Token".to_string()))
         }
     }
 }

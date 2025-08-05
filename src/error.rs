@@ -8,9 +8,6 @@ pub enum Error {
     /// Relevant Cookies or Token expires
     #[error("Login Expired: {0}")]
     LoginExpired(Location),
-    /// Key information for login is incorrect
-    #[error("Login Error: {0}")]
-    LoginError(String),
 
     /// Crash in Serde
     #[error("Deserialize Error: {0}")]
