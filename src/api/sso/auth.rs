@@ -11,11 +11,11 @@ impl super::SsoApi {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
-            None => return Err(Error::LoginError("No Username".to_string())),
+            None => return Err(Error::AuthError("No Username".to_string())),
         };
         let pw = match cred.password.as_ref() {
             Some(s) => s,
-            None => return Err(Error::LoginError("No Password".to_string())),
+            None => return Err(Error::AuthError("No Password".to_string())),
         };
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;
@@ -27,7 +27,7 @@ impl super::SsoApi {
         let execution = match utils::get_value_by_lable(&html, "\"execution\" value=\"", "\"") {
             Some(s) => s,
             None => {
-                return Err(Error::LoginError("No Execution Value".to_string()));
+                return Err(Error::ServerError("No Execution Value".to_string()));
             }
         };
         let form = [
@@ -46,7 +46,7 @@ impl super::SsoApi {
             });
             Ok(())
         } else {
-            Err(Error::LoginError(String::from(
+            Err(Error::ServerError(String::from(
                 "Maybe wrong username or password",
             )))
         }

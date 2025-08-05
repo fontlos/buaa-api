@@ -60,7 +60,7 @@ impl super::CloudApi {
             });
             Ok(())
         } else {
-            Err(Error::LoginError("Login failed".to_string()))
+            Err(Error::ServerError("Login failed".to_string()))
         }
     }
 

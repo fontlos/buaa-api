@@ -26,7 +26,7 @@ impl super::SrsApi {
                 });
                 Ok(())
             }
-            None => Err(Error::LoginError("No Token".to_string())),
+            None => Err(Error::ServerError("No Token".to_string())),
         }
     }
 }

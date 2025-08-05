@@ -17,8 +17,8 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::LoginError(
-                    "Smart Classroom Login Required".to_string(),
+                return Err(Error::AuthError(
+                    "No Class Token".to_string(),
                 ));
             }
         };
@@ -43,8 +43,8 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::LoginError(
-                    "Smart Classroom Login Required".to_string(),
+                return Err(Error::AuthError(
+                    "No Class Token".to_string(),
                 ));
             }
         };
@@ -69,8 +69,8 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::LoginError(
-                    "Smart Classroom Login Required".to_string(),
+                return Err(Error::AuthError(
+                    "No Class Token".to_string(),
                 ));
             }
         };
