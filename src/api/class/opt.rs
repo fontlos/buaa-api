@@ -17,9 +17,7 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::AuthError(
-                    "No Class Token".to_string(),
-                ));
+                return Err(Error::AuthError("No Class Token".to_string()));
             }
         };
         let res = self.post(
@@ -43,9 +41,7 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::AuthError(
-                    "No Class Token".to_string(),
-                ));
+                return Err(Error::AuthError("No Class Token".to_string()));
             }
         };
         let res = self.post(
@@ -69,9 +65,7 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::AuthError(
-                    "No Class Token".to_string(),
-                ));
+                return Err(Error::AuthError("No Class Token".to_string()));
             }
         };
         let time = utils::get_time_millis();
