@@ -8,6 +8,9 @@ pub enum Error {
     /// Relevant Cookies or Token expires
     #[error("Login Expired: {0}")]
     LoginExpired(Location),
+    /// Network error
+    #[error("Network Error: {0}")]
+    NetworkError(String),
 
     /// Crash in Serde
     #[error("Deserialize Error: {0}")]

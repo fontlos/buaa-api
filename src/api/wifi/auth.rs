@@ -39,8 +39,7 @@ impl super::WifiApi {
         // 获取本机 IP
         let ip = match get_wifi_ip() {
             Some(s) => s,
-            // TODO 这里需要新的错误类型
-            None => return Err(Error::AuthError(String::from("Cannot get IP address"))),
+            None => return Err(Error::NetworkError(String::from("Cannot get IP address"))),
         };
 
         // 从重定向 URL 中获取 ACID 接入点
@@ -56,11 +55,9 @@ impl super::WifiApi {
                     .unwrap_or_else(|| e.to_string());
 
                 if err == "dns error" {
-                    // TODO 这里需要新的错误类型
-                    return Err(Error::AuthError("Not connect to BUAA-WiFi".to_string()));
+                    return Err(Error::NetworkError("Not connect to BUAA-WiFi".to_string()));
                 } else {
-                    // TODO 这里需要新的错误类型
-                    return Err(Error::AuthError(err));
+                    return Err(Error::NetworkError(err));
                 }
             }
         };
@@ -176,8 +173,7 @@ impl super::WifiApi {
         // 获取本机 IP
         let ip = match get_wifi_ip() {
             Some(s) => s,
-            // TODO 这里需要新的错误类型
-            None => return Err(Error::AuthError(String::from("Cannot get IP address"))),
+            None => return Err(Error::NetworkError(String::from("Cannot get IP address"))),
         };
 
         // 从重定向 URL 中获取 ACID 接入点
@@ -193,11 +189,9 @@ impl super::WifiApi {
                     .unwrap_or_else(|| e.to_string());
 
                 if err == "dns error" {
-                    // TODO 这里需要新的错误类型
-                    return Err(Error::AuthError("Not connect to BUAA-WiFi".to_string()));
+                    return Err(Error::NetworkError("Not connect to BUAA-WiFi".to_string()));
                 } else {
-                    // TODO 这里需要新的错误类型
-                    return Err(Error::AuthError(err));
+                    return Err(Error::NetworkError(err));
                 }
             }
         };
