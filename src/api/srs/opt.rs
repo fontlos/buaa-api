@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::error::{Error, Location};
 
 use super::{_SrsOpt, _SrsRes1, _SrsRes2, _SrsStatus, CourseFilter, CourseSeleted, Courses};
 
@@ -10,7 +10,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Srs Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Srs)),
         };
 
         let query = [("token", token)];
@@ -40,7 +40,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Srs Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Srs)),
         };
 
         let res = self
@@ -68,7 +68,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Srs Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Srs)),
         };
 
         let res = self.post(url).header("Authorization", token).send().await?;
@@ -90,7 +90,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Srs Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Srs)),
         };
 
         let res = self
@@ -116,7 +116,7 @@ impl super::SrsApi {
         let cred = self.cred.load();
         let token = match cred.srs_token.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Srs Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Srs)),
         };
 
         let res = self

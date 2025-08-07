@@ -1,7 +1,10 @@
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{Error, crypto};
+use crate::{
+    crypto,
+    error::{Error, Location},
+};
 
 #[derive(Deserialize)]
 struct SpocState {
@@ -18,7 +21,7 @@ impl super::SpocApi {
         let cred = self.cred.load();
         let token = match cred.spoc_token.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Spoc)),
         };
         // 逆向出来的密钥和初始向量, 既然写死了为什么不用 ECB 模式啊
         let ase_key = crate::consts::SPOC_AES_KEY;

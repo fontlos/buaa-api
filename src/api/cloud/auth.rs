@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::error::{Error, Location};
 
 impl super::CloudApi {
     pub async fn login(&self) -> crate::Result<()> {
@@ -71,6 +71,6 @@ impl super::CloudApi {
             self.login().await?;
         }
         cred.value()
-            .ok_or_else(|| Error::AuthError("No Cloud Token".to_string()))
+            .ok_or_else(|| Error::auth_expired(Location::Cloud))
     }
 }

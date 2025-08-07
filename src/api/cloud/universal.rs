@@ -1,6 +1,6 @@
 use serde_json::Value;
 
-use crate::Error;
+use crate::error::{Error, Location};
 
 impl super::CloudApi {
     pub async fn universal_request(&self, url: &str, data: &Value) -> crate::Result<String> {
@@ -12,7 +12,7 @@ impl super::CloudApi {
         }
         let token = match cred.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Cloud Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Cloud)),
         };
 
         let res = self.post(url).bearer_auth(token).json(data).send().await?;

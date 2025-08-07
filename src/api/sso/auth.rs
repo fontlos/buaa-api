@@ -1,4 +1,7 @@
-use crate::{Error, utils};
+use crate::{
+    error::{AuthError, Error},
+    utils,
+};
 
 impl super::SsoApi {
     /// # SSO Login
@@ -11,11 +14,11 @@ impl super::SsoApi {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError("No Username".to_string())),
+            None => return Err(Error::AuthError(AuthError::NoUsername)),
         };
         let pw = match cred.password.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError("No Password".to_string())),
+            None => return Err(Error::AuthError(AuthError::NoPassword)),
         };
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;

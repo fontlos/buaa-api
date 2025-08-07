@@ -1,4 +1,8 @@
-use crate::{Error, crypto, error::Location, utils};
+use crate::{
+    crypto,
+    error::{Error, Location},
+    utils,
+};
 
 use super::_ClassLogin;
 
@@ -22,7 +26,7 @@ impl super::ClassApi {
         // 如果获取失败, 说明登录已过期, 则重新登录
         let login_name = match utils::get_value_by_lable(url, "loginName=", "#/") {
             Some(v) => v,
-            None => return Err(Error::LoginExpired(Location::Sso)),
+            None => return Err(Error::auth_expired(Location::Sso)),
         };
         let url = &url[..url.len() - 2];
         // 使用 DES 加密 URL, 这是下一步请求的参数之一

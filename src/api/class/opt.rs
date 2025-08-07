@@ -1,6 +1,9 @@
 use reqwest::Response;
 
-use crate::{Error, utils};
+use crate::{
+    error::{Error, Location},
+    utils,
+};
 
 use super::{_ClassCourses, _ClassSchedules, ClassCourse, ClassSchedule};
 
@@ -17,7 +20,7 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::AuthError("No Class Token".to_string()));
+                return Err(Error::auth_expired(Location::Class));
             }
         };
         let res = self.post(
@@ -41,7 +44,7 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::AuthError("No Class Token".to_string()));
+                return Err(Error::auth_expired(Location::Class));
             }
         };
         let res = self.post(
@@ -65,7 +68,7 @@ impl super::ClassApi {
         let token = match cred.class_token.value() {
             Some(t) => t,
             None => {
-                return Err(Error::AuthError("No Class Token".to_string()));
+                return Err(Error::auth_expired(Location::Class));
             }
         };
         let time = utils::get_time_millis();
