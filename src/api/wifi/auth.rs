@@ -1,6 +1,10 @@
 use std::error::Error as StdError;
 
-use crate::{Error, crypto, utils};
+use crate::{
+    crypto,
+    error::{AuthError, Error},
+    utils,
+};
 
 use super::utils::{get_wifi_ip, get_wifi_ssid};
 
@@ -22,11 +26,11 @@ impl super::WifiApi {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError("No Username".to_string())),
+            None => return Err(Error::AuthError(AuthError::NoUsername)),
         };
         let pw = match cred.password.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError("No Password".to_string())),
+            None => return Err(Error::AuthError(AuthError::NoPassword)),
         };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 但是手机上不知道怎么获取, 所以如果无法获取到 SSID 那么也尝试连接
@@ -160,7 +164,7 @@ impl super::WifiApi {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError("No Username".to_string())),
+            None => return Err(Error::AuthError(AuthError::NoUsername)),
         };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接

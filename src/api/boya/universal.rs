@@ -2,7 +2,11 @@ use rand::Rng;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{Error, crypto, error::Location, utils};
+use crate::{
+    crypto,
+    error::{Error, Location},
+    utils,
+};
 
 #[derive(Deserialize)]
 struct BoyaStatus {
@@ -69,7 +73,7 @@ impl super::BoyaApi {
         // 首先尝试获取 token, 如果没有就可以直接返回了
         let token = match cred.value() {
             Some(t) => t,
-            None => return Err(Error::AuthError("No Boya Token".to_string())),
+            None => return Err(Error::auth_expired(Location::Boya)),
         };
 
         // 初始化 RSA, 设置公钥
@@ -125,10 +129,11 @@ impl super::BoyaApi {
         let status = serde_json::from_str::<BoyaStatus>(&res)?;
         if status.status == "98005399" {
             // 刷新登录 Token 的操作无需在这里执行, 如果上面刷新了, 这里还能报这个状态码那应该不是 Token 的问题
-            return Err(Error::LoginExpired(Location::Boya));
+            return Err(Error::auth_expired(Location::Boya));
         }
         if status.status == "1" {
-            return Err(Error::AuthError(status.errmsg));
+            // TODO 这个错误值得重新看一下是因为什么
+            return Err(Error::ServerError(status.errmsg));
         }
         if status.status != "0" {
             return Err(Error::ServerError(status.errmsg));
