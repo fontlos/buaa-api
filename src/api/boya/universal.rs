@@ -133,10 +133,10 @@ impl super::BoyaApi {
         }
         if status.status == "1" {
             // TODO 这个错误值得重新看一下是因为什么
-            return Err(Error::ServerError(status.errmsg));
+            return Err(Error::Server(status.errmsg));
         }
         if status.status != "0" {
-            return Err(Error::ServerError(status.errmsg));
+            return Err(Error::Server(status.errmsg));
         }
 
         // 刷新 Token 时效
