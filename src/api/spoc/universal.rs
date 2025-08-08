@@ -39,7 +39,7 @@ impl super::SpocApi {
         let res = res.text().await?;
         let status = serde_json::from_str::<SpocState>(&res)?;
         if status.code != 200 {
-            return Err(Error::ServerError(
+            return Err(Error::Server(
                 status.msg.unwrap_or("Unknown Error".to_string()),
             ));
         }

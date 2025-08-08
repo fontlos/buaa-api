@@ -60,7 +60,7 @@ impl super::ClassApi {
                 });
                 Ok(())
             }
-            Err(_) => Err(Error::ServerError(format!(
+            Err(_) => Err(Error::Server(format!(
                 "Smart Classroom Login Failed: {res}"
             ))),
         }

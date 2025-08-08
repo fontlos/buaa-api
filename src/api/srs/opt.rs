@@ -26,10 +26,10 @@ impl super::SrsApi {
         if let Some(campus) = campus {
             match campus.parse::<u8>() {
                 Ok(campus) => Ok(CourseFilter::new(campus)),
-                Err(_) => Err(Error::ServerError("Invalid Campus".to_string())),
+                Err(_) => Err(Error::Server("Invalid Campus".to_string())),
             }
         } else {
-            Err(Error::ServerError("No Campus".to_string()))
+            Err(Error::Server("No Campus".to_string()))
         }
     }
     /// Query Course
@@ -52,7 +52,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::ServerError(status.msg));
+            return Err(Error::Server(status.msg));
         }
 
         let res = serde_json::from_str::<_SrsRes1>(&text)?;
@@ -75,7 +75,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::ServerError(status.msg));
+            return Err(Error::Server(status.msg));
         }
         let res = serde_json::from_str::<_SrsRes2>(&text)?;
         Ok(res.data)
@@ -102,7 +102,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::ServerError(status.msg));
+            return Err(Error::Server(status.msg));
         }
         Ok(())
     }
@@ -128,7 +128,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::ServerError(status.msg));
+            return Err(Error::Server(status.msg));
         }
         Ok(())
     }

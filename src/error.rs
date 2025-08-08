@@ -4,21 +4,21 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Auth error.
     #[error("Auth Error: {0}")]
-    AuthError(AuthError),
+    Auth(AuthError),
     /// Network error
     #[error("Network Error: {0}")]
-    NetworkError(String),
+    Network(String),
 
     /// Crash in Serde
     #[error("Deserialize Error: {0}")]
-    DeserializeError(#[from] serde_json::Error),
+    Deserialize(#[from] serde_json::Error),
     /// Crash in Reqwest
     #[error("Request Error")]
-    RequestError(#[from] reqwest::Error),
+    Request(#[from] reqwest::Error),
 
     /// Server internal error. So you can't handle such errors, just for logging
     #[error("Server Error: {0}")]
-    ServerError(String),
+    Server(String),
 
     /// Other errors
     #[error(transparent)]
@@ -27,7 +27,7 @@ pub enum Error {
 
 impl Error {
     pub fn auth_expired(location: Location) -> Self {
-        Error::AuthError(AuthError::Expired(location))
+        Error::Auth(AuthError::Expired(location))
     }
 }
 

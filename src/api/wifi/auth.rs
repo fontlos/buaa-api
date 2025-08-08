@@ -26,11 +26,11 @@ impl super::WifiApi {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError(AuthError::NoUsername)),
+            None => return Err(Error::Auth(AuthError::NoUsername)),
         };
         let pw = match cred.password.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError(AuthError::NoPassword)),
+            None => return Err(Error::Auth(AuthError::NoPassword)),
         };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 但是手机上不知道怎么获取, 所以如果无法获取到 SSID 那么也尝试连接
@@ -43,7 +43,7 @@ impl super::WifiApi {
         // 获取本机 IP
         let ip = match get_wifi_ip() {
             Some(s) => s,
-            None => return Err(Error::NetworkError(String::from("Cannot get IP address"))),
+            None => return Err(Error::Network(String::from("Cannot get IP address"))),
         };
 
         // 从重定向 URL 中获取 ACID 接入点
@@ -59,9 +59,9 @@ impl super::WifiApi {
                     .unwrap_or_else(|| e.to_string());
 
                 if err == "dns error" {
-                    return Err(Error::NetworkError("Not connect to BUAA-WiFi".to_string()));
+                    return Err(Error::Network("Not connect to BUAA-WiFi".to_string()));
                 } else {
-                    return Err(Error::NetworkError(err));
+                    return Err(Error::Network(err));
                 }
             }
         };
@@ -69,7 +69,7 @@ impl super::WifiApi {
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(Error::ServerError("No AC ID".to_string())),
+            None => return Err(Error::Server("No AC ID".to_string())),
         };
 
         // 获取 Challenge Token
@@ -86,14 +86,14 @@ impl super::WifiApi {
             .send()
             .await?;
         if !res.status().is_success() {
-            return Err(Error::ServerError(
+            return Err(Error::Server(
                 "Request Failed. Maybe wrong username and password".to_string(),
             ));
         };
         let html = res.text().await.unwrap();
         let token = match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
             Some(s) => s,
-            None => return Err(Error::ServerError("No Challenge Value".to_string())),
+            None => return Err(Error::Server("No Challenge Value".to_string())),
         };
         let token_bytes = token.as_bytes();
 
@@ -143,7 +143,7 @@ impl super::WifiApi {
         if res.contains(r#""error":"ok""#) {
             Ok(())
         } else {
-            Err(Error::ServerError(format!("Response: {res}")))
+            Err(Error::Server(format!("Response: {res}")))
         }
     }
 
@@ -164,7 +164,7 @@ impl super::WifiApi {
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s,
-            None => return Err(Error::AuthError(AuthError::NoUsername)),
+            None => return Err(Error::Auth(AuthError::NoUsername)),
         };
         // 先检测 WiFi 名称, 不符合就直接返回以节省时间
         // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
@@ -177,7 +177,7 @@ impl super::WifiApi {
         // 获取本机 IP
         let ip = match get_wifi_ip() {
             Some(s) => s,
-            None => return Err(Error::NetworkError(String::from("Cannot get IP address"))),
+            None => return Err(Error::Network(String::from("Cannot get IP address"))),
         };
 
         // 从重定向 URL 中获取 ACID 接入点
@@ -193,9 +193,9 @@ impl super::WifiApi {
                     .unwrap_or_else(|| e.to_string());
 
                 if err == "dns error" {
-                    return Err(Error::NetworkError("Not connect to BUAA-WiFi".to_string()));
+                    return Err(Error::Network("Not connect to BUAA-WiFi".to_string()));
                 } else {
-                    return Err(Error::NetworkError(err));
+                    return Err(Error::Network(err));
                 }
             }
         };
@@ -203,7 +203,7 @@ impl super::WifiApi {
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(Error::ServerError("No AC ID".to_string())),
+            None => return Err(Error::Server("No AC ID".to_string())),
         };
 
         let time = &utils::get_time_millis().to_string()[..];
@@ -228,7 +228,7 @@ impl super::WifiApi {
         if res.contains(r#""error":"ok""#) {
             Ok(())
         } else {
-            Err(Error::ServerError(format!(
+            Err(Error::Server(format!(
                 "WiFi logout failed. Response: {res}"
             )))
         }

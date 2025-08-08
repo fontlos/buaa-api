@@ -21,7 +21,7 @@ impl super::TesApi {
         let text = res.text().await?;
         let rwid = match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
             Some(rwid) => rwid,
-            None => return Err(Error::ServerError("No rwid".to_string())),
+            None => return Err(Error::Server("No rwid".to_string())),
         };
 
         // 看不懂, 但需要获取一些称为 wjid 的东西, 对应于理论课, 实践课, 英语课, 体育课, 科研课堂, 这是已知的五个类型
