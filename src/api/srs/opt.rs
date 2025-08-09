@@ -1,4 +1,5 @@
-use crate::error::{Error, Location};
+use crate::api::Location;
+use crate::error::Error;
 
 use super::{_SrsOpt, _SrsRes1, _SrsRes2, _SrsStatus, CourseFilter, CourseSeleted, Courses};
 

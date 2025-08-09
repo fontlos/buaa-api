@@ -1,8 +1,6 @@
-use crate::{
-    crypto,
-    error::{Error, Location},
-    utils,
-};
+use crate::api::Location;
+use crate::error::Error;
+use crate::{crypto, utils};
 
 use super::_ClassLogin;
 

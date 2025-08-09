@@ -1,4 +1,5 @@
-use crate::error::{Error, Location};
+use crate::api::Location;
+use crate::error::Error;
 
 impl super::BoyaApi {
     /// # Boya Login

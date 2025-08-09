@@ -1,4 +1,5 @@
-use crate::error::{Error, Location};
+use crate::api::Location;
+use crate::error::Error;
 
 impl super::SrsApi {
     pub async fn login(&self) -> crate::Result<()> {
