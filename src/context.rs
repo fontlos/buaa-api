@@ -8,7 +8,7 @@ use crate::store::cookies::AtomicCookieStore;
 use crate::store::cred::CredentialStore;
 use crate::{api::Core, cell::AtomicCell};
 
-/// This is the core of this crate, it is used to store cookies and send requests <br>
+/// This is the core of this crate, it is used to store cookies and send requests
 pub struct Context<G = Core> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<AtomicCookieStore>,

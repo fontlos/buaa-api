@@ -1,3 +1,5 @@
+use crate::api::Location;
+
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
@@ -28,27 +30,6 @@ pub enum Error {
 impl Error {
     pub fn auth_expired(location: Location) -> Self {
         Error::Auth(AuthError::Expired(location))
-    }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum Location {
-    Ass,
-    App,
-    Boya,
-    Class,
-    Cloud,
-    Spoc,
-    Srs,
-    Sso,
-    Tes,
-    User,
-    Wifi,
-}
-
-impl std::fmt::Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
 

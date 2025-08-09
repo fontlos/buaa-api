@@ -1,6 +1,7 @@
 use serde_json::Value;
 
-use crate::error::{Error, Location};
+use crate::api::Location;
+use crate::error::Error;
 
 impl super::CloudApi {
     pub async fn universal_request(&self, url: &str, data: &Value) -> crate::Result<String> {

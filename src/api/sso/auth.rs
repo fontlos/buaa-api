@@ -1,7 +1,5 @@
-use crate::{
-    error::{AuthError, Error},
-    utils,
-};
+use crate::error::{AuthError, Error};
+use crate::utils;
 
 impl super::SsoApi {
     /// # SSO Login

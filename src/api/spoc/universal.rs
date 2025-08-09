@@ -1,10 +1,9 @@
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{
-    crypto,
-    error::{Error, Location},
-};
+use crate::api::Location;
+use crate::crypto;
+use crate::error::Error;
 
 #[derive(Deserialize)]
 struct SpocState {

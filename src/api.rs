@@ -102,3 +102,24 @@ impl crate::Context<Core> {
         self.api::<Wifi>()
     }
 }
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Location {
+    Ass,
+    App,
+    Boya,
+    Class,
+    Cloud,
+    Spoc,
+    Srs,
+    Sso,
+    Tes,
+    User,
+    Wifi,
+}
+
+impl std::fmt::Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}

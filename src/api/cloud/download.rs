@@ -1,7 +1,6 @@
-use crate::{
-    error::{Error, Location},
-    utils,
-};
+use crate::api::Location;
+use crate::error::Error;
+use crate::utils;
 
 use super::utils::CloudItem;
 

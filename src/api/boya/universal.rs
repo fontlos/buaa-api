@@ -2,11 +2,9 @@ use rand::Rng;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
-use crate::{
-    crypto,
-    error::{Error, Location},
-    utils,
-};
+use crate::api::Location;
+use crate::error::Error;
+use crate::{crypto, utils};
 
 #[derive(Deserialize)]
 struct BoyaStatus {
