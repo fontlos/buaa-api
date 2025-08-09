@@ -1,5 +1,4 @@
 use rand::Rng;
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
 use crate::api::Location;
@@ -14,50 +13,34 @@ struct BoyaStatus {
 
 impl super::BoyaApi {
     /// # Boya Universal Request API
-    /// - Input:
-    ///     - Query: JSON String for request
-    ///     - URL: API URL
     ///
-    /// Other Boya APIs don't need to be implemented, if you need to, you can extend it with this universal request API. <br>
-    /// You can find JS code like the following by intercepting all XHR requests in the browser, via stack calls. <br>
+    /// ## Note
+    ///
+    /// You should use other existing Boya APIs first.
+    ///
+    /// If the API you need but is not implemented, you can extend it with this universal request API.
+    ///
     /// Locate the following sections in the `app.js`(Windows UA)/`main.js`(Android UA) by search `setPublicKey` and set breakpoint to debug.
-    /// # JS Code
-    ///  ```js
-    /// var y = new h.default;
+    ///
+    /// ```js
+    /// ...
     /// y.setPublicKey(b);
     /// var x = c || {}
     ///   , w = JSON.stringify(x)
-    ///   , k = (0,
-    /// o.default)(w).toString()
-    ///   , A = y.encrypt(k)
-    ///   , _ = s.getRandomStr(16)
-    ///   , S = y.encrypt(_)
-    ///   , D = d.default.parse(_)
-    ///   , E = l.default.encrypt(d.default.parse(w), D, {
-    ///     iv: D,
-    ///     mode: u.default,
-    ///     padding: f.default
-    /// }).toString()
-    ///   , I = (new Date).getTime() + "";
-    /// g.sk = A,
-    /// g.ak = S,
-    /// g.ts = I;
-    /// var C = function(e) {
-    ///     var t = d.default.parse(_)
-    ///       , n = l.default.decrypt(e.data, t, {
-    ///         iv: t,
-    ///         mode: u.default,
-    ///         padding: f.default
-    ///     })
-    ///       , i = d.default.stringify(n);
-    ///     return i && (e.data = JSON.parse(i)),
-    ///     e
-    /// }
+    /// ...
     /// ```
     ///
     /// You can find `Query` in `w = JSON.stringify(x)`
     ///
-    /// # Example
+    /// ## Usage
+    ///
+    /// - Input:
+    ///     - URL: API URL
+    ///     - Query: JSON String for request
+    /// - Output:
+    ///     - JSON String for response
+    ///
+    /// ## Example
     ///
     /// `getUserProfile` API
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
@@ -92,31 +75,17 @@ impl super::BoyaApi {
         let body = crypto::aes::aes_encrypt_ecb(query.as_bytes(), aes_key);
         let time = utils::get_time_millis();
 
-        // 生成请求头
-        let mut header = HeaderMap::new();
-        header.insert(
-            HeaderName::from_bytes(b"Ak").unwrap(),
-            HeaderValue::from_str(&ak).unwrap(),
-        );
-        header.insert(
-            HeaderName::from_bytes(b"Auth_token").unwrap(),
-            HeaderValue::from_str(token).unwrap(),
-        );
-        header.insert(
-            HeaderName::from_bytes(b"Authtoken").unwrap(),
-            HeaderValue::from_str(token).unwrap(),
-        );
-        header.insert(
-            HeaderName::from_bytes(b"Sk").unwrap(),
-            HeaderValue::from_str(&sk).unwrap(),
-        );
-        header.insert(
-            HeaderName::from_bytes(b"Ts").unwrap(),
-            HeaderValue::from_str(&time.to_string()).unwrap(),
-        );
-
         // 获取 JSESSIONID
-        let res = self.post(url).headers(header).json(&body).send().await?;
+        let res = self
+            .post(url)
+            .header("Ak", &ak)
+            .header("Auth_token", token)
+            .header("Authtoken", token)
+            .header("Sk", &sk)
+            .header("Ts", time.to_string())
+            .json(&body)
+            .send()
+            .await?;
 
         // 响应体被 AES 加密了, 并且两端有引号需要去掉
         let res = res.text().await?;
