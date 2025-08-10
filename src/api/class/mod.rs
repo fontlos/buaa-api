@@ -3,10 +3,10 @@
 //! It is used for class sign-in and class attendance inquiry
 
 mod auth;
+mod data;
 mod opt;
-mod utils;
 
-pub use utils::*;
+pub use data::*;
 
 /// # BUAA Smart Classroom API
 ///

@@ -1,4 +1,4 @@
-use super::utils::{_BoyaAttend, BoyaAttend, BoyaAttendType, BoyaCoordinate};
+use super::data::{_BoyaAttend, BoyaAttend, BoyaAttendType, BoyaCoordinate};
 
 impl super::BoyaApi {
     /// # Select Course

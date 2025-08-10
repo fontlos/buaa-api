@@ -1,4 +1,4 @@
-use super::utils::{CloudDir, CloudRootDir};
+use super::data::{CloudDir, CloudRootDir};
 
 impl super::CloudApi {
     /// Get directory by type, possible types:

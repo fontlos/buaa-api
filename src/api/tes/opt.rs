@@ -122,7 +122,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_submit_evaluation() {
-        use crate::api::tes::utils::EvaluationAnswer;
+        use crate::api::tes::data::EvaluationAnswer;
 
         let context = Context::with_auth("./data");
 

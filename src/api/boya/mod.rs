@@ -1,12 +1,12 @@
 //! # BUAA Boya Course API
 
 mod auth;
+mod data;
 mod opt;
 mod query;
 mod universal;
-mod utils;
 
-pub use utils::*;
+pub use data::*;
 
 /// # BUAA Boya Course API
 ///
