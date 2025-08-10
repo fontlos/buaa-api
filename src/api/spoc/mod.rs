@@ -1,11 +1,11 @@
 //! # BUAA Spoc Platform API
 
 mod auth;
+mod data;
 mod opt;
 mod universal;
-mod utils;
 
-pub use utils::*;
+pub use data::*;
 
 /// # BUAA Spoc Platform API Group
 ///

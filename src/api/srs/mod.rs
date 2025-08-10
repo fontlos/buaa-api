@@ -1,10 +1,10 @@
 //! # BUAA Undergraduate & Graduate Student Course Registration System API
 
 mod auth;
+mod data;
 mod opt;
-mod utils;
 
-pub use utils::*;
+pub use data::*;
 
 /// # BUAA Undergraduate & Graduate Student Course Registration System API
 ///

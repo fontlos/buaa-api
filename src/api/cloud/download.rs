@@ -2,7 +2,7 @@ use crate::api::Location;
 use crate::error::Error;
 use crate::utils;
 
-use super::utils::CloudItem;
+use super::data::CloudItem;
 
 impl super::CloudApi {
     /// Get a download URL for a single file.
