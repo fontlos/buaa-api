@@ -29,7 +29,7 @@ pub fn aes_encrypt_ecb(data: &[u8], key: &[u8]) -> String {
 }
 
 /// AES decrypt, use Base64, ECB mode, PKCS5Padding
-pub fn aes_decrypt_ecb(data: &str, key: &[u8]) -> String {
+pub fn aes_decrypt_ecb(data: &[u8], key: &[u8]) -> String {
     // 将 Base64 编码的加密数据解码为字节数组
     let encrypted_bytes = general_purpose::STANDARD.decode(data).unwrap();
     // 创建 AES 解密器

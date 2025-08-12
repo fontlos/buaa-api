@@ -40,10 +40,8 @@ impl super::TesApi {
             let url = format!(
                 "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData?wjid={wjid}"
             );
-            let res = self.get(url).send().await?;
-            let text = res.text().await?;
-            let new_list: _EvaluationList = serde_json::from_str(&text)?;
-            list.extend(new_list.list);
+            let res = self.get(url).send().await?.json::<_EvaluationList>().await?;
+            list.extend(res.list);
         }
 
         Ok(list)
@@ -67,10 +65,8 @@ impl super::TesApi {
             ("rwh", &item.rwh),
         ];
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
-        let res = self.get(url).query(&query).send().await?;
-        let text = res.text().await?;
-        let form: _EvaluationForm = serde_json::from_str(&text)?;
-        Ok(form.result)
+        let res = self.get(url).query(&query).send().await?.json::<_EvaluationForm>().await?;
+        Ok(res.result)
     }
 
     pub async fn submit_evaluation(
@@ -93,8 +89,7 @@ impl super::TesApi {
         .unwrap();
         self.post("https://spoc.buaa.edu.cn/pjxt/system/property")
             .send()
-            .await
-            .unwrap();
+            .await?;
 
         // {"code":"200","msg":"成功","msg_en":"Operation is successful","result":[{"pjid":"","pjbm":"","sfnm":"1"}]} 是否匿名??
         Ok(res)

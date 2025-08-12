@@ -88,8 +88,8 @@ impl super::BoyaApi {
             .await?;
 
         // 响应体被 AES 加密了, 并且两端有引号需要去掉
-        let res = res.text().await?;
-        let res = res.trim_matches('"');
+        let res = res.bytes().await?;
+        let res = &res[1..res.len() - 1];
         let res = crypto::aes::aes_decrypt_ecb(res, aes_key);
 
         // 检查状态

@@ -6,7 +6,7 @@ mod tests {
     fn test_aes_ecb() {
         let encrypted = aes::aes_encrypt_ecb(b"HelloWorld", b"SenQBA8xn6CQGNJs");
         assert_eq!("Kn2AACfzhA8YPsPPH3SgdA==", encrypted);
-        let decrypted = aes::aes_decrypt_ecb(&encrypted, b"SenQBA8xn6CQGNJs");
+        let decrypted = aes::aes_decrypt_ecb(encrypted.as_bytes(), b"SenQBA8xn6CQGNJs");
         assert_eq!("HelloWorld", decrypted);
     }
 

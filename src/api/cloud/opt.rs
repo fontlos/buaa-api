@@ -19,9 +19,9 @@ impl super::CloudApi {
             .bearer_auth(token)
             .query(&query)
             .send()
+            .await?
+            .json::<Vec<CloudRootDir>>()
             .await?;
-        let text = res.text().await?;
-        let res = serde_json::from_str::<Vec<CloudRootDir>>(&text)?;
         Ok(res)
     }
 

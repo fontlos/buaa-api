@@ -62,7 +62,8 @@ impl super::SrsApi {
 
     /// Query Selected Course
     pub async fn query_selected(&self) -> Result<Vec<CourseSeleted>, Error> {
-        // https://byxk.buaa.edu.cn/xsxk/elective/deselect 查询退选记录的 URL, 操作相同, 但感觉没啥用
+        // 查询退选记录的 URL, 操作相同, 但感觉没啥用
+        // https://byxk.buaa.edu.cn/xsxk/elective/deselect
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
 
         // 获取 token
@@ -99,11 +100,11 @@ impl super::SrsApi {
             .form(&opt)
             .header("Authorization", token)
             .send()
+            .await?
+            .json::<_SrsStatus>()
             .await?;
-        let text = res.text().await?;
-        let status = serde_json::from_str::<_SrsStatus>(&text)?;
-        if status.code != 200 {
-            return Err(Error::Server(status.msg));
+        if res.code != 200 {
+            return Err(Error::Server(res.msg));
         }
         Ok(())
     }
@@ -125,11 +126,11 @@ impl super::SrsApi {
             .form(&opt)
             .header("Authorization", token)
             .send()
+            .await?
+            .json::<_SrsStatus>()
             .await?;
-        let text = res.text().await?;
-        let status = serde_json::from_str::<_SrsStatus>(&text)?;
-        if status.code != 200 {
-            return Err(Error::Server(status.msg));
+        if res.code != 200 {
+            return Err(Error::Server(res.msg));
         }
         Ok(())
     }

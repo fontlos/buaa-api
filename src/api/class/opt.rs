@@ -26,9 +26,9 @@ impl super::ClassApi {
             format!("https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={token}&xq_code={id}")
             )
             .send()
+            .await?
+            .json::<_ClassCourses>()
             .await?;
-        let res = res.text().await?;
-        let res = serde_json::from_str::<_ClassCourses>(&res)?;
         Ok(res.result)
     }
 
@@ -50,9 +50,9 @@ impl super::ClassApi {
             format!("https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={token}&courseId={id}")
             )
             .send()
+            .await?
+            .json::<_ClassSchedules>()
             .await?;
-        let res = res.text().await?;
-        let res = serde_json::from_str::<_ClassSchedules>(&res)?;
         Ok(res.result)
     }
 
