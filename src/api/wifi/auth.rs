@@ -8,6 +8,8 @@ use crate::{
 
 use super::utils::{get_wifi_ip, get_wifi_ssid};
 
+static CHECK: &[u8] = b"\"error\":\"ok\"";
+
 impl super::WifiApi {
     /// # BUAA WiFi Login
     /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
@@ -137,13 +139,13 @@ impl super::WifiApi {
             .query(&params)
             .send()
             .await?;
-        let res = res.text().await?;
+        let res = res.bytes().await?;
         // 注意没有考虑免费流量用尽或者全部流量用尽的情况
         // "ploy_msg":"您的免费30G流量已用尽，当前正在使用套餐流量。"
-        if res.contains(r#""error":"ok""#) {
+        if res.windows(CHECK.len()).any(|window| window == CHECK) {
             Ok(())
         } else {
-            Err(Error::Server(format!("Response: {res}")))
+            Err(Error::Server(format!("Response: {}", String::from_utf8_lossy(&res))))
         }
     }
 
@@ -224,12 +226,13 @@ impl super::WifiApi {
             .send()
             .await?;
 
-        let res = res.text().await?;
-        if res.contains(r#""error":"ok""#) {
+        let res = res.bytes().await?;
+        if res.windows(CHECK.len()).any(|window| window == CHECK) {
             Ok(())
         } else {
             Err(Error::Server(format!(
-                "WiFi logout failed. Response: {res}"
+                "WiFi logout failed. Response: {}",
+                String::from_utf8_lossy(&res)
             )))
         }
     }
