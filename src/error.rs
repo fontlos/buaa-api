@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::api::Location;
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -20,7 +22,7 @@ pub enum Error {
 
     /// Server internal error. So you can't handle such errors, just for logging
     #[error("Server Error: {0}")]
-    Server(String),
+    Server(Cow<'static, str>),
 
     /// Other errors
     #[error(transparent)]
@@ -30,6 +32,11 @@ pub enum Error {
 impl Error {
     pub fn auth_expired(location: Location) -> Self {
         Error::Auth(AuthError::Expired(location))
+    }
+
+    #[inline]
+    pub fn server(msg: impl Into<Cow<'static, str>>) -> Self {
+        Error::Server(msg.into())
     }
 }
 

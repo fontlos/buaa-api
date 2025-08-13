@@ -23,15 +23,11 @@ impl super::SrsApi {
             .send()
             .await?;
         let text = res.text().await?;
-        let campus = crate::utils::get_value_by_lable(&text, "\"campus\": \"", "\"");
-        if let Some(campus) = campus {
-            match campus.parse::<u8>() {
-                Ok(campus) => Ok(CourseFilter::new(campus)),
-                Err(_) => Err(Error::Server("Invalid Campus".to_string())),
-            }
-        } else {
-            Err(Error::Server("No Campus".to_string()))
-        }
+        let campus = crate::utils::get_value_by_lable(&text, "\"campus\": \"", "\"")
+            .and_then(|campus| campus.parse::<u8>().ok())
+            .map(CourseFilter::new)
+            .ok_or_else(|| Error::server("[Srs] Invalid or missing campus"))?;
+        Ok(campus)
     }
     /// Query Course
     pub async fn query_course(&self, filter: &CourseFilter) -> Result<Courses, Error> {
@@ -53,7 +49,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::Server(status.msg));
+            return Err(Error::server(format!("[Srs] Response: {}", status.msg)));
         }
 
         let res = serde_json::from_str::<_SrsRes1>(&text)?;
@@ -77,7 +73,7 @@ impl super::SrsApi {
         let text = res.text().await?;
         let status = serde_json::from_str::<_SrsStatus>(&text)?;
         if status.code != 200 {
-            return Err(Error::Server(status.msg));
+            return Err(Error::server(format!("[Srs] Response: {}", status.msg)));
         }
         let res = serde_json::from_str::<_SrsRes2>(&text)?;
         Ok(res.data)
@@ -104,7 +100,7 @@ impl super::SrsApi {
             .json::<_SrsStatus>()
             .await?;
         if res.code != 200 {
-            return Err(Error::Server(res.msg));
+            return Err(Error::server(format!("[Srs] Response: {}", res.msg)));
         }
         Ok(())
     }
@@ -130,7 +126,7 @@ impl super::SrsApi {
             .json::<_SrsStatus>()
             .await?;
         if res.code != 200 {
-            return Err(Error::Server(res.msg));
+            return Err(Error::server(format!("[Srs] Response: {}", res.msg)));
         }
         Ok(())
     }

@@ -21,7 +21,7 @@ impl super::TesApi {
         let text = res.text().await?;
         let rwid = match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
             Some(rwid) => rwid,
-            None => return Err(Error::Server("No rwid".to_string())),
+            None => return Err(Error::server("[Tes] Get list failed. No rwid")),
         };
 
         // 看不懂, 但需要获取一些称为 wjid 的东西, 对应于理论课, 实践课, 英语课, 体育课, 科研课堂, 这是已知的五个类型
@@ -40,7 +40,12 @@ impl super::TesApi {
             let url = format!(
                 "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData?wjid={wjid}"
             );
-            let res = self.get(url).send().await?.json::<_EvaluationList>().await?;
+            let res = self
+                .get(url)
+                .send()
+                .await?
+                .json::<_EvaluationList>()
+                .await?;
             list.extend(res.list);
         }
 
@@ -65,7 +70,13 @@ impl super::TesApi {
             ("rwh", &item.rwh),
         ];
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
-        let res = self.get(url).query(&query).send().await?.json::<_EvaluationForm>().await?;
+        let res = self
+            .get(url)
+            .query(&query)
+            .send()
+            .await?
+            .json::<_EvaluationForm>()
+            .await?;
         Ok(res.result)
     }
 
@@ -85,8 +96,7 @@ impl super::TesApi {
         )
         .query(&query)
         .send()
-        .await
-        .unwrap();
+        .await?;
         self.post("https://spoc.buaa.edu.cn/pjxt/system/property")
             .send()
             .await?;

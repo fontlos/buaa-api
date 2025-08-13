@@ -16,7 +16,7 @@ impl super::CloudApi {
         let res = match utils::get_value_by_lable(&text, ",\"", "\"") {
             Some(url) => url,
             None => {
-                return Err(Error::Server("No url".to_string()));
+                return Err(Error::server("[Cloud] Can not get download url"));
             }
         };
 
@@ -46,7 +46,7 @@ impl super::CloudApi {
         let raw_url = match utils::get_value_by_lable(&text, "address\":\"", "\"") {
             Some(url) => url,
             None => {
-                return Err(Error::Server("No url".to_string()));
+                return Err(Error::server("[Cloud] Can not get download url"));
             }
         };
 

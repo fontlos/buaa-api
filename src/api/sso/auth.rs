@@ -28,7 +28,7 @@ impl super::SsoApi {
         let execution = match utils::get_value_by_lable(&html, "\"execution\" value=\"", "\"") {
             Some(s) => s,
             None => {
-                return Err(Error::Server("No Execution Value".to_string()));
+                return Err(Error::server("[Sso] Login failed. No Execution Value"));
             }
         };
         let form = [
@@ -47,9 +47,9 @@ impl super::SsoApi {
             });
             Ok(())
         } else {
-            Err(Error::Server(String::from(
-                "Maybe wrong username or password",
-            )))
+            Err(Error::server(
+                "[Sso] Login failed. Maybe wrong username or password",
+            ))
         }
     }
 }

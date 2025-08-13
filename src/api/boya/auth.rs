@@ -19,20 +19,17 @@ impl super::BoyaApi {
             return Err(Error::auth_expired(Location::Sso));
         }
         let mut query = res.url().query_pairs();
-        let token = match query.next() {
-            Some(t) => t,
-            None => return Err(Error::Server("No Token".to_string())),
-        };
-        if token.0 == "token" {
-            self.cred.update(|c| {
-                // 经验证 15 分钟内过期, 我们这里用 10 分钟
-                c.boya_token.set(token.1.to_string(), 600);
-                // 刷新 SSO 时效
-                c.sso.refresh(5400);
-            });
-            Ok(())
-        } else {
-            Err(Error::Server("No Token".to_string()))
-        }
+        let token = query
+            .next()
+            .and_then(|t| if t.0 == "token" { Some(t.1) } else { None })
+            .ok_or_else(|| Error::server("[Boya] Login failed. No token"))?;
+
+        self.cred.update(|c| {
+            // 经验证 15 分钟内过期, 我们这里用 10 分钟
+            c.boya_token.set(token.to_string(), 600);
+            // 刷新 SSO 时效
+            c.sso.refresh(5400);
+        });
+        Ok(())
     }
 }
