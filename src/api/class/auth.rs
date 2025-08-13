@@ -47,6 +47,7 @@ impl super::ClassApi {
             .query(&params)
             .send()
             .await?;
+        // TODO: 到时候还是用字符串匹配吧, 不关心其他错误
         let res = res.text().await?;
         match serde_json::from_str::<_ClassLogin>(&res) {
             Ok(res) => {
@@ -58,9 +59,7 @@ impl super::ClassApi {
                 });
                 Ok(())
             }
-            Err(_) => Err(Error::Server(format!(
-                "Smart Classroom Login Failed: {res}"
-            ))),
+            Err(_) => Err(Error::server("[Class] Login failed. No token")),
         }
     }
 }

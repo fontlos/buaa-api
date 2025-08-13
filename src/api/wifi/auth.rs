@@ -71,7 +71,7 @@ impl super::WifiApi {
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(Error::Server("No AC ID".to_string())),
+            None => return Err(Error::server("[Wifi] No AC ID")),
         };
 
         // 获取 Challenge Token
@@ -88,14 +88,12 @@ impl super::WifiApi {
             .send()
             .await?;
         if !res.status().is_success() {
-            return Err(Error::Server(
-                "Request Failed. Maybe wrong username and password".to_string(),
-            ));
+            return Err(Error::server("[Wifi] Request for challenge value failed"));
         };
         let html = res.text().await.unwrap();
         let token = match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
             Some(s) => s,
-            None => return Err(Error::Server("No Challenge Value".to_string())),
+            None => return Err(Error::server("[Wifi] No challenge value")),
         };
         let token_bytes = token.as_bytes();
 
@@ -145,7 +143,10 @@ impl super::WifiApi {
         if res.windows(CHECK.len()).any(|window| window == CHECK) {
             Ok(())
         } else {
-            Err(Error::Server(format!("Response: {}", String::from_utf8_lossy(&res))))
+            Err(Error::server(format!(
+                "[Wifi] Login failed. Response: {}",
+                String::from_utf8_lossy(&res)
+            )))
         }
     }
 
@@ -205,7 +206,7 @@ impl super::WifiApi {
         let url = res.url().as_str();
         let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(Error::Server("No AC ID".to_string())),
+            None => return Err(Error::server("[Wifi] No AC ID")),
         };
 
         let time = &utils::get_time_millis().to_string()[..];
@@ -230,8 +231,8 @@ impl super::WifiApi {
         if res.windows(CHECK.len()).any(|window| window == CHECK) {
             Ok(())
         } else {
-            Err(Error::Server(format!(
-                "WiFi logout failed. Response: {}",
+            Err(Error::server(format!(
+                "[WiFi] Logout failed. Response: {}",
                 String::from_utf8_lossy(&res)
             )))
         }

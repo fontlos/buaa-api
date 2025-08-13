@@ -17,27 +17,12 @@ impl super::SpocApi {
             return Err(Error::auth_expired(Location::Sso));
         }
         let mut query = res.url().query_pairs();
-        let token = match query.next() {
-            Some((key, value)) => {
-                if key == "token" {
-                    value
-                } else {
-                    return Err(Error::Server("No Token".to_string()));
-                }
-            }
-            None => return Err(Error::Server("No Token".to_string())),
-        };
-        // 用来刷新 Token 的 Refresh Token, 但我们用不着
-        // let _refresh_token = match query.next() {
-        //     Some((key, value)) => {
-        //         if key == "refreshToken" {
-        //             value
-        //         } else {
-        //             return Err(SessionError::LoginError("No Refresh Token".to_string()));
-        //         }
-        //     }
-        //     None => return Err(SessionError::LoginError("No Refresh Token".to_string())),
-        // };
+        let token = query
+            .next()
+            .and_then(|t| if t.0 == "token" { Some(t.1) } else { None })
+            .ok_or_else(|| Error::server("[Spoc] Login failed. No token"))?;
+        // 再次调用 next 获取 refreshToken, 但我们用不着, 使用我们自己的机制刷新登陆状态
+
         self.cred.update(|c| {
             // 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
             c.spoc_token.set(token.to_string(), 604800);
