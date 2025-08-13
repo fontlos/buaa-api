@@ -11,11 +11,11 @@ impl super::SsoApi {
         let verify_url = "https://uc.buaa.edu.cn/#/user/login";
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
-            Some(s) => s,
+            Some(s) => s.as_str(),
             None => return Err(Error::Auth(AuthError::NoUsername)),
         };
         let pw = match cred.password.as_ref() {
-            Some(s) => s,
+            Some(s) => s.as_str(),
             None => return Err(Error::Auth(AuthError::NoPassword)),
         };
         // 获取登录页 execution 值
@@ -32,8 +32,8 @@ impl super::SsoApi {
             }
         };
         let form = [
-            ("username", &un[..]),
-            ("password", &pw[..]),
+            ("username", un),
+            ("password", pw),
             ("submit", "登录"),
             ("type", "username_password"),
             ("execution", execution),
