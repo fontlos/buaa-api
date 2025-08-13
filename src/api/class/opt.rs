@@ -22,9 +22,10 @@ impl super::ClassApi {
                 return Err(Error::auth_expired(Location::Class));
             }
         };
-        let res = self.post(
-            format!("https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action?user_type=1&id={token}&xq_code={id}")
-            )
+        let query = [("user_type", "1"), ("id", token), ("xq_code", id)];
+        let res = self
+            .post("https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action")
+            .query(&query)
             .send()
             .await?
             .json::<_ClassCourses>()
@@ -41,14 +42,15 @@ impl super::ClassApi {
         }
         let cred = self.cred.load();
         let token = match cred.class_token.value() {
-            Some(t) => t,
+            Some(t) => t.as_str(),
             None => {
                 return Err(Error::auth_expired(Location::Class));
             }
         };
-        let res = self.post(
-            format!("https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action?id={token}&courseId={id}")
-            )
+        let query = [("id", token), ("courseId", id)];
+        let res = self
+            .post("https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action")
+            .query(&query)
             .send()
             .await?
             .json::<_ClassSchedules>()
@@ -71,9 +73,14 @@ impl super::ClassApi {
             }
         };
         let time = utils::get_time_millis();
-        let res = self.post(
-            format!("http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action?courseSchedId={id}&timestamp={time}&id={token}")
-            )
+        let query = [
+            ("courseSchedId", id),
+            ("timestamp", &time.to_string()),
+            ("id", token),
+        ];
+        let res = self
+            .post("http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action")
+            .query(&query)
             .send()
             .await?;
         Ok(res)
