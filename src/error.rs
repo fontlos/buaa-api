@@ -30,12 +30,13 @@ pub enum Error {
 }
 
 impl Error {
-    pub fn auth_expired(location: Location) -> Self {
+    #[inline]
+    pub(crate) fn auth_expired(location: Location) -> Self {
         Error::Auth(AuthError::Expired(location))
     }
 
     #[inline]
-    pub fn server(msg: impl Into<Cow<'static, str>>) -> Self {
+    pub(crate) fn server(msg: impl Into<Cow<'static, str>>) -> Self {
         Error::Server(msg.into())
     }
 }
