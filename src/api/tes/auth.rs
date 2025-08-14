@@ -17,8 +17,7 @@ impl super::TesApi {
             return Err(Error::auth_expired(Location::Sso));
         }
         self.cred.update(|c| {
-            // 刷新 SSO 时效
-            c.sso.refresh(5400);
+            c.refresh(Location::Sso);
         });
         Ok(())
     }

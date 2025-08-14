@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::OpenOptions;
 use std::path::Path;
 
+use crate::api::Location;
 use crate::utils;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -38,6 +39,42 @@ impl CredentialStore {
             .unwrap();
         serde_json::to_writer(file, self).unwrap();
     }
+
+    const fn item(&mut self, loc: Location) -> (&mut CredentialItem, u64) {
+        match loc {
+            // 经验证 15 分钟内过期, 我们这里用 10 分钟
+            Location::Boya => (&mut self.boya_token, 600),
+            // 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
+            Location::Class => (&mut self.class_token, 604800),
+            // TODO: 我们先默认十分钟过期, 待测试
+            Location::Cloud => (&mut self.cloud_token, 600),
+            // 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
+            Location::Spoc => (&mut self.spoc_token, 604800),
+            // TODO: 我们先默认十分钟过期, 待测试
+            Location::Srs => (&mut self.srs_token, 600),
+            // 经验证 1.5 小时过期
+            Location::Sso => (&mut self.sso, 5400),
+            // 内部方法, 我们自己保证绝对不会出现其他分支
+            _ => unreachable!(),
+        }
+    }
+
+    pub(crate) fn set(&mut self, loc: Location, value: String) {
+        let now = utils::get_time_secs();
+        let (item, expiration) = self.item(loc);
+        item.expiration = now + expiration;
+        item.value = Some(value);
+        // 能用上 set 方法一定伴随着 Sso 的刷新
+        // 而且 Sso 一定不会用上 set 方法
+        // 所以这里可以放心的做一次 Sso 的刷新
+        self.sso.expiration = now + 5400;
+    }
+
+    pub(crate) fn refresh(&mut self, loc: Location) {
+        let now = utils::get_time_secs();
+        let (item, expiration) = self.item(loc);
+        item.expiration = now + expiration;
+    }
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -49,15 +86,6 @@ pub struct CredentialItem {
 impl CredentialItem {
     pub fn value(&self) -> Option<&String> {
         self.value.as_ref()
-    }
-
-    pub fn set(&mut self, value: String, expiration: u64) {
-        self.value = Some(value);
-        self.expiration = utils::get_time_secs() + expiration;
-    }
-
-    pub fn refresh(&mut self, expiration: u64) {
-        self.expiration = utils::get_time_secs() + expiration;
     }
 
     pub fn is_expired(&self) -> bool {

@@ -108,7 +108,7 @@ impl super::BoyaApi {
 
         // 刷新 Token 时效
         self.cred.update(|c| {
-            c.boya_token.refresh(600);
+            c.refresh(Location::Boya);
         });
 
         Ok(res)
