@@ -11,16 +11,16 @@ pub struct CredentialStore {
     pub password: Option<String>,
     /// Token for Boya API
     pub boya_token: CredentialItem,
-    /// User ID for SmartClass API
+    /// Token for Class API
     pub class_token: CredentialItem,
     /// Token for Cloud API
     pub cloud_token: CredentialItem,
-    /// User ID for Spoc API
+    /// Token for Spoc API
     pub spoc_token: CredentialItem,
     /// Token for Srs API
     pub srs_token: CredentialItem,
-    /// Mark expiration time of SSO Login
-    pub sso: Expiration,
+    /// Mark login expiration time of SSO
+    pub sso: CredentialItem,
 }
 
 impl CredentialStore {
@@ -47,13 +47,6 @@ pub struct CredentialItem {
 }
 
 impl CredentialItem {
-    pub fn new(value: String, expiration: u64) -> Self {
-        CredentialItem {
-            value: Some(value),
-            expiration,
-        }
-    }
-
     pub fn value(&self) -> Option<&String> {
         self.value.as_ref()
     }
@@ -69,18 +62,5 @@ impl CredentialItem {
 
     pub fn is_expired(&self) -> bool {
         self.expiration < utils::get_time_secs()
-    }
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct Expiration(u64);
-
-impl Expiration {
-    pub fn is_expired(&self) -> bool {
-        self.0 < utils::get_time_secs()
-    }
-
-    pub fn refresh(&mut self, expiration: u64) {
-        self.0 = utils::get_time_secs() + expiration;
     }
 }
