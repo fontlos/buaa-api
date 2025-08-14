@@ -11,9 +11,7 @@ impl super::AppApi {
             .send()
             .await?;
 
-        self.cred.update(|c| {
-            c.refresh(Location::Sso);
-        });
+        self.cred.refresh(Location::Sso);
 
         Ok(())
     }

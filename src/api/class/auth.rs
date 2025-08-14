@@ -51,9 +51,7 @@ impl super::ClassApi {
         let res = res.text().await?;
         match serde_json::from_str::<_ClassLogin>(&res) {
             Ok(res) => {
-                self.cred.update(|c| {
-                    c.set(Location::Class, res.result.id);
-                });
+                self.cred.set(Location::Class, res.result.id);
                 Ok(())
             }
             Err(_) => Err(Error::server("[Class] Login failed. No token")),

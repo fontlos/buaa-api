@@ -42,9 +42,7 @@ impl super::SsoApi {
         ];
         let res = self.post(login_url).form(&form).send().await?;
         if res.status().as_u16() == 200 {
-            self.cred.update(|c| {
-                c.refresh(Location::Sso);
-            });
+            self.cred.refresh(Location::Sso);
             Ok(())
         } else {
             Err(Error::server(

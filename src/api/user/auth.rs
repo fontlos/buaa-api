@@ -21,9 +21,7 @@ impl super::UserApi {
         self.get("https://uc.buaa.edu.cn/api/login?target=https://uc.buaa.edu.cn/#/user/login")
             .send()
             .await?;
-        self.cred.update(|c| {
-            c.refresh(Location::Sso);
-        });
+        self.cred.refresh(Location::Sso);
         Ok(())
     }
 }

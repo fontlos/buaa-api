@@ -23,9 +23,7 @@ impl super::SpocApi {
             .ok_or_else(|| Error::server("[Spoc] Login failed. No token"))?;
         // 再次调用 next 获取 refreshToken, 但我们用不着, 使用我们自己的机制刷新登陆状态
 
-        self.cred.update(|c| {
-            c.set(Location::Spoc, token.to_string());
-        });
+        self.cred.set(Location::Spoc, token.to_string());
         Ok(())
     }
 }
