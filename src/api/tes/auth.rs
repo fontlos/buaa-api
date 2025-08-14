@@ -16,9 +16,7 @@ impl super::TesApi {
         if res.url().as_str() == login_url {
             return Err(Error::auth_expired(Location::Sso));
         }
-        self.cred.update(|c| {
-            c.refresh(Location::Sso);
-        });
+        self.cred.refresh(Location::Sso);
         Ok(())
     }
 }

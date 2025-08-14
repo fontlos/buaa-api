@@ -24,9 +24,7 @@ impl super::BoyaApi {
             .and_then(|t| if t.0 == "token" { Some(t.1) } else { None })
             .ok_or_else(|| Error::server("[Boya] Login failed. No token"))?;
 
-        self.cred.update(|c| {
-            c.set(Location::Boya, token.to_string());
-        });
+        self.cred.set(Location::Boya, token.to_string());
         Ok(())
     }
 }

@@ -55,10 +55,7 @@ impl super::CloudApi {
                         return Err(Error::server("[Cloud] Login failed. No token"));
                     }
                 };
-            self.cred.update(|c| {
-                // TODO: 我们先默认十分钟过期, 待测试
-                c.set(Location::Cloud, token);
-            });
+            self.cred.set(Location::Cloud, token);
             Ok(())
         } else {
             Err(Error::server("[Cloud] Login failed. Unknown error"))

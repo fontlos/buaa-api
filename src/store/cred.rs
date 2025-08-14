@@ -4,6 +4,7 @@ use std::fs::OpenOptions;
 use std::path::Path;
 
 use crate::api::Location;
+use crate::cell::AtomicCell;
 use crate::utils;
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -58,22 +59,28 @@ impl CredentialStore {
             _ => unreachable!(),
         }
     }
+}
 
-    pub(crate) fn set(&mut self, loc: Location, value: String) {
-        let now = utils::get_time_secs();
-        let (item, expiration) = self.item(loc);
-        item.expiration = now + expiration;
-        item.value = Some(value);
-        // 能用上 set 方法一定伴随着 Sso 的刷新
-        // 而且 Sso 一定不会用上 set 方法
-        // 所以这里可以放心的做一次 Sso 的刷新
-        self.sso.expiration = now + 5400;
+impl AtomicCell<CredentialStore> {
+    pub(crate) fn set(&self, loc: Location, value: String) {
+        self.update(|store| {
+            let now = utils::get_time_secs();
+            let (item, expiration) = store.item(loc);
+            item.expiration = now + expiration;
+            item.value = Some(value);
+            // 能用上 set 方法一定伴随着 Sso 的刷新
+            // 而且 Sso 一定不会用上 set 方法
+            // 所以这里可以放心的做一次 Sso 的刷新
+            store.sso.expiration = now + 5400;
+        });
     }
 
-    pub(crate) fn refresh(&mut self, loc: Location) {
-        let now = utils::get_time_secs();
-        let (item, expiration) = self.item(loc);
-        item.expiration = now + expiration;
+    pub(crate) fn refresh(&self, loc: Location) {
+        self.update(|store| {
+            let now = utils::get_time_secs();
+            let (item, expiration) = store.item(loc);
+            item.expiration = now + expiration;
+        });
     }
 }
 
