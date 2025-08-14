@@ -20,10 +20,7 @@ impl super::SrsApi {
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
                 self.cred.update(|c| {
-                    // TODO: 我们先默认十分钟过期, 待测试
-                    c.srs_token.set(t.to_string(), 600);
-                    // 刷新 SSO 时效
-                    c.sso.refresh(5400);
+                    c.set(Location::Srs, t.to_string());
                 });
                 Ok(())
             }

@@ -1,3 +1,5 @@
+use crate::api::Location;
+
 impl super::AppApi {
     pub async fn login(&self) -> crate::Result<()> {
         // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
@@ -10,8 +12,7 @@ impl super::AppApi {
             .await?;
 
         self.cred.update(|c| {
-            // 刷新 SSO 时效
-            c.sso.refresh(5400);
+            c.refresh(Location::Sso);
         });
 
         Ok(())

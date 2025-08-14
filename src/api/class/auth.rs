@@ -52,10 +52,7 @@ impl super::ClassApi {
         match serde_json::from_str::<_ClassLogin>(&res) {
             Ok(res) => {
                 self.cred.update(|c| {
-                    // 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
-                    c.class_token.set(res.result.id, 604800);
-                    // 刷新 SSO 时效
-                    c.sso.refresh(5400);
+                    c.set(Location::Class, res.result.id);
                 });
                 Ok(())
             }

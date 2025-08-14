@@ -57,9 +57,7 @@ impl super::CloudApi {
                 };
             self.cred.update(|c| {
                 // TODO: 我们先默认十分钟过期, 待测试
-                c.cloud_token.set(token, 600);
-                // 刷新 SSO 时效
-                c.sso.refresh(5400);
+                c.set(Location::Cloud, token);
             });
             Ok(())
         } else {

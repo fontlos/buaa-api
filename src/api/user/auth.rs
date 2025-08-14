@@ -1,3 +1,4 @@
+use crate::api::Location;
 use crate::utils;
 
 impl super::UserApi {
@@ -21,8 +22,7 @@ impl super::UserApi {
             .send()
             .await?;
         self.cred.update(|c| {
-            // 刷新 SSO 时效
-            c.sso.refresh(5400);
+            c.refresh(Location::Sso);
         });
         Ok(())
     }

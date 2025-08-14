@@ -25,10 +25,7 @@ impl super::BoyaApi {
             .ok_or_else(|| Error::server("[Boya] Login failed. No token"))?;
 
         self.cred.update(|c| {
-            // 经验证 15 分钟内过期, 我们这里用 10 分钟
-            c.boya_token.set(token.to_string(), 600);
-            // 刷新 SSO 时效
-            c.sso.refresh(5400);
+            c.set(Location::Boya, token.to_string());
         });
         Ok(())
     }
