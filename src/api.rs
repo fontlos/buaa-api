@@ -13,28 +13,49 @@ pub mod wifi;
 
 /// Marker type for Core Context, and it is the default API Group
 pub struct Core;
-/// Marker type for BUAA Academic Affairs System API Grouping
+/// Marker type for BUAA Academic Affairs System API Group
 pub struct Aas;
-/// Marker type for BUAA App API Grouping
+/// Marker type for BUAA App API Group
 pub struct App;
-/// Marker type for BUAA Boya Course API Grouping
+/// Marker type for BUAA Boya Course API Group
 pub struct Boya;
-/// Marker type for BUAA Smart Classroom API Grouping
+/// Marker type for BUAA Smart Classroom API Group
 pub struct Class;
-/// Marker type for BUAA Cloud Disk API Grouping
+/// Marker type for BUAA Cloud Disk API Group
 pub struct Cloud;
-/// Marker type for BUAA Spoc Platform API Grouping
+/// Marker type for BUAA Spoc Platform API Group
 pub struct Spoc;
-/// Marker type for BUAA Undergraduate & Graduate Student Course Registration System API Grouping
+/// Marker type for BUAA Undergraduate & Graduate Student Course Registration System API Group
 pub struct Srs;
-/// Marker type for BUAA SSO API Grouping
+/// Marker type for BUAA SSO API Group
 pub struct Sso;
-/// Marker type for BUAA Teacher Evaluation System API Grouping
+/// Marker type for BUAA Teacher Evaluation System API Group
 pub struct Tes;
-/// Marker type for BUAA User Center API Grouping
+/// Marker type for BUAA User Center API Group
 pub struct User;
-/// Marker type for BUAA WiFi API Grouping
+/// Marker type for BUAA WiFi API Group
 pub struct Wifi;
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum Location {
+    Ass,
+    App,
+    Boya,
+    Class,
+    Cloud,
+    Spoc,
+    Srs,
+    Sso,
+    Tes,
+    User,
+    Wifi,
+}
+
+impl std::fmt::Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
 impl<G> crate::Context<G> {
     /// Obtains a type-state view for the specified API group
@@ -43,7 +64,9 @@ impl<G> crate::Context<G> {
     /// while sharing the same underlying context.
     ///
     /// # Safety
+    ///
     /// The cast is safe because:
+    ///
     /// 1. `PhantomData<G>` has no runtime representation
     /// 2. All context data is stored in `Arc`-wrapped fields
     /// 3. The original context remains accessible
@@ -100,26 +123,5 @@ impl crate::Context<Core> {
     /// Get BUAA WiFi API Group
     pub const fn wifi(&self) -> &crate::Context<Wifi> {
         self.api::<Wifi>()
-    }
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum Location {
-    Ass,
-    App,
-    Boya,
-    Class,
-    Cloud,
-    Spoc,
-    Srs,
-    Sso,
-    Tes,
-    User,
-    Wifi,
-}
-
-impl std::fmt::Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{:?}", self)
     }
 }
