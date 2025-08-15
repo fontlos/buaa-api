@@ -3,9 +3,8 @@ use crate::error::Error;
 
 impl super::SrsApi {
     pub async fn login(&self) -> crate::Result<()> {
-        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
         if self.cred.load().sso.is_expired() {
-            self.api::<crate::api::Core>().login().await?;
+            self.api::<crate::api::Sso>().login().await?;
         }
 
         let url = "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fbyxk.buaa.edu.cn%2Fxsxk%2Fauth%2Fcas";
