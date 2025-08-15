@@ -47,7 +47,6 @@ impl super::BoyaApi {
     /// - Query: `{}`
     pub async fn universal_request(&self, url: &str, query: &str) -> crate::Result<String> {
         let cred = &self.cred.load().boya_token;
-        // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
         if cred.is_expired() {
             self.login().await?;
         }
