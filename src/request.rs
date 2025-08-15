@@ -18,15 +18,3 @@ pub(crate) fn client<C: reqwest::cookie::CookieStore + 'static>(cookies: Arc<C>)
         .build()
         .unwrap()
 }
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum LoginPolicy {
-    Manual,
-    Auto,
-}
-
-impl LoginPolicy {
-    pub fn is_auto(&self) -> bool {
-        matches!(self, LoginPolicy::Auto)
-    }
-}

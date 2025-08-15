@@ -12,7 +12,7 @@ impl super::ClassApi {
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
         // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
-        if self.policy.load().is_auto() && self.cred.load().class_token.is_expired() {
+        if self.cred.load().class_token.is_expired() {
             self.login().await?;
         }
         let cred = self.cred.load();
@@ -37,7 +37,7 @@ impl super::ClassApi {
     /// - Input: Course ID, from [ClassCourse]
     pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
         // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
-        if self.policy.load().is_auto() && self.cred.load().class_token.is_expired() {
+        if self.cred.load().class_token.is_expired() {
             self.login().await?;
         }
         let cred = self.cred.load();
@@ -62,7 +62,7 @@ impl super::ClassApi {
     /// - Input: Schedule ID, from [ClassSchedule]
     pub async fn checkin(&self, id: &str) -> crate::Result<Response> {
         // 因为我们可以知道 Token 是否过期, 我们这里只完成保守的刷新, 仅在 Token 超出我们预期时刷新 Token
-        if self.policy.load().is_auto() && self.cred.load().class_token.is_expired() {
+        if self.cred.load().class_token.is_expired() {
             self.login().await?;
         }
         let cred = self.cred.load();

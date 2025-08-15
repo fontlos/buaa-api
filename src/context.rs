@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::request::{Client, LoginPolicy, client};
+use crate::request::{Client, client};
 use crate::store::cookies::AtomicCookieStore;
 use crate::store::cred::CredentialStore;
 use crate::{api::Core, cell::AtomicCell};
@@ -13,7 +13,6 @@ pub struct Context<G = Core> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<AtomicCookieStore>,
     pub(crate) cred: AtomicCell<CredentialStore>,
-    pub(crate) policy: AtomicCell<LoginPolicy>,
     _marker: PhantomData<G>,
 }
 
@@ -42,7 +41,6 @@ impl Context {
             client,
             cookies,
             cred: AtomicCell::new(CredentialStore::default()),
-            policy: AtomicCell::new(LoginPolicy::Auto),
             _marker: PhantomData,
         }
     }
@@ -69,7 +67,6 @@ impl Context {
             client,
             cookies,
             cred: AtomicCell::new(cred),
-            policy: AtomicCell::new(LoginPolicy::Auto),
             _marker: PhantomData,
         }
     }
@@ -136,10 +133,6 @@ impl Context {
 
     pub fn set_cred(&self, cred: CredentialStore) {
         self.cred.store(cred);
-    }
-
-    pub fn set_policy(&self, policy: LoginPolicy) {
-        self.policy.store(policy);
     }
 
     pub fn get_cookies(&self) -> &AtomicCookieStore {
