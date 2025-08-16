@@ -2,10 +2,18 @@ use serde::{Deserialize, Serialize};
 
 use std::fs::OpenOptions;
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
-use crate::cell::AtomicCell;
+use crate::cell::{AtomicCell, AtomicType};
 use crate::utils;
+
+impl AtomicType for AtomicU64 {
+    type Wrapped = u64;
+    fn store(&self, value: u64, order: Ordering) {
+        self.store(value, order);
+    }
+}
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialStore {
@@ -66,20 +74,20 @@ impl AtomicCell<CredentialStore> {
         self.update(|store| {
             let now = utils::get_time_secs();
             let (item, expiration) = store.item(loc);
-            item.expiration = now + expiration;
+            item.expiration.store(now + expiration, Ordering::Relaxed);
             item.value = Some(value);
             // 能用上 set 方法一定伴随着 Sso 的刷新
             // 而且 Sso 一定不会用上 set 方法
             // 所以这里可以放心的做一次 Sso 的刷新
-            store.sso.expiration = now + 5400;
+            store.sso.expiration.store(now + 5400, Ordering::Relaxed);
         });
     }
 
     pub(crate) fn refresh(&self, loc: Location) {
-        self.update(|store| {
+        self.update_atomic(|store| {
             let now = utils::get_time_secs();
             let (item, expiration) = store.item(loc);
-            item.expiration = now + expiration;
+            (&item.expiration, now + expiration)
         });
     }
 }
@@ -87,7 +95,7 @@ impl AtomicCell<CredentialStore> {
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialItem {
     value: Option<String>,
-    expiration: u64,
+    expiration: AtomicU64,
 }
 
 impl CredentialItem {
@@ -96,6 +104,6 @@ impl CredentialItem {
     }
 
     pub fn is_expired(&self) -> bool {
-        self.expiration < utils::get_time_secs()
+        self.expiration.load(Ordering::Relaxed) < utils::get_time_secs()
     }
 }
