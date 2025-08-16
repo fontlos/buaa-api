@@ -1,4 +1,3 @@
-use rand::Rng;
 use serde::Deserialize;
 
 use crate::api::Location;
@@ -65,7 +64,7 @@ impl super::BoyaApi {
         let sk = rsa.encrypt_to_string(sha1_query.as_bytes());
 
         // AES Key, 使用十六位随机字符
-        let aes_key = gen_rand_str(16);
+        let aes_key = utils::gen_rand_str(16);
         let aes_key = aes_key.as_bytes();
         // ak 参数, rsa aes_key
         let ak = rsa.encrypt_to_string(aes_key);
@@ -110,15 +109,4 @@ impl super::BoyaApi {
 
         Ok(res)
     }
-}
-
-fn gen_rand_str(size: u8) -> String {
-    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let mut rng = rand::rng();
-    (0..size)
-        .map(|_| {
-            let idx = rng.random_range(0..CHARSET.len());
-            CHARSET[idx] as char
-        })
-        .collect()
 }
