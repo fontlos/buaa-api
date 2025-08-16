@@ -1,3 +1,16 @@
+use rand::Rng;
+
+pub(crate) fn gen_rand_str(size: u8) -> String {
+    const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let mut rng = rand::rng();
+    (0..size)
+        .map(|_| {
+            let idx = rng.random_range(0..CHARSET.len());
+            CHARSET[idx] as char
+        })
+        .collect()
+}
+
 // 用于匹配一个字符串中的某个标签对之间的内容
 pub(crate) fn get_value_by_lable<'a>(text: &'a str, right: &str, left: &str) -> Option<&'a str> {
     if let Some(start) = text.find(right) {
