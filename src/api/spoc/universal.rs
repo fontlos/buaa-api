@@ -1,4 +1,3 @@
-use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use serde::Deserialize;
 
 use crate::api::Location;
@@ -28,12 +27,12 @@ impl super::SpocApi {
             "param": crypto::aes::aes_encrypt_cbc(query.as_bytes(), ase_key, ase_iv)
         });
         let token = format!("Inco-{token}");
-        let mut header = HeaderMap::new();
-        header.insert(
-            HeaderName::from_bytes(b"Token").unwrap(),
-            HeaderValue::from_str(&token).unwrap(),
-        );
-        let res = self.post(url).headers(header).json(&body).send().await?;
+        let res = self
+            .post(url)
+            .header("Token", &token)
+            .json(&body)
+            .send()
+            .await?;
         let res = res.text().await?;
         let status = serde_json::from_str::<SpocState>(&res)?;
         if status.code != 200 {
