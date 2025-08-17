@@ -1,10 +1,9 @@
 //! # BUAA Cloud Disk API
 
-mod auth;
+mod core;
 mod data;
 mod download;
 mod opt;
-mod universal;
 
 /// # BUAA Cloud Disk API Group
 ///
