@@ -1,10 +1,9 @@
 //! # BUAA Boya Course API
 
-mod auth;
+mod core;
 mod data;
 mod opt;
 mod query;
-mod universal;
 
 pub use data::*;
 

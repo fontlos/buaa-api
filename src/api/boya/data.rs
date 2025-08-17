@@ -4,6 +4,12 @@ use time::PrimitiveDateTime;
 
 use crate::utils::deserialize_datatime;
 
+#[derive(Deserialize)]
+pub(super) struct _BoyaStatus {
+    pub status: String,
+    pub errmsg: String,
+}
+
 // ====================
 // 用于 query_courses
 // ====================
