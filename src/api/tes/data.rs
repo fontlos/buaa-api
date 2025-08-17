@@ -346,10 +346,10 @@ impl<'a> EvaluationCompleted<'a> {
 
 impl<'a> EvaluationCompleted<'a> {
     pub(super) fn rwid(&self) -> &str {
-        &self.content[0].rwid
+        self.content[0].rwid
     }
     pub(super) fn wjid(&self) -> &str {
-        &self.content[0].wjid
+        self.content[0].wjid
     }
     pub fn score(&self) -> f32 {
         self.content[0].score

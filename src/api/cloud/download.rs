@@ -12,7 +12,7 @@ impl super::CloudApi {
             "docid": item.id,
             "authtype": "QUERY_STRING",
         });
-        let text = self.universal_request(&url, &data).await?;
+        let text = self.universal_request(url, &data).await?;
         let res = match utils::get_value_by_lable(&text, ",\"", "\"") {
             Some(url) => url,
             None => {
@@ -42,7 +42,7 @@ impl super::CloudApi {
             "name": "download.zip",
             "doc": ids
         });
-        let text = self.universal_request(&url, &data).await?;
+        let text = self.universal_request(url, &data).await?;
         let raw_url = match utils::get_value_by_lable(&text, "address\":\"", "\"") {
             Some(url) => url,
             None => {
@@ -56,7 +56,7 @@ impl super::CloudApi {
             None => return Err(Error::auth_expired(Location::Cloud)),
         };
 
-        let url = format!("{}?token={}", raw_url, cred);
+        let url = format!("{raw_url}?token={cred}");
 
         Ok(url)
     }
