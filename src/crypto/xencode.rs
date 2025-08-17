@@ -4,7 +4,7 @@ use base64::engine::{Engine, GeneralPurpose, GeneralPurposeConfig};
 /// Convert the string byte array every four bits and merge it into a new array
 fn str2vec(a: &[u8]) -> Vec<u32> {
     let c = a.len();
-    let mut v = Vec::with_capacity((c + 3) / 4); // 预分配
+    let mut v = Vec::with_capacity(c.div_ceil(4)); // 预分配
     for i in (0..c).step_by(4) {
         let mut value: u32 = 0;
         if i < c {

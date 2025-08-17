@@ -27,7 +27,7 @@ impl super::CloudApi {
 
     /// Return All Type Root directory
     pub async fn get_all_dir(&self) -> crate::Result<Vec<CloudRootDir>> {
-        Ok(self.get_root_dir("").await?)
+        self.get_root_dir("").await
     }
 
     /// Return User Root directory ID
