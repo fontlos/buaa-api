@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 use crate::api::Location;
 use crate::error::Error;
 
@@ -68,5 +70,14 @@ impl super::CloudApi {
         }
         cred.value()
             .ok_or_else(|| Error::auth_expired(Location::Cloud))
+    }
+
+    pub async fn universal_request(&self, url: &str, data: &Value) -> crate::Result<String> {
+        let token = self.token().await?;
+
+        let res = self.post(url).bearer_auth(token).json(data).send().await?;
+        let text = res.text().await?;
+
+        Ok(text)
     }
 }
