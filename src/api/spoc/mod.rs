@@ -1,9 +1,8 @@
 //! # BUAA Spoc Platform API
 
-mod auth;
+mod core;
 mod data;
 mod opt;
-mod universal;
 
 pub use data::*;
 

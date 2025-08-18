@@ -1,16 +1,32 @@
-use serde::Deserialize;
-
 use crate::api::Location;
 use crate::crypto;
 use crate::error::Error;
 
-#[derive(Deserialize)]
-struct SpocState {
-    code: u32,
-    msg: Option<String>,
-}
-
 impl super::SpocApi {
+    /// # Spoc Login
+    pub async fn login(&self) -> crate::Result<()> {
+        if self.cred.load().sso.is_expired() {
+            self.api::<crate::api::Sso>().login().await?;
+        }
+
+        let res = self
+            .get("https://spoc.buaa.edu.cn/spocnewht/cas")
+            .send()
+            .await?;
+        if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
+            return Err(Error::auth_expired(Location::Sso));
+        }
+        let mut query = res.url().query_pairs();
+        let token = query
+            .next()
+            .and_then(|t| if t.0 == "token" { Some(t.1) } else { None })
+            .ok_or_else(|| Error::server("[Spoc] Login failed. No token"))?;
+        // 再次调用 next 获取 refreshToken, 但我们用不着, 使用我们自己的机制刷新登陆状态
+
+        self.cred.set(Location::Spoc, token.to_string());
+        Ok(())
+    }
+
     pub async fn universal_request(&self, url: &str, query: &str) -> crate::Result<String> {
         if self.cred.load().spoc_token.is_expired() {
             self.login().await?;
@@ -34,7 +50,7 @@ impl super::SpocApi {
             .send()
             .await?;
         let res = res.text().await?;
-        let status = serde_json::from_str::<SpocState>(&res)?;
+        let status = serde_json::from_str::<super::_SpocState>(&res)?;
         if status.code != 200 {
             return Err(Error::server(format!(
                 "[Spoc] Response: {}",

@@ -3,6 +3,12 @@ use serde_json::Value;
 use time::{PrimitiveDateTime, Weekday, format_description};
 
 #[derive(Deserialize)]
+pub(super) struct _SpocState {
+    pub code: u32,
+    pub msg: Option<String>,
+}
+
+#[derive(Deserialize)]
 pub(super) struct _SpocRes1 {
     pub content: SpocWeek,
 }
