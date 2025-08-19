@@ -1,7 +1,5 @@
-use reqwest::Response;
+use serde_json::Value;
 
-use crate::api::Location;
-use crate::error::Error;
 use crate::utils;
 
 use super::{_ClassCourses, _ClassSchedules, ClassCourse, ClassSchedule};
@@ -11,75 +9,30 @@ impl super::ClassApi {
     /// - Input: Term ID
     ///     - Example: `202320242`` is 2024 spring term, `202420251` is 2024 autumn term
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
-        if self.cred.load().class_token.is_expired() {
-            self.login().await?;
-        }
-        let cred = self.cred.load();
-        let token = match cred.class_token.value() {
-            Some(t) => t,
-            None => {
-                return Err(Error::auth_expired(Location::Class));
-            }
-        };
-        let query = [("user_type", "1"), ("id", token), ("xq_code", id)];
-        let res = self
-            .post("https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action")
-            .query(&query)
-            .send()
-            .await?
-            .json::<_ClassCourses>()
-            .await?;
+        let url = "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action";
+        let query = [("user_type", "1"), ("xq_code", id)];
+        let res: _ClassCourses = self.universal_request(url, &query).await?;
         Ok(res.result)
     }
 
     /// # Smart Classroom query one course's all schedule
     /// - Input: Course ID, from [ClassCourse]
     pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
-        if self.cred.load().class_token.is_expired() {
-            self.login().await?;
-        }
-        let cred = self.cred.load();
-        let token = match cred.class_token.value() {
-            Some(t) => t.as_str(),
-            None => {
-                return Err(Error::auth_expired(Location::Class));
-            }
-        };
-        let query = [("id", token), ("courseId", id)];
-        let res = self
-            .post("https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action")
-            .query(&query)
-            .send()
-            .await?
-            .json::<_ClassSchedules>()
-            .await?;
+        let url = "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action";
+        let query = [("courseId", id)];
+        let res: _ClassSchedules = self.universal_request(url, &query).await?;
         Ok(res.result)
     }
 
     /// # Smart Classroom checkin schedule
     /// - Input: Schedule ID, from [ClassSchedule]
-    pub async fn checkin(&self, id: &str) -> crate::Result<Response> {
-        if self.cred.load().class_token.is_expired() {
-            self.login().await?;
-        }
-        let cred = self.cred.load();
-        let token = match cred.class_token.value() {
-            Some(t) => t,
-            None => {
-                return Err(Error::auth_expired(Location::Class));
-            }
-        };
-        let time = utils::get_time_millis();
+    pub async fn checkin(&self, id: &str) -> crate::Result<Value> {
+        let url = "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action";
         let query = [
             ("courseSchedId", id),
-            ("timestamp", &time.to_string()),
-            ("id", token),
+            ("timestamp", &utils::get_time_millis().to_string()),
         ];
-        let res = self
-            .post("http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action")
-            .query(&query)
-            .send()
-            .await?;
+        let res: Value = self.universal_request(url, &query).await?;
         Ok(res)
     }
 }
@@ -94,12 +47,9 @@ mod tests {
         let context = Context::with_auth("./data");
 
         let class = context.class();
-        // class.login().await.unwrap();
 
         let res = class.query_course("202420252").await.unwrap();
         println!("{:#?}", res);
-
-        // context.save_auth("./data");
     }
 
     #[tokio::test]
@@ -107,7 +57,6 @@ mod tests {
         let context = Context::with_auth("./data");
 
         let class = context.class();
-        class.login().await.unwrap();
 
         let res = class.query_schedule("64668").await.unwrap();
         println!("{:#?}", res);
@@ -118,9 +67,8 @@ mod tests {
         let context = Context::with_auth("./data");
 
         let class = context.class();
-        class.login().await.unwrap();
 
         let res = class.checkin("2090542").await.unwrap();
-        println!("{}", res.text().await.unwrap());
+        println!("{}", res);
     }
 }
