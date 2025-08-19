@@ -4,16 +4,18 @@ use time::PrimitiveDateTime;
 
 use crate::utils::deserialize_datatime;
 
+// TODO: 尝试通过泛型来将这个整合到每个结构中, 避免二次解析
 #[derive(Deserialize)]
-pub(super) struct _BoyaStatus {
-    pub status: String,
-    pub errmsg: String,
+pub(super) struct _BoyaStatus<'a> {
+    pub status: &'a str,
+    pub errmsg: &'a str,
 }
 
 // ====================
 // 用于 query_courses
 // ====================
 
+// TODO: 手动实现 Deserialize 来进一步封装中间结构体
 #[derive(Deserialize)]
 pub(super) struct _BoyaCourses {
     #[serde(deserialize_with = "deserialize_boya_courses")]
@@ -26,12 +28,12 @@ where
     D: Deserializer<'de>,
 {
     #[derive(Deserialize)]
-    struct Intermediate {
+    struct I {
         content: Vec<BoyaCourse>,
     }
 
-    let intermediate = Intermediate::deserialize(deserializer)?;
-    Ok(intermediate.content)
+    let i = I::deserialize(deserializer)?;
+    Ok(i.content)
 }
 
 #[derive(Debug, Deserialize)]
@@ -161,17 +163,17 @@ where
     D: Deserializer<'de>,
 {
     #[derive(Deserialize)]
-    struct Intermediate {
+    struct I1 {
         #[serde(rename = "courseList")]
-        content: Vec<IntermediateBoyaSelected>,
+        content: Vec<I2>,
     }
     #[derive(Deserialize)]
-    struct IntermediateBoyaSelected {
+    struct I2 {
         #[serde(rename = "courseInfo")]
         info: BoyaSelected,
     }
-    let intermediate = Intermediate::deserialize(deserializer)?;
-    let course_list = intermediate.content;
+    let i = I1::deserialize(deserializer)?;
+    let course_list = i.content;
 
     Ok(course_list.into_iter().map(|x| x.info).collect())
 }
@@ -211,19 +213,19 @@ where
     D: Deserializer<'de>,
 {
     #[derive(Deserialize)]
-    struct Intermediate {
-        statistical: IntermediateBoyaStatisticData,
+    struct I {
+        statistical: J,
     }
 
     #[derive(Deserialize)]
-    struct IntermediateBoyaStatisticData {
+    struct J {
         #[serde(rename = "60|博雅课程")]
         data: BoyaStatistic,
     }
 
-    let intermediate = Intermediate::deserialize(deserializer)?;
+    let i = I::deserialize(deserializer)?;
 
-    Ok(intermediate.statistical.data)
+    Ok(i.statistical.data)
 }
 
 /// Boya course's Statistics
@@ -243,7 +245,10 @@ pub struct BoyaStatistic {
     pub safety: BoyaAssessment,
 }
 
-/// Boya course's assessment. Includes required quantity, selected quantity, completed quantity, incomplete quantity, and failed quantity
+/// Boya course's assessment.
+/// Includes required quantity,
+/// selected quantity, completed quantity,
+/// incomplete quantity, and failed quantity
 #[derive(Debug, Deserialize)]
 pub struct BoyaAssessment {
     #[serde(rename = "assessmentCount")]
@@ -337,52 +342,49 @@ where
 }
 
 // ====================
-// 用于 attend_course
+// 用于 sign_course
 // ====================
 
-pub enum BoyaAttendType {
-    Checkin = 1,
-    Checkout = 2,
-}
-
 #[derive(Deserialize)]
-pub(super) struct _BoyaAttend {
-    pub data: _BoyaAttendData,
+pub(super) struct _BoyaSign {
+    #[serde(deserialize_with = "deserialize_boya_sign")]
+    pub data: BoyaSign,
 }
 
-#[derive(Deserialize)]
-pub(super) struct _BoyaAttendData {
-    #[serde(deserialize_with = "deserialize_boya_attend")]
-    #[serde(rename = "signInfo")]
-    pub info: BoyaAttend,
-}
-
-fn deserialize_boya_attend<'de, D>(deserializer: D) -> Result<BoyaAttend, D::Error>
+fn deserialize_boya_sign<'de, D>(deserializer: D) -> Result<BoyaSign, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value: String = Deserialize::deserialize(deserializer)?;
-    let value = value.replace("\\\"", "\"");
-    match serde_json::from_str::<BoyaAttend>(&value) {
+    #[derive(Deserialize)]
+    struct I {
+        #[serde(rename = "signInfo")]
+        info: String,
+    }
+
+    let i = I::deserialize(deserializer)?;
+    let i = i.info.replace("\\\"", "\"");
+    match serde_json::from_str::<BoyaSign>(&i) {
         Ok(config) => Ok(config),
         Err(_) => Err(serde::de::Error::custom("failed to deserialize SignInfo")),
     }
 }
 
 #[derive(Debug, Deserialize)]
-pub struct BoyaAttend {
+pub struct BoyaSign {
     #[serde(rename = "signIn")]
-    pub checkin: SignInfo,
+    pub checkin: BoyaSignInfo,
     #[serde(rename = "signOut")]
-    pub checkout: SignInfo,
+    pub checkout: BoyaSignInfo,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SignInfo {
+pub struct BoyaSignInfo {
+    /// longitude
     #[serde(rename = "lng")]
-    pub longitude: f64,
+    pub lon: f64,
+    /// latitude
     #[serde(rename = "lat")]
-    pub latitude: f64,
+    pub lat: f64,
     #[serde(rename = "inSignArea")]
-    pub is_success: bool,
+    pub is_ok: bool,
 }
