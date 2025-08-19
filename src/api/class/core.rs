@@ -1,3 +1,6 @@
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+
 use crate::api::Location;
 use crate::error::Error;
 use crate::{crypto, utils};
@@ -55,5 +58,34 @@ impl super::ClassApi {
             }
             Err(_) => Err(Error::server("[Class] Login failed. No token")),
         }
+    }
+
+    /// Universal request for class API
+    ///
+    /// **Note**: `token` parameter is already included
+    pub async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
+    where
+        Q: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
+        if self.cred.load().class_token.is_expired() {
+            self.login().await?;
+        }
+        let cred = self.cred.load();
+        let token = match cred.class_token.value() {
+            Some(t) => t,
+            None => {
+                return Err(Error::auth_expired(Location::Class));
+            }
+        };
+        // 在 URL 中硬编码 token
+        let res = self
+            .post(format!("{url}?id={token}"))
+            .query(&query)
+            .send()
+            .await?
+            .json::<T>()
+            .await?;
+        Ok(res)
     }
 }
