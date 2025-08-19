@@ -1,4 +1,4 @@
-use super::data::{_BoyaAttend, BoyaAttend, BoyaAttendType, BoyaCoordinate};
+use super::data::{_BoyaSign, BoyaCoordinate, BoyaSign};
 
 impl super::BoyaApi {
     /// # Select Course
@@ -25,14 +25,15 @@ impl super::BoyaApi {
         Ok(res)
     }
 
+    // 不再公开, 因为本来也只是用于辅助签到和签退, 没有其他用途
     // 这个接口只在 Android UA 时才能找到, 但不妨碍使用, 在浏览器调试时可以尝试修改 UA
     // TODO: 也许我可以考虑全局使用 Android UA 避免一些痕迹
-    pub async fn attend_course(
+    async fn sign_course(
         &self,
         id: u32,
         coordinate: &BoyaCoordinate,
-        attend_type: BoyaAttendType,
-    ) -> crate::Result<BoyaAttend> {
+        s_type: u8,
+    ) -> crate::Result<BoyaSign> {
         use rand::Rng;
         let mut rng = rand::rng();
         let offset = 1e-5;
@@ -40,35 +41,34 @@ impl super::BoyaApi {
         let lng_offset = rng.random_range(-offset..offset);
         let lat_offset = rng.random_range(-offset..offset);
 
+        // signType 1 为签到, 2 为签退
         let query = format!(
             "{{\"courseId\":{},\"signLat\":{},\"signLng\":{},\"signType\":{}}}",
             id,
             coordinate.latitude + lat_offset,
             coordinate.longitude + lng_offset,
-            attend_type as u8
+            s_type
         );
         let url = "https://bykc.buaa.edu.cn/sscv/signCourseByUser";
         let res = self.universal_request(url, &query).await?;
-        let res = serde_json::from_str::<_BoyaAttend>(&res)?;
-        Ok(res.data.info)
+        let res = serde_json::from_str::<_BoyaSign>(&res)?;
+        Ok(res.data)
     }
 
     pub async fn checkin_course(
         &self,
         id: u32,
         coordinate: &BoyaCoordinate,
-    ) -> crate::Result<BoyaAttend> {
-        self.attend_course(id, coordinate, BoyaAttendType::Checkin)
-            .await
+    ) -> crate::Result<BoyaSign> {
+        self.sign_course(id, coordinate, 1).await
     }
 
     pub async fn checkout_course(
         &self,
         id: u32,
         coordinate: &BoyaCoordinate,
-    ) -> crate::Result<BoyaAttend> {
-        self.attend_course(id, coordinate, BoyaAttendType::Checkout)
-            .await
+    ) -> crate::Result<BoyaSign> {
+        self.sign_course(id, coordinate, 2).await
     }
 }
 
