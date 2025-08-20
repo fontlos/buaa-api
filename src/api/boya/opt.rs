@@ -106,7 +106,7 @@ mod tests {
         let boya = context.boya();
         let id = 7774;
 
-        let rule = boya.query_attend_rule(id).await.unwrap().unwrap();
+        let rule = boya.query_sign_rule(id).await.unwrap().unwrap();
         println!("{:?}", rule);
 
         let time = crate::utils::get_datatime();
