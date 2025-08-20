@@ -1,7 +1,7 @@
 use time::Date;
 
 use super::{
-    _BoyaCourses, _BoyaDetail, _BoyaSelecteds, _BoyaStatistics, BoyaAttendRule, BoyaCourse,
+    _BoyaCourses, _BoyaDetail, _BoyaSelecteds, _BoyaStatistics, BoyaSignRule, BoyaCourse,
     BoyaSelected, BoyaStatistic,
 };
 
@@ -17,13 +17,13 @@ impl super::BoyaApi {
         Ok(res.data)
     }
 
-    // 查询出席规则, 包括签到签退的时间地点
-    pub async fn query_attend_rule(&self, id: u32) -> crate::Result<Option<BoyaAttendRule>> {
+    // 查询签到规则, 包括签到签退的时间地点
+    pub async fn query_sign_rule(&self, id: u32) -> crate::Result<Option<BoyaSignRule>> {
         let query = format!("{{\"id\":{id}}}");
         let url = "https://bykc.buaa.edu.cn/sscv/queryCourseById";
         let res = self.universal_request(url, &query).await?;
         let res = serde_json::from_str::<_BoyaDetail>(&res)?;
-        Ok(res.data.rule)
+        Ok(res.data)
     }
 
     /// # Query Selected Courses
@@ -81,7 +81,7 @@ mod tests {
 
         let boya = context.boya();
 
-        let res = boya.query_attend_rule(7882).await.unwrap();
+        let res = boya.query_sign_rule(7882).await.unwrap();
         println!("{:?}", res);
     }
 

@@ -269,23 +269,40 @@ pub struct BoyaAssessment {
 
 #[derive(Deserialize)]
 pub(super) struct _BoyaDetail {
-    pub data: _BoyaDetailData,
+    #[serde(deserialize_with = "deserialize_boya_sign_rule")]
+    pub data: Option<BoyaSignRule>,
+}
+
+fn deserialize_boya_sign_rule<'de, D>(
+    deserializer: D,
+) -> Result<Option<BoyaSignRule>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    struct I {
+        // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
+        // #[serde(rename = "courseDesc")]
+        // pub description: String,
+
+        // 同时用于签到签退的信息
+        #[serde(rename = "courseSignConfig")]
+        rule: String,
+    }
+
+    let i = I::deserialize(deserializer)?;
+    if i.rule.is_empty() {
+        return Ok(None);
+    }
+    let rule = i.rule.replace("\\\"", "\"");
+    match serde_json::from_str::<BoyaSignRule>(&rule) {
+        Ok(r) => Ok(Some(r)),
+        Err(_) => Ok(None),
+    }
 }
 
 #[derive(Debug, Deserialize)]
-pub(super) struct _BoyaDetailData {
-    // 这玩意几乎啥信息没有, 主办方瞎**填的, 不解析了
-    // #[serde(rename = "courseDesc")]
-    // pub description: String,
-
-    // 同时用于签到签退的信息
-    #[serde(deserialize_with = "deserialize_boya_attendance_rule")]
-    #[serde(rename = "courseSignConfig")]
-    pub rule: Option<BoyaAttendRule>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct BoyaAttendRule {
+pub struct BoyaSignRule {
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "signStartDate")]
     pub checkin_start: PrimitiveDateTime,
@@ -301,23 +318,6 @@ pub struct BoyaAttendRule {
     #[serde(deserialize_with = "deserialize_boya_sign_coordinate")]
     #[serde(rename = "signPointList")]
     pub coordinate: BoyaCoordinate,
-}
-
-fn deserialize_boya_attendance_rule<'de, D>(
-    deserializer: D,
-) -> Result<Option<BoyaAttendRule>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value: String = Deserialize::deserialize(deserializer)?;
-    if value.is_empty() {
-        return Ok(None);
-    }
-    let value = value.replace("\\\"", "\"");
-    match serde_json::from_str::<BoyaAttendRule>(&value) {
-        Ok(config) => Ok(Some(config)),
-        Err(_) => Ok(None),
-    }
 }
 
 #[derive(Debug, Deserialize)]
