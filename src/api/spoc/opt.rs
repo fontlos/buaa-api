@@ -1,4 +1,4 @@
-use super::{_SpocRes1, _SpocRes2, SpocSchedule, SpocWeek};
+use super::{_SpocRes, SpocSchedule, SpocWeek};
 
 impl super::SpocApi {
     /// Get current week
@@ -7,7 +7,7 @@ impl super::SpocApi {
         let query = r#"{"sqlid":"17275975753144ed8d6fe15425677f752c936d97de1bab76"}"#;
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryOne";
         let res = self.universal_request(url, query).await?;
-        let res = serde_json::from_str::<_SpocRes1>(&res)?;
+        let res = serde_json::from_str::<_SpocRes<SpocWeek>>(&res)?;
         Ok(res.content)
     }
 
@@ -19,7 +19,7 @@ impl super::SpocApi {
         );
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryList";
         let res = self.universal_request(url, &query).await?;
-        let res = serde_json::from_str::<_SpocRes2>(&res)?;
+        let res = serde_json::from_str::<_SpocRes<Vec<SpocSchedule>>>(&res)?;
         Ok(res.content)
     }
 }
