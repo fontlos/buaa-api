@@ -9,9 +9,13 @@ pub(super) struct _SpocState {
 }
 
 #[derive(Deserialize)]
-pub(super) struct _SpocRes1 {
-    pub content: SpocWeek,
+pub(super) struct _SpocRes<T> {
+    pub content: T,
 }
+
+// ====================
+// 用于 get_week
+// ====================
 
 /// For `get_week_schedule`, you can get it through `get_week`, and manual builds are generally not recommended
 #[derive(Debug, Deserialize)]
@@ -33,10 +37,9 @@ where
     Ok((s.next().unwrap().to_string(), s.next().unwrap().to_string()))
 }
 
-#[derive(Deserialize)]
-pub(super) struct _SpocRes2 {
-    pub content: Vec<SpocSchedule>,
-}
+// ====================
+// 用于 get_week_schedule
+// ====================
 
 #[derive(Debug, Deserialize)]
 pub struct SpocSchedule {
