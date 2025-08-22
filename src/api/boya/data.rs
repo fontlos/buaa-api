@@ -163,16 +163,16 @@ where
     D: Deserializer<'de>,
 {
     #[derive(Deserialize)]
-    struct I1 {
+    struct I {
         #[serde(rename = "courseList")]
-        content: Vec<I2>,
+        content: Vec<J>,
     }
     #[derive(Deserialize)]
-    struct I2 {
+    struct J {
         #[serde(rename = "courseInfo")]
         info: BoyaSelected,
     }
-    let i = I1::deserialize(deserializer)?;
+    let i = I::deserialize(deserializer)?;
     let course_list = i.content;
 
     Ok(course_list.into_iter().map(|x| x.info).collect())
@@ -273,9 +273,7 @@ pub(super) struct _BoyaDetail {
     pub data: Option<BoyaSignRule>,
 }
 
-fn deserialize_boya_sign_rule<'de, D>(
-    deserializer: D,
-) -> Result<Option<BoyaSignRule>, D::Error>
+fn deserialize_boya_sign_rule<'de, D>(deserializer: D) -> Result<Option<BoyaSignRule>, D::Error>
 where
     D: Deserializer<'de>,
 {

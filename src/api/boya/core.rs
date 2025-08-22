@@ -1,3 +1,5 @@
+use serde::Serialize;
+
 use crate::api::Location;
 use crate::error::Error;
 use crate::{crypto, utils};
@@ -61,7 +63,10 @@ impl super::BoyaApi {
     /// `getUserProfile` API
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
     /// - Query: `{}`
-    pub async fn universal_request(&self, url: &str, query: &str) -> crate::Result<String> {
+    pub async fn universal_request<Q>(&self, url: &str, query: &Q) -> crate::Result<String>
+    where
+        Q: Serialize + ?Sized,
+    {
         let cred = &self.cred.load().boya_token;
         if cred.is_expired() {
             self.login().await?;
@@ -75,8 +80,10 @@ impl super::BoyaApi {
         // 初始化 RSA, 设置公钥
         let rsa = crypto::rsa::RsaPkcs1v15::from_pem(crate::consts::BOYA_RSA_KEY);
 
+        let query = serde_json::to_vec(query)?;
         // 这是查询参数, 然后被 sha1 处理
-        let sha1_query = crypto::sha1::sha1(query.as_bytes());
+        // TODO: 既然需要再次加密 sha1 结果, 那也许 sha1 可以直接返回字节数组
+        let sha1_query = crypto::sha1::sha1(&query);
         // sk 参数, rsa sha1_query
         let sk = rsa.encrypt_to_string(sha1_query.as_bytes());
 
@@ -87,7 +94,7 @@ impl super::BoyaApi {
         let ak = rsa.encrypt_to_string(aes_key);
 
         // 请求的负载, 是使用 AES 加密的查询参数
-        let body = crypto::aes::aes_encrypt_ecb(query.as_bytes(), aes_key);
+        let body = crypto::aes::aes_encrypt_ecb(&query, aes_key);
         let time = utils::get_time_millis();
 
         // 获取 JSESSIONID
