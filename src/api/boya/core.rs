@@ -1,8 +1,11 @@
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 use crate::api::Location;
 use crate::error::Error;
 use crate::{crypto, utils};
+
+use super::{_BoyaData, _BoyaRes};
 
 impl super::BoyaApi {
     /// # Boya Login
@@ -32,11 +35,24 @@ impl super::BoyaApi {
 
     /// # Boya Universal Request API
     ///
-    /// ## Note
-    ///
-    /// You should use other existing Boya APIs first.
+    /// **Note**: You should use other existing APIs first.
+    /// Because of some limitations, you can only use `serde_json::Value` as a return value,
+    /// so if you really need additional APIs, open Issue or PR firstly
     ///
     /// If the API you need but is not implemented, you can extend it with this universal request API.
+    ///
+    /// ## Usage
+    ///
+    /// - Input:
+    ///     - URL: API URL
+    ///     - Query: Serialize JSON
+    /// - Output:
+    ///     - DeserializeOwned JSON
+    ///
+    ///
+    /// ## Example
+    ///
+    /// **Note**: Type of `T` is the `data` field in JSON response.
     ///
     /// Locate the following sections in the `app.js`(Windows UA)/`main.js`(Android UA) by search `setPublicKey` and set breakpoint to debug.
     ///
@@ -48,24 +64,26 @@ impl super::BoyaApi {
     /// ...
     /// ```
     ///
-    /// You can find `Query` in `w = JSON.stringify(x)`
+    /// You can find `query` in `w = JSON.stringify(x)`
     ///
-    /// ## Usage
+    /// And then for `getUserProfile` API
     ///
-    /// - Input:
-    ///     - URL: API URL
-    ///     - Query: JSON String for request
-    /// - Output:
-    ///     - JSON String for response
-    ///
-    /// ## Example
-    ///
-    /// `getUserProfile` API
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
     /// - Query: `{}`
-    pub async fn universal_request<Q>(&self, url: &str, query: &Q) -> crate::Result<String>
+    ///
+    /// ```
+    /// use serde_json::Value;
+    /// let url = "https://bykc.buaa.edu.cn/sscv/getUserProfile";
+    /// let query = serde_json::json!({});
+    /// let res: Value = self.universal_request::<_, Value>(&url, &query).await?;
+    /// ```
+    // TODO: 目前因为 _BoyaData 可见性需要如此约束
+    #[allow(private_bounds)]
+    pub async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
     where
         Q: Serialize + ?Sized,
+        T: DeserializeOwned,
+        _BoyaData<T>: DeserializeOwned,
     {
         let cred = &self.cred.load().boya_token;
         if cred.is_expired() {
@@ -112,25 +130,25 @@ impl super::BoyaApi {
         // 响应体被 AES 加密了, 并且两端有引号需要去掉
         let res = res.bytes().await?;
         let res = &res[1..res.len() - 1];
+        // TODO: 直接解密成字节数组然后解析成 Json
         let res = crypto::aes::aes_decrypt_ecb(res, aes_key);
 
-        // 检查状态
-        let status = serde_json::from_str::<super::_BoyaStatus>(&res)?;
-        if status.status == "98005399" {
+        let res = serde_json::from_str::<_BoyaRes<T>>(&res)?;
+        if res.status == "98005399" {
             // 刷新登录 Token 的操作无需在这里执行, 如果上面刷新了, 这里还能报这个状态码那应该不是 Token 的问题
             return Err(Error::auth_expired(Location::Boya));
         }
-        if status.status == "1" {
+        if res.status == "1" {
             // TODO 这个错误值得重新看一下是因为什么
-            return Err(Error::server(format!("[Boya] Response: {}", status.errmsg)));
+            return Err(Error::server(format!("[Boya] Response: {}", res.errmsg)));
         }
-        if status.status != "0" {
-            return Err(Error::server(format!("[Boya] Response: {}", status.errmsg)));
+        if res.status != "0" {
+            return Err(Error::server(format!("[Boya] Response: {}", res.errmsg)));
         }
 
         // 刷新 Token 时效
         self.cred.refresh(Location::Boya);
 
-        Ok(res)
+        Ok(res.data.0)
     }
 }
