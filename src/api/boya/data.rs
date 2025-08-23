@@ -1,39 +1,53 @@
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::PrimitiveDateTime;
 
 use crate::utils::deserialize_datatime;
 
-// TODO: 尝试通过泛型来将这个整合到每个结构中, 避免二次解析
-#[derive(Deserialize)]
-pub(super) struct _BoyaStatus<'a> {
-    pub status: &'a str,
-    pub errmsg: &'a str,
+#[derive(Debug, Deserialize)]
+pub(super) struct _BoyaRes<T>
+where
+    _BoyaData<T>: DeserializeOwned,
+{
+    pub status: String,
+    pub errmsg: String,
+    pub data: _BoyaData<T>,
+}
+
+// TODO: 这种设计严重限制了灵活性, 如果没法修改那就只能像原来那样多暴露几个中间类型了
+// 因为所需数据普遍在 data 字段内部的下一层包装, 所以需要一个额外的容器
+#[derive(Debug)]
+pub(super) struct _BoyaData<T>(pub T);
+
+// 为 Value 类型实现一个保底措施
+impl<'de> Deserialize<'de> for _BoyaData<serde_json::Value> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        Ok(_BoyaData(value))
+    }
 }
 
 // ====================
 // 用于 query_courses
 // ====================
 
-// TODO: 手动实现 Deserialize 来进一步封装中间结构体
-#[derive(Deserialize)]
-pub(super) struct _BoyaCourses {
-    #[serde(deserialize_with = "deserialize_boya_courses")]
-    pub data: Vec<BoyaCourse>,
-}
-
-// 用于直接解析到 BoyaCourses 的函数
-fn deserialize_boya_courses<'de, D>(deserializer: D) -> Result<Vec<BoyaCourse>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct I {
-        content: Vec<BoyaCourse>,
+// _BoyaRes<Vec<BoyaCourse>>
+impl<'de> Deserialize<'de> for _BoyaData<Vec<BoyaCourse>> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            content: Vec<BoyaCourse>,
+        }
+        let i = I::deserialize(deserializer)?;
+        Ok(_BoyaData(i.content))
     }
-
-    let i = I::deserialize(deserializer)?;
-    Ok(i.content)
 }
 
 #[derive(Debug, Deserialize)]
@@ -152,30 +166,26 @@ where
 // ====================
 
 // 由于学校的**设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
-#[derive(Deserialize)]
-pub(super) struct _BoyaSelecteds {
-    #[serde(deserialize_with = "deserialize_boya_selecteds")]
-    pub data: Vec<BoyaSelected>,
-}
+impl<'de> Deserialize<'de> for _BoyaData<Vec<BoyaSelected>> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            #[serde(rename = "courseList")]
+            content: Vec<J>,
+        }
+        #[derive(Deserialize)]
+        struct J {
+            #[serde(rename = "courseInfo")]
+            info: BoyaSelected,
+        }
+        let i = I::deserialize(deserializer)?;
+        let list = i.content.into_iter().map(|x| x.info).collect();
 
-fn deserialize_boya_selecteds<'de, D>(deserializer: D) -> Result<Vec<BoyaSelected>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct I {
-        #[serde(rename = "courseList")]
-        content: Vec<J>,
+        Ok(_BoyaData(list))
     }
-    #[derive(Deserialize)]
-    struct J {
-        #[serde(rename = "courseInfo")]
-        info: BoyaSelected,
-    }
-    let i = I::deserialize(deserializer)?;
-    let course_list = i.content;
-
-    Ok(course_list.into_iter().map(|x| x.info).collect())
 }
 
 /// Selected Boya courses
@@ -202,30 +212,26 @@ pub struct BoyaSelected {
 // 用于 query_statistic
 // ====================
 
-#[derive(Deserialize)]
-pub(super) struct _BoyaStatistics {
-    #[serde(deserialize_with = "deserialize_boya_statistics")]
-    pub data: BoyaStatistic,
-}
+impl<'de> Deserialize<'de> for _BoyaData<BoyaStatistic> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            statistical: J,
+        }
 
-fn deserialize_boya_statistics<'de, D>(deserializer: D) -> Result<BoyaStatistic, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct I {
-        statistical: J,
+        #[derive(Deserialize)]
+        struct J {
+            #[serde(rename = "60|博雅课程")]
+            data: BoyaStatistic,
+        }
+
+        let i = I::deserialize(deserializer)?;
+
+        Ok(_BoyaData(i.statistical.data))
     }
-
-    #[derive(Deserialize)]
-    struct J {
-        #[serde(rename = "60|博雅课程")]
-        data: BoyaStatistic,
-    }
-
-    let i = I::deserialize(deserializer)?;
-
-    Ok(i.statistical.data)
 }
 
 /// Boya course's Statistics
@@ -267,35 +273,31 @@ pub struct BoyaAssessment {
 // 用于 query_attend_rule
 // ====================
 
-#[derive(Deserialize)]
-pub(super) struct _BoyaDetail {
-    #[serde(deserialize_with = "deserialize_boya_sign_rule")]
-    pub data: Option<BoyaSignRule>,
-}
+impl<'de> Deserialize<'de> for _BoyaData<Option<BoyaSignRule>> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
+            // #[serde(rename = "courseDesc")]
+            // pub description: String,
 
-fn deserialize_boya_sign_rule<'de, D>(deserializer: D) -> Result<Option<BoyaSignRule>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct I {
-        // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
-        // #[serde(rename = "courseDesc")]
-        // pub description: String,
+            // 同时用于签到签退的信息
+            #[serde(rename = "courseSignConfig")]
+            rule: String,
+        }
 
-        // 同时用于签到签退的信息
-        #[serde(rename = "courseSignConfig")]
-        rule: String,
-    }
-
-    let i = I::deserialize(deserializer)?;
-    if i.rule.is_empty() {
-        return Ok(None);
-    }
-    let rule = i.rule.replace("\\\"", "\"");
-    match serde_json::from_str::<BoyaSignRule>(&rule) {
-        Ok(r) => Ok(Some(r)),
-        Err(_) => Ok(None),
+        let i = I::deserialize(deserializer)?;
+        if i.rule.is_empty() {
+            return Ok(_BoyaData(None));
+        }
+        let rule = i.rule.replace("\\\"", "\"");
+        match serde_json::from_str::<BoyaSignRule>(&rule) {
+            Ok(r) => Ok(_BoyaData(Some(r))),
+            Err(_) => Ok(_BoyaData(None)),
+        }
     }
 }
 
@@ -343,27 +345,23 @@ where
 // 用于 sign_course
 // ====================
 
-#[derive(Deserialize)]
-pub(super) struct _BoyaSign {
-    #[serde(deserialize_with = "deserialize_boya_sign")]
-    pub data: BoyaSign,
-}
+impl<'de> Deserialize<'de> for _BoyaData<BoyaSign> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            #[serde(rename = "signInfo")]
+            info: String,
+        }
 
-fn deserialize_boya_sign<'de, D>(deserializer: D) -> Result<BoyaSign, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    #[derive(Deserialize)]
-    struct I {
-        #[serde(rename = "signInfo")]
-        info: String,
-    }
-
-    let i = I::deserialize(deserializer)?;
-    let i = i.info.replace("\\\"", "\"");
-    match serde_json::from_str::<BoyaSign>(&i) {
-        Ok(config) => Ok(config),
-        Err(_) => Err(serde::de::Error::custom("failed to deserialize SignInfo")),
+        let i = I::deserialize(deserializer)?;
+        let i = i.info.replace("\\\"", "\"");
+        match serde_json::from_str::<BoyaSign>(&i) {
+            Ok(s) => Ok(_BoyaData(s)),
+            Err(_) => Err(serde::de::Error::custom("failed to deserialize SignInfo")),
+        }
     }
 }
 
