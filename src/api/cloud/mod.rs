@@ -2,7 +2,6 @@
 
 mod core;
 mod data;
-mod download;
 mod opt;
 
 /// # BUAA Cloud Disk API Group
