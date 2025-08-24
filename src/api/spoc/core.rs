@@ -1,6 +1,11 @@
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+
 use crate::api::Location;
 use crate::crypto;
 use crate::error::Error;
+
+use super::_SpocRes;
 
 impl super::SpocApi {
     /// # Spoc Login
@@ -27,20 +32,32 @@ impl super::SpocApi {
         Ok(())
     }
 
-    pub async fn universal_request(&self, url: &str, query: &str) -> crate::Result<String> {
+    /// # Spoc Universal Request API
+    ///
+    /// **Note**: You should use other existing APIs first.
+    ///
+    /// If the API you need but is not implemented, you can extend it with this universal request API.
+    ///
+    /// **Note**: Type of `T` is the `content` field in JSON response.
+    pub async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
+    where
+        Q: Serialize + ?Sized,
+        T: DeserializeOwned,
+    {
         if self.cred.load().spoc_token.is_expired() {
             self.login().await?;
         }
         let cred = self.cred.load();
-        let token = match cred.spoc_token.value() {
+        let token: &String = match cred.spoc_token.value() {
             Some(t) => t,
             None => return Err(Error::auth_expired(Location::Spoc)),
         };
         // 逆向出来的密钥和初始向量, 既然写死了为什么不用 ECB 模式啊
         let ase_key = crate::consts::SPOC_AES_KEY;
         let ase_iv = crate::consts::SPOC_AES_IV;
+        let query = serde_json::to_vec(query)?;
         let body = serde_json::json!({
-            "param": crypto::aes::aes_encrypt_cbc(query.as_bytes(), ase_key, ase_iv)
+            "param": crypto::aes::aes_encrypt_cbc(&query, ase_key, ase_iv)
         });
         let token = format!("Inco-{token}");
         let res = self
@@ -48,15 +65,16 @@ impl super::SpocApi {
             .header("Token", &token)
             .json(&body)
             .send()
+            .await?
+            .json::<_SpocRes<T>>()
             .await?;
-        let res = res.text().await?;
-        let status = serde_json::from_str::<super::_SpocState>(&res)?;
-        if status.code != 200 {
+        if res.code != 200 {
             return Err(Error::server(format!(
                 "[Spoc] Response: {}",
-                status.msg.unwrap_or("Unknown Error".into())
+                res.msg.unwrap_or("Unknown Error".into())
             )));
         }
-        Ok(res)
+        self.cred.refresh(Location::Spoc);
+        Ok(res.content)
     }
 }
