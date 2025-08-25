@@ -9,41 +9,56 @@ impl super::CloudApi {
             self.api::<crate::api::Sso>().login().await?;
         }
 
-        // 获取登录参数, 302 后可解析出 login_challenge
+        let mut is_ok = false;
+
+        // TODO: 这有一个可能的 bug
+        // 如果 302 到 `signin` 后可解析出登陆参数 login_challenge
+        // 如果 302 到 `callback` 可以使用 refresh_token
+        // 问题出在如果刷新 token 过期了会怎样, 会重定向到 `signin` 吗
+        // 目前不知道其有效期
         let url =
             "https://bhpan.buaa.edu.cn/anyshare/oauth2/login?redirect=%2Fanyshare%2Fzh-cn%2Fportal";
         let res = self.client.get(url).send().await?;
+        let path = res.url().path();
 
-        // 如果直接跳转到登录回调地址, 说明已经登录状态仍在
-        if res.url().path() == "/anyshare/oauth2/login/callback" {
-            return Ok(());
+        if path == "/oauth2/signin" {
+            // 从 URL 解析 login_challenge=xxx
+            let login_challenge = res.url().query().unwrap().to_string();
+
+            let login_challenge = cookie_store::Cookie::parse(
+                login_challenge,
+                &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
+            )
+            .unwrap();
+
+            // 这里有一条需要手动添加的临时 Cookie
+            self.cookies.update(|store| {
+                store
+                    .insert(
+                        login_challenge,
+                        &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
+                    )
+                    .unwrap();
+            });
+            // 发起登录请求
+            let url =
+                "https://sso.buaa.edu.cn/login?service=https://bhpan.buaa.edu.cn/oauth2/signin";
+            let res = self.client.get(url).send().await?;
+            // 来到回调地址证明登陆成功
+            if res.url().path() == "/anyshare/oauth2/login/callback" {
+                is_ok = true;
+            }
+            // 移除临时 Cookie
+            self.cookies.update(|store| {
+                store.remove("bhpan.buaa.edu.cn", "/", "login_challenge");
+            })
+        } else if path == "/anyshare/oauth2/login/callback" {
+            let url = "https://bhpan.buaa.edu.cn/anyshare/oauth2/login/refreshToken";
+            self.client.get(url).send().await?;
+            is_ok = true;
         }
 
-        // 从 URL 解析 login_challenge=xxx
-        let login_challenge = res.url().query().unwrap().to_string();
-
-        let login_challenge = cookie_store::Cookie::parse(
-            login_challenge,
-            &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
-        )
-        .unwrap();
-
-        // 这里有一条需要手动添加的 cookie
-        self.cookies.update(|store| {
-            store
-                .insert(
-                    login_challenge,
-                    &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
-                )
-                .unwrap();
-        });
-
-        // 发起登录请求
-        let url = "https://sso.buaa.edu.cn/login?service=https://bhpan.buaa.edu.cn/oauth2/signin";
-        let res = self.client.get(url).send().await?;
-
-        // 来到回调地址证明登陆成功
-        if res.url().path() == "/anyshare/oauth2/login/callback" {
+        if is_ok {
             // is_previous_login_3rd_party=true 和 oauth2.isSkip=true 两个 cookie 似乎没有用, 这里就不添加了
             let token =
                 match self
