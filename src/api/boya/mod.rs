@@ -3,7 +3,6 @@
 mod core;
 mod data;
 mod opt;
-mod query;
 
 pub use data::*;
 
