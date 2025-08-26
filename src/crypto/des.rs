@@ -18,8 +18,5 @@ pub fn des_encrypt(data: &[u8], key: &[u8]) -> String {
         output[i * 8..(i + 1) * 8].copy_from_slice(&block);
     }
     // 将加密后的数据转换为 Hex 格式
-    #[cfg(feature = "crypto")]
-    return hex::encode(&output);
-    #[cfg(not(feature = "crypto"))]
     crate::crypto::bytes2hex(&output)
 }
