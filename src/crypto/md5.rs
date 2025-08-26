@@ -197,5 +197,5 @@ pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
     let mut hmac = Hmac::<Md5>::new_from_slice(key).unwrap();
     hmac.update(data);
     let res = hmac.finalize().into_bytes();
-    hex::encode(&res)
+    crate::crypto::bytes2hex(&result)
 }

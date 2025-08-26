@@ -128,5 +128,5 @@ pub fn sha1(data: &[u8]) -> String {
 pub fn sha1(data: &str) -> String {
     use sha1::{Digest, Sha1};
     let hasher = Sha1::digest(data.as_bytes());
-    hex::encode(&hasher)
+    crate::crypto::bytes2hex(&hasher)
 }
