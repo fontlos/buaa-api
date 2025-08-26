@@ -1,4 +1,3 @@
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::PrimitiveDateTime;
@@ -6,36 +5,21 @@ use time::PrimitiveDateTime;
 use crate::utils::deserialize_datatime;
 
 #[derive(Debug, Deserialize)]
-pub(super) struct _BoyaRes<T>
-where
-    _BoyaData<T>: DeserializeOwned,
-{
+pub(super) struct _BoyaRes<T> {
     pub status: String,
     pub errmsg: String,
-    pub data: _BoyaData<T>,
+    pub data: T,
 }
 
-// TODO: 这种设计严重限制了灵活性, 如果没法修改那就只能像原来那样多暴露几个中间类型了
-// 因为所需数据普遍在 data 字段内部的下一层包装, 所以需要一个额外的容器
+// 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
 #[derive(Debug)]
 pub(super) struct _BoyaData<T>(pub T);
-
-// 为 Value 类型实现一个保底措施
-impl<'de> Deserialize<'de> for _BoyaData<serde_json::Value> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = serde_json::Value::deserialize(deserializer)?;
-        Ok(_BoyaData(value))
-    }
-}
 
 // ====================
 // 用于 query_courses
 // ====================
 
-// _BoyaRes<Vec<BoyaCourse>>
+// _BoyaRes<_BoyaData<Vec<BoyaCourse>>>
 impl<'de> Deserialize<'de> for _BoyaData<Vec<BoyaCourse>> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

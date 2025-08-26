@@ -3,7 +3,7 @@ use serde_json::Value;
 use time::Date;
 
 use super::data::{
-    BoyaCoordinate, BoyaCourse, BoyaSelected, BoyaSign, BoyaSignRule, BoyaStatistic,
+    _BoyaData, BoyaCoordinate, BoyaCourse, BoyaSelected, BoyaSign, BoyaSignRule, BoyaStatistic,
 };
 
 impl super::BoyaApi {
@@ -16,8 +16,8 @@ impl super::BoyaApi {
         // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
         // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
-        let res: Vec<BoyaCourse> = self.universal_request(url, &query).await?;
-        Ok(res)
+        let res: _BoyaData<Vec<BoyaCourse>> = self.universal_request(url, &query).await?;
+        Ok(res.0)
     }
 
     // 查询签到规则, 包括签到签退的时间地点
@@ -26,8 +26,8 @@ impl super::BoyaApi {
             "id": id,
         });
         let url = "https://bykc.buaa.edu.cn/sscv/queryCourseById";
-        let res: Option<BoyaSignRule> = self.universal_request(url, &query).await?;
-        Ok(res)
+        let res: _BoyaData<Option<BoyaSignRule>> = self.universal_request(url, &query).await?;
+        Ok(res.0)
     }
 
     /// # Query Selected Courses
@@ -39,16 +39,16 @@ impl super::BoyaApi {
             "endDate": format!("{} 00:00:00", end),
         });
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
-        let res: Vec<BoyaSelected> = self.universal_request(url, &query).await?;
-        Ok(res)
+        let res: _BoyaData<Vec<BoyaSelected>> = self.universal_request(url, &query).await?;
+        Ok(res.0)
     }
 
     /// # Query Statistic
     pub async fn query_statistic(&self) -> crate::Result<BoyaStatistic> {
         let query = serde_json::json!({});
         let url = "https://bykc.buaa.edu.cn/sscv/queryStatisticByUserId";
-        let res: BoyaStatistic = self.universal_request(url, &query).await?;
-        Ok(res)
+        let res: _BoyaData<BoyaStatistic> = self.universal_request(url, &query).await?;
+        Ok(res.0)
     }
 
     /// # Select Course
@@ -98,8 +98,8 @@ impl super::BoyaApi {
             "signType": s_type,
         });
         let url = "https://bykc.buaa.edu.cn/sscv/signCourseByUser";
-        let res: BoyaSign = self.universal_request(url, &query).await?;
-        Ok(res)
+        let res: _BoyaData<BoyaSign> = self.universal_request(url, &query).await?;
+        Ok(res.0)
     }
 
     pub async fn checkin_course(

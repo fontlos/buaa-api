@@ -5,7 +5,7 @@ use crate::api::Location;
 use crate::error::Error;
 use crate::{crypto, utils};
 
-use super::{_BoyaData, _BoyaRes};
+use super::_BoyaRes;
 
 impl super::BoyaApi {
     /// # Boya Login
@@ -36,8 +36,7 @@ impl super::BoyaApi {
     /// # Boya Universal Request API
     ///
     /// **Note**: You should use other existing APIs first.
-    /// Because of some limitations, you can only use `serde_json::Value` as a return value,
-    /// so if you really need additional APIs, open Issue or PR firstly
+    /// If you really need additional APIs, open Issue or PR firstly
     ///
     /// If the API you need but is not implemented, you can extend it with this universal request API.
     ///
@@ -77,13 +76,10 @@ impl super::BoyaApi {
     /// let query = serde_json::json!({});
     /// let res: Value = self.universal_request::<_, Value>(&url, &query).await?;
     /// ```
-    // TODO: 目前因为 _BoyaData 可见性需要如此约束
-    #[allow(private_bounds)]
     pub async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
     where
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
-        _BoyaData<T>: DeserializeOwned,
     {
         let cred = &self.cred.load().boya_token;
         if cred.is_expired() {
@@ -149,6 +145,6 @@ impl super::BoyaApi {
         // 刷新 Token 时效
         self.cred.refresh(Location::Boya);
 
-        Ok(res.data.0)
+        Ok(res.data)
     }
 }
