@@ -1,4 +1,3 @@
-use bytes::Bytes;
 use cookie_store::{Cookie, CookieStore, RawCookie, RawCookieParseError};
 use reqwest::header::HeaderValue;
 
@@ -94,6 +93,6 @@ impl reqwest::cookie::CookieStore for AtomicCookieStore {
             return None;
         }
 
-        HeaderValue::from_maybe_shared(Bytes::from(s)).ok()
+        HeaderValue::from_str(&s).ok()
     }
 }
