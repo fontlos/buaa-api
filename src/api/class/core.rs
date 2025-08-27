@@ -9,7 +9,7 @@ use super::_ClassLogin;
 
 /// From the reverse analysis of JS
 /// 2025.04.22
-pub const CLASS_DES_KEY: &[u8] = b"Jyd#351*";
+const CLASS_DES_KEY: &[u8] = b"Jyd#351*";
 
 impl super::ClassApi {
     /// # Smart Classroom Login

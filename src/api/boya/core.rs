@@ -7,6 +7,15 @@ use crate::{crypto, utils};
 
 use super::_BoyaRes;
 
+/// From hard-coded in JS
+/// 2025.04.22
+const BOYA_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDlHMQ3B5GsWnCe7Nlo1YiG/YmH
+dlOiKOST5aRm4iaqYSvhvWmwcigoyWTM+8bv2+sf6nQBRDWTY4KmNV7DBk1eDnTI
+Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
+0jbxfDVBBNtyltIsDQIDAQAB
+-----END PUBLIC KEY-----";
+
 impl super::BoyaApi {
     /// # Boya Login
     pub async fn login(&self) -> crate::Result<()> {
@@ -92,7 +101,7 @@ impl super::BoyaApi {
         };
 
         // 初始化 RSA, 设置公钥
-        let rsa = crypto::rsa::RsaPkcs1v15::from_pem(crate::consts::BOYA_RSA_KEY);
+        let rsa = crypto::rsa::RsaPkcs1v15::from_pem(BOYA_RSA_KEY);
 
         let query = serde_json::to_vec(query)?;
         // 这是查询参数, 然后被 sha1 处理

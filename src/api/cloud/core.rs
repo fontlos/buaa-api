@@ -3,6 +3,27 @@ use serde_json::Value;
 use crate::api::Location;
 use crate::error::Error;
 
+// 手动登录用 RSA 密钥, 但我们使用 SSO 登录
+// From https://bhpan.buaa.edu.cn/oauth2/_next/static/chunks/pages/signin-2a57b4f57ddbb54dc27e.js
+// Changed since v7 (2023.08)
+// 2025.04.22
+// const CLOUD_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
+// MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC7JL0DcaMUHumSdhxXTxqiABBC
+// DERhRJIsAPB++zx1INgSEKPGbexDt1ojcNAc0fI+G/yTuQcgH1EW8posgUni0mcT
+// E6CnjkVbv8ILgCuhy+4eu+2lApDwQPD9Tr6J8k21Ruu2sWV5Z1VRuQFqGm/c5vaT
+// OQE5VFOIXPVTaa25mQIDAQAB
+// -----END PUBLIC KEY-----";
+// 这个不知道是做什么的
+// const CLOUD_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
+// MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4E+eiWRwffhRIPQYvlXU
+// jf0b3HqCmosiCxbFCYI/gdfDBhrTUzbt3fL3o/gRQQBEPf69vhJMFH2ZMtaJM6oh
+// E3yQef331liPVM0YvqMOgvoID+zDa1NIZFObSsjOKhvZtv9esO0REeiVEPKNc+Dp
+// 6il3x7TV9VKGEv0+iriNjqv7TGAexo2jVtLm50iVKTju2qmCDG83SnVHzsiNj70M
+// iviqiLpgz72IxjF+xN4bRw8I5dD0GwwO8kDoJUGWgTds+VckCwdtZA65oui9Osk5
+// t1a4pg6Xu9+HFcEuqwJTDxATvGAz1/YW0oUisjM0ObKTRDVSfnTYeaBsN6L+M+8g
+// CwIDAQAB
+// -----END PUBLIC KEY-----";
+
 impl super::CloudApi {
     pub async fn login(&self) -> crate::Result<()> {
         if self.cred.load().sso.is_expired() {
