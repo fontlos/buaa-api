@@ -16,7 +16,6 @@
 
 pub mod api;
 mod cell;
-mod consts;
 mod context;
 mod crypto;
 pub mod error;
