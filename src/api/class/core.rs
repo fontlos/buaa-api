@@ -31,7 +31,9 @@ impl super::ClassApi {
         // 去掉最后的 #/
         let url = &url[..url.len() - 2];
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
-        let url = crypto::des::des_encrypt(url.as_bytes(), CLASS_DES_KEY);
+        let cipher = crypto::des::Des::new(CLASS_DES_KEY).unwrap();
+        let url = cipher.encrypt_ecb(url.as_bytes());
+        let url = crypto::bytes2hex(&url);
         let params = [("method", "html5GetPrivateUserInfo"), ("url", &url)];
         self.get("https://iclass.buaa.edu.cn:8346/wc/auth/html5GetPrivateUserInfo")
             .query(&params)
