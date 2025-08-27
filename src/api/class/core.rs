@@ -28,6 +28,7 @@ impl super::ClassApi {
             Some(v) => v,
             None => return Err(Error::auth_expired(Location::Sso)),
         };
+        // 去掉最后的 #/
         let url = &url[..url.len() - 2];
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
         let url = crypto::des::des_encrypt(url.as_bytes(), CLASS_DES_KEY);
@@ -60,10 +61,11 @@ impl super::ClassApi {
         }
     }
 
-    /// Universal request for class API
+    // 似乎没有什么公开的必要
+    /// Class Universal Request API
     ///
     /// **Note**: `token` parameter is already included
-    pub async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
+    pub(crate) async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
     where
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
