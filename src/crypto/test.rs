@@ -19,8 +19,10 @@ mod tests {
 
     #[test]
     fn test_des() {
-        let encrypted = des::des_encrypt(b"HelloWorld", b"Jyd#351*");
-        assert_eq!(&encrypted, "e8c2f09cbf46cb0a70f11196330b1657");
+        let cipher = des::Des::new(b"Jyd#351*").unwrap();
+        let encrypted = cipher.encrypt_ecb(b"HelloWorld");
+        let str = bytes2hex(&encrypted);
+        assert_eq!(&str, "e8c2f09cbf46cb0a70f11196330b1657");
     }
 
     #[test]
