@@ -108,12 +108,14 @@ impl super::WifiApi {
 
         // 计算加密后的密码, 并且后补前缀
         let password_md5 = crypto::md5::md5_hmac(pw.as_bytes(), token_bytes);
+        let password_md5 = crypto::bytes2hex(&password_md5);
 
         // 计算校验和, 参数顺序如下, 剩下的两个是 n 和 type, 固定为 200 和 1
         let check_str = format!(
             "{token}{un}{token}{password_md5}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}"
         );
         let chk_sum = crypto::sha1::sha1(check_str.as_bytes());
+        let chk_sum = crypto::bytes2hex(&chk_sum);
 
         // 构造登录 URL 并登录
         // 暂时不知道后面五个参数有无修改必要

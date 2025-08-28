@@ -64,8 +64,11 @@ impl super::SpocApi {
 
         // 加密请求体
         let query = serde_json::to_vec(query)?;
+        let query = crypto::aes::aes_encrypt_cbc(&query, SPOC_AES_KEY, SPOC_AES_IV);
+        // 使用 Base64 编码
+        let query = crypto::encode_base64(query);
         let body = serde_json::json!({
-            "param": crypto::aes::aes_encrypt_cbc(&query, SPOC_AES_KEY, SPOC_AES_IV)
+            "param": query
         });
 
         let res = self

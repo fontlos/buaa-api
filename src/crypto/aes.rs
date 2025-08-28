@@ -1,9 +1,8 @@
 use aes::Aes128;
 use aes::cipher::{BlockDecrypt, BlockEncrypt, KeyInit, generic_array::GenericArray};
-use base64::{Engine as _, engine::general_purpose};
 
-/// AES encrypt, use Base64, ECB mode, PKCS5Padding
-pub fn aes_encrypt_ecb(data: &[u8], key: &[u8]) -> String {
+/// AES encrypt, use ECB mode, PKCS5Padding
+pub fn aes_encrypt_ecb(data: &[u8], key: &[u8]) -> Vec<u8> {
     // 将密钥转换为字节数组
     let key_bytes = key;
     // 创建 AES 加密器
@@ -24,20 +23,17 @@ pub fn aes_encrypt_ecb(data: &[u8], key: &[u8]) -> String {
         cipher.encrypt_block(&mut block);
         output[i * 16..(i + 1) * 16].copy_from_slice(&block);
     }
-    // 将加密后的数据进行 Base64 编码
-    general_purpose::STANDARD.encode(&output)
+    output
 }
 
-/// AES decrypt, use Base64, ECB mode, PKCS5Padding
-pub fn aes_decrypt_ecb(data: &[u8], key: &[u8]) -> String {
-    // 将 Base64 编码的加密数据解码为字节数组
-    let encrypted_bytes = general_purpose::STANDARD.decode(data).unwrap();
+/// AES decrypt, use ECB mode, PKCS5Padding
+pub fn aes_decrypt_ecb(data: &[u8], key: &[u8]) -> Vec<u8> {
     // 创建 AES 解密器
     let cipher = Aes128::new_from_slice(key).unwrap();
     // 创建输出缓冲区
-    let mut output = vec![0u8; encrypted_bytes.len()];
+    let mut output = vec![0u8; data.len()];
     // 逐块解密数据
-    for (i, chunk) in encrypted_bytes.chunks(16).enumerate() {
+    for (i, chunk) in data.chunks(16).enumerate() {
         let mut block = *GenericArray::from_slice(chunk);
         cipher.decrypt_block(&mut block);
         output[i * 16..(i + 1) * 16].copy_from_slice(&block);
@@ -47,12 +43,11 @@ pub fn aes_decrypt_ecb(data: &[u8], key: &[u8]) -> String {
     if padding_len <= output.len() {
         output.truncate(output.len() - padding_len);
     }
-    // 将解密后的数据转换为字符串
-    String::from_utf8(output).unwrap()
+    output
 }
 
-/// AES encrypt, use Base64, CBC mode, ZeroPadding
-pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> String {
+/// AES encrypt, use CBC mode, ZeroPadding
+pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8> {
     // 创建 AES 加密器
     let cipher = Aes128::new_from_slice(key).unwrap();
 
@@ -95,6 +90,5 @@ pub fn aes_encrypt_cbc(data: &[u8], key: &[u8], iv: &[u8]) -> String {
         cipher.encrypt_block(block);
     }
 
-    // 将加密后的数据进行 Base64 编码
-    general_purpose::STANDARD.encode(&output)
+    output
 }

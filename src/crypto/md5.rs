@@ -176,26 +176,23 @@ mod light {
 
 #[cfg(not(feature = "crypto"))]
 #[allow(dead_code)]
-pub fn md5(data: &[u8]) -> String {
+pub fn md5(data: &[u8]) -> [u8; 16] {
     let mut hasher = light::MD5::new();
     hasher.update(data);
-    let result = hasher.finalize();
-    crate::crypto::bytes2hex(&result)
+    hasher.finalize()
 }
 
 #[cfg(not(feature = "crypto"))]
-pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
+pub fn md5_hmac(data: &[u8], key: &[u8]) -> [u8; 16] {
     let hmac = light::HMACMD5::new(key);
-    let digest = hmac.compute(data);
-    crate::crypto::bytes2hex(&digest)
+    hmac.compute(data)
 }
 
 #[cfg(feature = "crypto")]
-pub fn md5_hmac(data: &[u8], key: &[u8]) -> String {
+pub fn md5_hmac(data: &[u8], key: &[u8]) -> [u8; 16] {
     use hmac::{Hmac, Mac};
     use md5::Md5;
     let mut hmac = Hmac::<Md5>::new_from_slice(key).unwrap();
     hmac.update(data);
-    let res = hmac.finalize().into_bytes();
-    crate::crypto::bytes2hex(&result)
+    hmac.finalize().into_bytes()
 }
