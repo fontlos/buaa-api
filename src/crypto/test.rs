@@ -5,15 +5,19 @@ mod tests {
     #[test]
     fn test_aes_ecb() {
         let encrypted = aes::aes_encrypt_ecb(b"HelloWorld", b"SenQBA8xn6CQGNJs");
+        let encrypted = encode_base64(&encrypted);
         assert_eq!("Kn2AACfzhA8YPsPPH3SgdA==", encrypted);
-        let decrypted = aes::aes_decrypt_ecb(encrypted.as_bytes(), b"SenQBA8xn6CQGNJs");
-        assert_eq!("HelloWorld", decrypted);
+
+        let encrypted = decode_base64(&encrypted);
+        let decrypted = aes::aes_decrypt_ecb(&encrypted, b"SenQBA8xn6CQGNJs");
+        assert_eq!(b"HelloWorld", decrypted.as_slice());
     }
 
     #[test]
     fn test_aes_encrypt_cbc() {
         let encrypted =
             aes::aes_encrypt_cbc(b"HelloWorld", b"inco12345678ocni", b"ocni12345678inco");
+        let encrypted = encode_base64(&encrypted);
         assert_eq!("Qb5wy8PdDSUs6EgTzMX6Gw==", encrypted);
     }
 
@@ -29,19 +33,22 @@ mod tests {
     fn test_md5() {
         let data = std::fs::read("License").unwrap();
         let md5 = md5::md5(&data);
-        assert_eq!(&md5, "2817feea7bcabab5909f75866950e0d3");
+        let hex = bytes2hex(&md5);
+        assert_eq!(&hex, "2817feea7bcabab5909f75866950e0d3");
     }
 
     #[test]
     fn test_md5_hmac() {
         let hmac = md5::md5_hmac(b"HelloWorld", b"Key");
-        assert_eq!(&hmac, "219e14bef981f117479a7695dacb10c7");
+        let hex = bytes2hex(&hmac);
+        assert_eq!(&hex, "219e14bef981f117479a7695dacb10c7");
     }
 
     #[test]
     fn test_sha1() {
         let sha1 = sha1::sha1(b"HelloWorld");
-        assert_eq!(&sha1, "db8ac1c259eb89d4a131b253bacfca5f319d54f2");
+        let hex = bytes2hex(&sha1);
+        assert_eq!(&hex, "db8ac1c259eb89d4a131b253bacfca5f319d54f2");
     }
 
     #[test]

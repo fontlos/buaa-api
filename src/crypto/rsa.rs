@@ -1,7 +1,6 @@
 //! Separate implementation of Pkcs1v15Encrypt RSA encryption only to omit dependencies on external RSA Crates
 //! Since the vanilla RSA relies on rand 0.6, this is implemented in order to upgrade the rand
 
-use base64::{Engine as _, engine::general_purpose};
 use num_bigint::BigUint;
 use rand::Rng;
 
@@ -20,7 +19,7 @@ impl RsaPkcs1v15 {
             .collect::<String>();
 
         // 解码 DER 格式
-        let der = general_purpose::STANDARD.decode(base64_str).unwrap();
+        let der = crate::crypto::decode_base64(base64_str);
 
         // 公钥的 ASN.1 结构通常是: SEQUENCE { SEQUENCE { OID, NULL }, BITSTRING }
         let mut cursor = 0;
@@ -140,12 +139,6 @@ impl RsaPkcs1v15 {
 
         // 返回大整数的大端字节表示
         c.to_bytes_be()
-    }
-
-    pub fn encrypt_to_string(&self, data: &[u8]) -> String {
-        // RSA 加密并转换为 Base64 字符串
-        let enc_data = self.encrypt(data);
-        general_purpose::STANDARD.encode(&enc_data)
     }
 }
 

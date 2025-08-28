@@ -117,16 +117,14 @@ mod light {
 }
 
 #[cfg(not(feature = "crypto"))]
-pub fn sha1(data: &[u8]) -> String {
+pub fn sha1(data: &[u8]) -> [u8; 20] {
     let mut hasher = light::SHA1::new();
     hasher.update(data);
-    let result = hasher.finalize();
-    crate::crypto::bytes2hex(&result)
+    hasher.finalize()
 }
 
 #[cfg(feature = "crypto")]
-pub fn sha1(data: &str) -> String {
+pub fn sha1(data: &str) -> [u8; 20] {
     use sha1::{Digest, Sha1};
-    let hasher = Sha1::digest(data.as_bytes());
-    crate::crypto::bytes2hex(&hasher)
+    Sha1::digest(data.as_bytes()).into()
 }

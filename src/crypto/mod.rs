@@ -7,6 +7,8 @@ pub mod xencode;
 
 mod test;
 
+use base64::engine::{Engine, general_purpose};
+
 /// Converts an array of bytes to a hexadecimal string
 pub fn bytes2hex(bytes: &[u8]) -> String {
     #[cfg(not(feature = "crypto"))]
@@ -23,4 +25,18 @@ pub fn bytes2hex(bytes: &[u8]) -> String {
     {
         hex::encode(&bytes)
     }
+}
+
+pub fn encode_base64<T>(bytes: T) -> String
+where
+    T: AsRef<[u8]>,
+{
+    general_purpose::STANDARD.encode(bytes)
+}
+
+pub fn decode_base64<T>(s: T) -> Vec<u8>
+where
+    T: AsRef<[u8]>,
+{
+    general_purpose::STANDARD.decode(s).unwrap()
 }
