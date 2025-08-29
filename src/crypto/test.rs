@@ -4,29 +4,30 @@ mod tests {
 
     #[test]
     fn test_aes_ecb() {
-        let encrypted = aes::aes_encrypt_ecb(b"HelloWorld", b"SenQBA8xn6CQGNJs");
-        let encrypted = encode_base64(&encrypted);
-        assert_eq!("Kn2AACfzhA8YPsPPH3SgdA==", encrypted);
+        let cipher = aes::Aes128::new(b"SenQBA8xn6CQGNJs").unwrap();
+        let encrypted = cipher.encrypt_ecb(b"HelloWorld");
+        let base64 = encode_base64(&encrypted);
+        assert_eq!("Kn2AACfzhA8YPsPPH3SgdA==", base64);
 
-        let encrypted = decode_base64(&encrypted);
-        let decrypted = aes::aes_decrypt_ecb(&encrypted, b"SenQBA8xn6CQGNJs");
+        let encrypted = decode_base64(&base64);
+        let decrypted = cipher.decrypt_ecb(&encrypted);
         assert_eq!(b"HelloWorld", decrypted.as_slice());
     }
 
     #[test]
     fn test_aes_encrypt_cbc() {
-        let encrypted =
-            aes::aes_encrypt_cbc(b"HelloWorld", b"inco12345678ocni", b"ocni12345678inco");
-        let encrypted = encode_base64(&encrypted);
-        assert_eq!("Qb5wy8PdDSUs6EgTzMX6Gw==", encrypted);
+        let cipher = aes::Aes128::new(b"inco12345678ocni").unwrap();
+        let encrypted = cipher.encrypt_cbc(b"HelloWorld", b"ocni12345678inco");
+        let base64 = encode_base64(&encrypted);
+        assert_eq!("Qb5wy8PdDSUs6EgTzMX6Gw==", base64);
     }
 
     #[test]
     fn test_des() {
         let cipher = des::Des::new(b"Jyd#351*").unwrap();
         let encrypted = cipher.encrypt_ecb(b"HelloWorld");
-        let str = bytes2hex(&encrypted);
-        assert_eq!(&str, "e8c2f09cbf46cb0a70f11196330b1657");
+        let hex = bytes2hex(&encrypted);
+        assert_eq!(&hex, "e8c2f09cbf46cb0a70f11196330b1657");
     }
 
     #[test]

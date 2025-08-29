@@ -6,7 +6,6 @@ edition = "2024"
 readme = "Readme.md"
 
 [dependencies]
-aes = "0.8.4"
 base64 = "0.22.1"
 cookie_store = "0.22.0"
 num-bigint = "0.4.6"

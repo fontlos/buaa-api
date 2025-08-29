@@ -54,21 +54,25 @@ impl super::SpocApi {
         if self.cred.load().spoc_token.is_expired() {
             self.login().await?;
         }
+
         let cred = self.cred.load();
         let token: &String = match cred.spoc_token.value() {
             Some(t) => t,
             None => return Err(Error::auth_expired(Location::Spoc)),
         };
+
         // TODO: 考虑在储存时就加上前缀
         let token = format!("Inco-{token}");
 
-        // 加密请求体
-        let query = serde_json::to_vec(query)?;
-        let query = crypto::aes::aes_encrypt_cbc(&query, SPOC_AES_KEY, SPOC_AES_IV);
-        // 使用 Base64 编码
-        let query = crypto::encode_base64(query);
+        // 初始化 AES
+        let aes = crypto::aes::Aes128::new(SPOC_AES_KEY).unwrap();
+
+        // 构造请求体, 使用 AES 加密请求参数, Base64 编码
+        let body = serde_json::to_vec(query)?;
+        let body = aes.encrypt_cbc(&body, SPOC_AES_IV);
+        let body = crypto::encode_base64(body);
         let body = serde_json::json!({
-            "param": query
+            "param": body
         });
 
         let res = self
@@ -79,13 +83,16 @@ impl super::SpocApi {
             .await?
             .json::<_SpocRes<T>>()
             .await?;
+
         if res.code != 200 {
             return Err(Error::server(format!(
                 "[Spoc] Response: {}",
                 res.msg.unwrap_or("Unknown Error".into())
             )));
         }
+
         self.cred.refresh(Location::Spoc);
+
         Ok(res.content)
     }
 }
