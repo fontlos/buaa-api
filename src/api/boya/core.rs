@@ -94,6 +94,7 @@ impl super::BoyaApi {
         if cred.is_expired() {
             self.login().await?;
         }
+
         // 首先尝试获取 token, 如果没有就可以直接返回了
         let token = match cred.value() {
             Some(t) => t,
@@ -101,50 +102,50 @@ impl super::BoyaApi {
         };
 
         // 初始化 RSA, 设置公钥
-        let rsa = crypto::rsa::RsaPkcs1v15::from_pem(BOYA_RSA_KEY);
+        let rsa_cipher = crypto::rsa::RsaPkcs1v15::from_pem(BOYA_RSA_KEY);
 
-        let query = serde_json::to_vec(query)?;
-        // 这是查询参数, 然后被 sha1 处理
-        let sha1_query = crypto::sha1::sha1(&query);
-        let sha1_query = crypto::bytes2hex(&sha1_query);
-        // sk 参数, rsa sha1_query
-        let sk = rsa.encrypt(sha1_query.as_bytes());
-        let sk = crypto::encode_base64(sk);
-
-        // AES Key, 使用十六位随机字符
+        // 初始化 AES, 使用十六位随机密钥
         let aes_key = utils::gen_rand_str(16);
         let aes_key = aes_key.as_bytes();
-        // ak 参数, rsa aes_key
-        let ak = rsa.encrypt(aes_key);
+        let aes_cipher = crypto::aes::Aes128::new(aes_key).unwrap();
+
+        // 请求头 Ak 参数, 由 AES Key 生成
+        let ak = rsa_cipher.encrypt(aes_key);
         let ak = crypto::encode_base64(ak);
 
-        // 请求的负载, 是使用 AES 加密的查询参数
-        let body = crypto::aes::aes_encrypt_ecb(&query, aes_key);
-        // 使用 Base64 编码
+        // 查询参数序列化到字节数组
+        let query = serde_json::to_vec(query)?;
+
+        // 请求头 Sk 参数, 由查询参数生成
+        let sk = crypto::sha1::sha1(&query);
+        let sk = crypto::bytes2hex(&sk);
+        let sk = rsa_cipher.encrypt(sk.as_bytes());
+        let sk = crypto::encode_base64(sk);
+
+        // 请求体负载, 由查询参数生成, 使用 AES 加密, Base64 编码
+        let body = aes_cipher.encrypt_ecb(&query);
         let body = crypto::encode_base64(body);
+
         let time = utils::get_time_millis();
 
-        // 获取 JSESSIONID
         let res = self
             .post(url)
-            .header("Ak", &ak)
             .header("Auth_token", token)
             .header("Authtoken", token)
+            .header("Ak", &ak)
             .header("Sk", &sk)
             .header("Ts", time.to_string())
             .json(&body)
             .send()
             .await?;
 
-        // 响应体被 AES 加密了, 并且两端有引号需要去掉
+        // 去掉响应体两端的引号, 先 Base64 解码, 再 AES 解密, 最后反序列化
         let res = res.bytes().await?;
         let res = &res[1..res.len() - 1];
-
-        // 先 Base64 解码, 再 AES 解密
         let res = crypto::decode_base64(res);
-        let res = crypto::aes::aes_decrypt_ecb(&res, aes_key);
-
+        let res = aes_cipher.decrypt_ecb(&res);
         let res = serde_json::from_slice::<_BoyaRes<T>>(&res)?;
+
         if res.status == "98005399" {
             // 刷新登录 Token 的操作无需在这里执行, 如果上面刷新了, 这里还能报这个状态码那应该不是 Token 的问题
             return Err(Error::auth_expired(Location::Boya));
