@@ -117,7 +117,7 @@ impl super::BoyaApi {
         let query = serde_json::to_vec(query)?;
 
         // 请求头 Sk 参数, 由查询参数生成
-        let sk = crypto::sha1::sha1(&query);
+        let sk = crypto::sha1::Sha1::digest(&query);
         let sk = crypto::bytes2hex(&sk);
         let sk = rsa_cipher.encrypt(sk.as_bytes());
         let sk = crypto::encode_base64(sk);
