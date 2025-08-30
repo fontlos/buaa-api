@@ -17,16 +17,8 @@ thiserror = "2.0.15"
 time = "0.3.41"
 url = "2.5.4"
 
-[target.'cfg(features = "crypto")'.dependencies]
-hex = "0.4.3"
-hmac = "0.12.1"
-md-5 = "0.10.6"
-sha1 = "0.10.6"
-
 [dev-dependencies]
 tokio = { version = "1.47.1", features = ["macros"] }
 
 [features]
 default = []
-# High-performance crypto solutions provided by the community
-crypto = []

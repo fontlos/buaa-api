@@ -33,21 +33,22 @@ mod tests {
     #[test]
     fn test_md5() {
         let data = std::fs::read("License").unwrap();
-        let md5 = md5::md5(&data);
+        let md5 = md5::Md5::digest(&data);
         let hex = bytes2hex(&md5);
         assert_eq!(&hex, "2817feea7bcabab5909f75866950e0d3");
     }
 
     #[test]
     fn test_md5_hmac() {
-        let hmac = md5::md5_hmac(b"HelloWorld", b"Key");
+        let cipher = md5::HmacMd5::new(b"Key");
+        let hmac = cipher.compute(b"HelloWorld");
         let hex = bytes2hex(&hmac);
         assert_eq!(&hex, "219e14bef981f117479a7695dacb10c7");
     }
 
     #[test]
     fn test_sha1() {
-        let sha1 = sha1::sha1(b"HelloWorld");
+        let sha1 = sha1::Sha1::digest(b"HelloWorld");
         let hex = bytes2hex(&sha1);
         assert_eq!(&hex, "db8ac1c259eb89d4a131b253bacfca5f319d54f2");
     }

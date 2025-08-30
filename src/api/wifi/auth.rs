@@ -12,7 +12,12 @@ static CHECK: &[u8] = b"\"error\":\"ok\"";
 
 impl super::WifiApi {
     /// # BUAA WiFi Login
-    /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username and password <br>
+    ///
+    /// This API is independent of other APIs and does not require cookies,
+    /// so you need to provide a separate username and password
+    ///
+    /// ## Example
+    ///
     /// ```rust
     /// use buaa::Context;
     ///
@@ -99,23 +104,28 @@ impl super::WifiApi {
         let token_bytes = token.as_bytes();
 
         // 计算登录信息
-        // 注意因为是直接格式化字符串而非通过json库转成标准json, 所以必须保证格式完全正确, 无空格, 键值对都带双引号
-        let data = format!(
-            r#"{{"username":"{un}","password":"{pw}","ip":"{ip}","acid":"{ac_id}","enc_ver":"srun_bx1"}}"#
-        );
-        // 自带前缀
-        let info = crypto::xencode::x_encode(data.as_bytes(), token_bytes);
+        let info = serde_json::json!({
+            "username": un,
+            "password": pw,
+            "ip": ip,
+            "acid": ac_id,
+            "enc_ver": "srun_bx1"
+        });
+        let info = serde_json::to_vec(&info)?;
+        // x_encode 自带前缀 {SRBX1}
+        let info = crypto::xencode::x_encode(&info, token_bytes);
 
         // 计算加密后的密码, 并且后补前缀
-        let password_md5 = crypto::md5::md5_hmac(pw.as_bytes(), token_bytes);
-        let password_md5 = crypto::bytes2hex(&password_md5);
+        let hmac_cipher = crypto::md5::HmacMd5::new(token_bytes);
+        let pw = hmac_cipher.compute(pw.as_bytes());
+        let pw = crypto::bytes2hex(&pw);
 
         // 计算校验和, 参数顺序如下, 剩下的两个是 n 和 type, 固定为 200 和 1
-        let check_str = format!(
-            "{token}{un}{token}{password_md5}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}"
+        let sum = format!(
+            "{token}{un}{token}{pw}{token}{ac_id}{token}{ip}{token}200{token}1{token}{info}"
         );
-        let chk_sum = crypto::sha1::sha1(check_str.as_bytes());
-        let chk_sum = crypto::bytes2hex(&chk_sum);
+        let sum = crypto::sha1::Sha1::digest(sum.as_bytes());
+        let sum = crypto::bytes2hex(&sum);
 
         // 构造登录 URL 并登录
         // 暂时不知道后面五个参数有无修改必要
@@ -123,10 +133,10 @@ impl super::WifiApi {
             ("callback", time),
             ("action", "login"),
             ("username", un),
-            ("password", &format!("{{MD5}}{password_md5}")),
+            ("password", &format!("{{MD5}}{pw}")),
             ("ac_id", ac_id),
             ("ip", &ip),
-            ("chksum", &chk_sum),
+            ("chksum", &sum),
             ("info", &info),
             ("n", "200"),
             ("type", "1"),
@@ -154,7 +164,12 @@ impl super::WifiApi {
     }
 
     /// # BUAA WiFi Logout
-    /// This API is independent of other APIs and does not require cookies, so you need to provide a separate username <br>
+    ///
+    /// This API is independent of other APIs and does not require cookies,
+    /// so you need to provide a separate username
+    ///
+    /// ## Example
+    ///
     /// ```rust
     /// use buaa::Context;
     ///
