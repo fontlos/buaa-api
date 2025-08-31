@@ -18,7 +18,7 @@ impl super::SrsApi {
         let cookie = self.cookies.load();
         match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
             Some(t) => {
-                self.cred.set(Location::Srs, t.to_string());
+                self.cred.set(Location::Srs, t.value().to_string());
                 Ok(())
             }
             None => Err(Error::server("[Srs] Login failed. No Token")),
