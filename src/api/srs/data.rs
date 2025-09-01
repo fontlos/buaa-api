@@ -16,7 +16,7 @@ pub(super) struct _SrsStatus {
 
 /// # A filter for querying courses
 #[derive(Serialize)]
-pub struct CourseFilter {
+pub struct SrsFilter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
     #[serde(serialize_with = "serialize_course_range")]
@@ -29,7 +29,7 @@ pub struct CourseFilter {
     size: u8,
     // 校区
     campus: u8,
-    // 是否显示冲突课程, 可选
+    // 是否显示冲突课程, 可选, 隐藏冲突为 0
     #[serde(rename = "SFCT")]
     conflict: Option<u8>,
     // 课程性质, 可选
@@ -45,12 +45,12 @@ pub struct CourseFilter {
     key: Option<String>,
 }
 
-impl CourseFilter {
+impl SrsFilter {
     /// Create a default course filter
     /// # Warning
     /// - make sure the campus is correct, or you can use SrsAPI.gen_filter() to get the default campus
     pub fn new(campus: u8) -> Self {
-        CourseFilter {
+        SrsFilter {
             range: CourseRange::SUGGEST,
             page: 1,
             size: 10,
@@ -282,11 +282,11 @@ where
 
 #[derive(Deserialize)]
 pub(super) struct _SrsRes1 {
-    pub data: Courses,
+    pub data: SrsCourses,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Courses {
+pub struct SrsCourses {
     #[serde(rename = "total")]
     pub count: u16,
     #[serde(rename = "rows")]
@@ -364,8 +364,8 @@ pub struct CourseSchedule {
 }
 
 impl Course {
-    pub fn to_opt<'a>(&'a self, filter: &'a CourseFilter) -> _SrsOpt<'a> {
-        _SrsOpt {
+    pub fn as_opt<'a>(&'a self, filter: &'a SrsFilter) -> SrsOpt<'a> {
+        SrsOpt {
             range: course_range_to_str(&filter.range),
             id: &self.id,
             sum: &self.sum,
@@ -379,11 +379,11 @@ impl Course {
 
 #[derive(Deserialize)]
 pub(crate) struct _SrsRes2 {
-    pub data: Vec<CourseSeleted>,
+    pub data: Vec<SrsSelected>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CourseSeleted {
+pub struct SrsSelected {
     #[serde(rename = "JXBID")]
     pub id: String,
     #[serde(rename = "teachingClassType")]
@@ -410,7 +410,7 @@ pub struct CourseSeleted {
     pub sum: String,
 }
 
-impl CourseSeleted {
+impl SrsSelected {
     pub fn can_drop(&self) -> bool {
         self.can_drop == "1"
     }
@@ -419,8 +419,8 @@ impl CourseSeleted {
     /// It can only be used to drop course,
     /// and you need to make sure that `can_drop()` returns true,
     /// otherwise it will fail at 'drop_course' or there will be some other unknown error
-    pub fn to_opt<'a>(&'a self) -> _SrsOpt<'a> {
-        _SrsOpt {
+    pub fn as_opt<'a>(&'a self) -> SrsOpt<'a> {
+        SrsOpt {
             range: self.range.as_deref().unwrap_or(""),
             id: &self.id,
             sum: &self.sum,
@@ -434,7 +434,7 @@ impl CourseSeleted {
 
 /// # Structure for course select and drop
 #[derive(Serialize)]
-pub struct _SrsOpt<'a> {
+pub struct SrsOpt<'a> {
     // 类型
     #[serde(rename = "clazzType")]
     range: &'a str,

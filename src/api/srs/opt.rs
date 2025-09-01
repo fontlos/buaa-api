@@ -1,10 +1,13 @@
 use crate::api::Location;
 use crate::error::Error;
 
-use super::{_SrsOpt, _SrsRes1, _SrsRes2, _SrsStatus, CourseFilter, CourseSeleted, Courses};
+use super::{_SrsRes1, _SrsRes2, _SrsStatus, SrsCourses, SrsFilter, SrsOpt, SrsSelected};
 
 impl super::SrsApi {
-    pub async fn gen_filter(&self) -> crate::Result<CourseFilter> {
+    /// Get the default course filter.
+    /// If you know your campus,
+    /// you can create the filter by `SrsFilter::new` directly.
+    pub async fn get_default_filter(&self) -> crate::Result<SrsFilter> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
 
         // 获取 token
@@ -25,12 +28,13 @@ impl super::SrsApi {
         let text = res.text().await?;
         let campus = crate::utils::get_value_by_lable(&text, "\"campus\": \"", "\"")
             .and_then(|campus| campus.parse::<u8>().ok())
-            .map(CourseFilter::new)
+            .map(SrsFilter::new)
             .ok_or_else(|| Error::server("[Srs] Invalid or missing campus"))?;
         Ok(campus)
     }
+
     /// Query Course
-    pub async fn query_course(&self, filter: &CourseFilter) -> Result<Courses, Error> {
+    pub async fn query_course(&self, filter: &SrsFilter) -> crate::Result<SrsCourses> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
 
         // 获取 token
@@ -57,7 +61,7 @@ impl super::SrsApi {
     }
 
     /// Query Selected Course
-    pub async fn query_selected(&self) -> Result<Vec<CourseSeleted>, Error> {
+    pub async fn query_selected(&self) -> crate::Result<Vec<SrsSelected>> {
         // 查询退选记录的 URL, 操作相同, 但感觉没啥用
         // https://byxk.buaa.edu.cn/xsxk/elective/deselect
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
@@ -81,7 +85,7 @@ impl super::SrsApi {
 
     /// # Select Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn select_course<'a>(&self, opt: &'a _SrsOpt<'a>) -> crate::Result<()> {
+    pub async fn select_course<'a>(&self, opt: &'a SrsOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
 
         // 获取 token
@@ -107,7 +111,7 @@ impl super::SrsApi {
 
     /// # Drop Course
     /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
-    pub async fn drop_course<'a>(&self, opt: &'a _SrsOpt<'a>) -> crate::Result<()> {
+    pub async fn drop_course<'a>(&self, opt: &'a SrsOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
 
         // 获取 token
@@ -138,24 +142,13 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_srs_gen_filter() {
-        let context = Context::with_auth("./data");
-
-        let srs = context.srs();
-        srs.login().await.unwrap();
-
-        let _filter = srs.gen_filter().await.unwrap();
-    }
-
-    #[ignore]
-    #[tokio::test]
     async fn test_srs_query() {
         let context = Context::with_auth("./data");
 
         let srs = context.srs();
         srs.login().await.unwrap();
 
-        let filter = srs.gen_filter().await.unwrap();
+        let filter = srs.get_default_filter().await.unwrap();
 
         let res = srs.query_course(&filter).await.unwrap();
         println!("{:?}", res);
