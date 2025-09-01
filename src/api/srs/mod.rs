@@ -1,6 +1,6 @@
 //! # BUAA Undergraduate & Graduate Student Course Registration System API
 
-mod auth;
+mod core;
 mod data;
 mod opt;
 

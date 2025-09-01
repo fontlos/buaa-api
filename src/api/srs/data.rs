@@ -1,18 +1,49 @@
 use serde::{Deserialize, Serialize, Serializer};
+use serde::de::{self, Deserializer};
 
 // ====================
-// 用于请求校验
+// 用于请求
 // ====================
 
 #[derive(Deserialize)]
-pub(super) struct _SrsStatus {
+pub(super) struct _SrsRes<T> {
     pub code: u16,
     pub msg: String,
+    pub data: T,
+}
+
+pub(super) enum _SrsBody<'a, Q: Serialize + ?Sized> {
+    QueryToken,
+    Form(&'a Q),
+    Json(&'a Q),
+    None,
 }
 
 // ====================
 // 用于课程查询
 // ====================
+
+// 用于提取校区的临时结构
+pub(super) struct _SrsCampus(pub u8);
+
+impl<'de> Deserialize<'de> for _SrsCampus {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            student: J,
+        }
+        #[derive(Deserialize)]
+        struct J {
+            campus: String,
+        }
+        let i = I::deserialize(deserializer)?;
+        let campus = i.student.campus.parse::<u8>().map_err(de::Error::custom)?;
+        Ok(_SrsCampus(campus))
+    }
+}
 
 /// # A filter for querying courses
 #[derive(Serialize)]
@@ -280,11 +311,7 @@ where
 // 用于课程查询
 // ====================
 
-#[derive(Deserialize)]
-pub(super) struct _SrsRes1 {
-    pub data: SrsCourses,
-}
-
+// _SrsRes<SrsCourses>
 #[derive(Debug, Deserialize)]
 pub struct SrsCourses {
     #[serde(rename = "total")]
@@ -315,6 +342,9 @@ pub struct Course {
     // 开课单位
     #[serde(rename = "KKDW")]
     pub department: String,
+    // 是否已选, 0 否
+    #[serde(rename = "SFYX")]
+    pub is_select: String,
     // 学时
     #[serde(rename = "XS")]
     pub class_hours: String,
@@ -377,11 +407,7 @@ impl Course {
 // 用于查询已选
 // ====================
 
-#[derive(Deserialize)]
-pub(crate) struct _SrsRes2 {
-    pub data: Vec<SrsSelected>,
-}
-
+// _SrsRes<Vec<SrsSelected>>
 #[derive(Debug, Deserialize)]
 pub struct SrsSelected {
     #[serde(rename = "JXBID")]
@@ -444,4 +470,6 @@ pub struct SrsOpt<'a> {
     // 校验和
     #[serde(rename = "secretVal")]
     sum: &'a str,
+    // batchId
+    // chooseVolunteer
 }
