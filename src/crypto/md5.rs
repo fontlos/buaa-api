@@ -1,7 +1,6 @@
 //! Self-implemented MD5, use to make dependencies minimize,
 //! and the performance gap is negligible for the small amount of data we pass on
 
-
 pub struct Md5 {
     state: [u32; 4],
     count: [u64; 2],

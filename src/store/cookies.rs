@@ -67,7 +67,11 @@ impl AtomicCookieStore {
 }
 
 impl reqwest::cookie::CookieStore for AtomicCookieStore {
-    fn set_cookies(&self, cookie_headers: &mut dyn Iterator<Item = &HeaderValue>, url: &reqwest::Url) {
+    fn set_cookies(
+        &self,
+        cookie_headers: &mut dyn Iterator<Item = &HeaderValue>,
+        url: &reqwest::Url,
+    ) {
         let cookies = cookie_headers.filter_map(|val| {
             std::str::from_utf8(val.as_bytes())
                 .map_err(RawCookieParseError::from)

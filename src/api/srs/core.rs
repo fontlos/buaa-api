@@ -1,10 +1,10 @@
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 use crate::api::Location;
 use crate::error::Error;
 
-use super::{_SrsRes, _SrsBody};
+use super::{_SrsBody, _SrsRes};
 
 impl super::SrsApi {
     pub async fn login(&self) -> crate::Result<()> {
