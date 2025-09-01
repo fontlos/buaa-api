@@ -16,8 +16,9 @@
   - [x] Login
 - [x] BUAA Boya Course: `boya`
   - [x] Login
-  - [x] Query course
-  - [x] Query selected
+  - [x] Query courses
+  - [x] Query course's sign rule
+  - [x] Query selected courses
   - [x] Query statistic information
   - [x] Select course
   - [x] Drop course
@@ -26,22 +27,27 @@
   - [x] A universal request API for extensions
 - [x] BUAA Smart Classroom: `class`
   - [x] Login
-  - [x] Checkin
-  - [x] Query
+  - [x] Query class
+  - [x] Query class schedule
+  - [x] Checkin class
 - [ ] BUAA Cloud Disk: `cloud`
   - [x] Login
   - [x] Get root dir
+  - [x] Get all root dir
+  - [x] Get user root dir
   - [x] List dir
-  - [x] Get download URL
+  - [x] Get single file download URL
+  - [x] Get a zip of multiple files download URL
 - [ ] Spoc Platform: `spoc`
   - [x] Login
+  - [x] Query teaching week
   - [x] Query class schedule
   - [x] A universal request API for extensions
 - [x] BUAA Undergraduate & Graduate Student Course Registration System: `srs`
   - [x] Login
   - [x] Get filter
-  - [x] Query with filter
-  - [x] Query selected
+  - [x] Query courses with filter
+  - [x] Query selected courses
   - [x] Select course
   - [x] Drop course
 - [x] BUAA Teacher Evaluation System: `tes`
@@ -66,11 +72,11 @@ APIs not listed above might have been overlooked or deemed unimportant by me, bu
 The basic process is:
 
 - Initialize the `Context`
-- (Optional) Set account
-- (Optional) Specifies the dictionary for auth
-- (Auto default) Login to SSO (Context)
+  - (Optional) Set account
+  - (Optional) Specifies the dictionary for auth
+  - (Auto default) Login to SSO (Context)
 - Get the API group you need
-- (Auto default) Login to this group
+  - (Auto default) Login to this group
 - Call API in this group
 - (Optional) Save auth file
 
@@ -108,12 +114,16 @@ async fn main() {
     context.login().await.unwrap();
 
     let boya = context.boya();
+    // You can manually relogin in advance.
+    // This is useful to prevent login invalidation when grabbing a course
     boya.login().await.unwrap();
 
     let course_list = boya.query_course().await.unwrap();
     println!("{}", course_list);
 
-    let id = 1; // Should get from course_list, just an example
+    // Waiting until course can be selected ...
+
+    let id = course_list[0].id; // Just an example
     let res = boya.select_course(id).await.unwrap();
     println!("{}", res);
 

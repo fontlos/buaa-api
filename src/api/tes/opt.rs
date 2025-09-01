@@ -35,6 +35,7 @@ impl super::TesApi {
 
         // 考虑到一个课可能有很多老师, 需要评多次, 但 30 位应该足够多数人了
         let mut list = Vec::<EvaluationListItem>::with_capacity(30);
+        // TODO: 并发请求
         for wjid in wjids {
             // 省略的无用查询参数 &sfyp=0&xnxq=2024-20251&pageNum=1&pageSize=999
             let url = format!(

@@ -7,6 +7,7 @@ use super::data::{
 };
 
 impl super::BoyaApi {
+    // TODO: 考虑在这里并发的给所有 Course 获取签到信息
     /// # Query Course
     pub async fn query_course(&self) -> crate::Result<Vec<BoyaCourse>> {
         let query = serde_json::json!({
