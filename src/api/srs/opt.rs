@@ -1,3 +1,5 @@
+use crate::{Error, utils};
+
 use super::{_SrsBody, _SrsCampus, SrsCourses, SrsFilter, SrsOpt, SrsSelected};
 
 impl super::SrsApi {
@@ -9,6 +11,19 @@ impl super::SrsApi {
         let body = _SrsBody::<'_, ()>::QueryToken;
         let res: _SrsCampus = self.universal_request(url, body).await?;
         Ok(SrsFilter::new(res.0))
+    }
+
+    // 预选所需, 有病吧嵌在 HTML 里
+    /// **Note**: Do not need login
+    pub async fn get_batch_id(&self) -> crate::Result<String> {
+        let url = "https://byxk.buaa.edu.cn/xsxk/profile/index.html";
+        let res = self.client.get(url).send().await?;
+        let text = res.text().await?;
+        let id = utils::get_value_by_lable(&text, "\"code\":\"", "\"");
+        match id {
+            Some(i) => Ok(i.to_string()),
+            None => Err(Error::server("Cannot find batch id")),
+        }
     }
 
     /// Query Course
