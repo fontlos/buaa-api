@@ -1,6 +1,6 @@
 use crate::{Error, utils};
 
-use super::{_SrsBody, _SrsCampus, SrsCourses, SrsFilter, SrsOpt, SrsSelected};
+use super::{_SrsBody, _SrsCampus, SrsCourses, SrsCourse, SrsFilter, SrsOpt, SrsSelected};
 
 impl super::SrsApi {
     /// Get the default course filter.
@@ -14,8 +14,10 @@ impl super::SrsApi {
     }
 
     // 预选所需, 有病吧嵌在 HTML 里
+    /// Get the batch id for course selection.
+    ///
     /// **Note**: Do not need login
-    pub async fn get_batch_id(&self) -> crate::Result<String> {
+    pub async fn get_batch(&self) -> crate::Result<String> {
         let url = "https://byxk.buaa.edu.cn/xsxk/profile/index.html";
         let res = self.client.get(url).send().await?;
         let text = res.text().await?;
@@ -47,8 +49,41 @@ impl super::SrsApi {
         Ok(res)
     }
 
+    /// # Pre-Select Course
+    ///
+    /// **Note**: Only for pre-selection. Late-selection use `select_course`
+    ///
+    /// **Note**: You cannot call login before calling this, otherwise the verification will fail
+    ///
+    /// - Input
+    ///     - `c`: Course to select, obtained from `query_course`
+    ///     - `f`: Filter current used
+    ///     - `b`: Batch ID, obtained from `get_batch`
+    ///     - `i`: Index ID
+    pub async fn pre_select_course(&self, c: &SrsCourse, f: &SrsFilter, b: &str, i: u8) -> crate::Result<()> {
+        let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
+        // 什么 ** 玩意, 课程列表缺少 range 参数还得从过滤器里借一个,
+        // 还比退选多了个莫名其妙的 batch 参数, 这玩意还写死在 HTML 里
+        let form = [
+            ("clazzType", f.range.as_str()),
+            ("clazzId", &c.id),
+            ("secretVal", &c.sum),
+            ("batchId", b),
+            ("chooseVolunteer", &i.to_string())
+        ];
+        let body = _SrsBody::Form(&form);
+        let _: Option<()> = self.universal_request(url, body).await?;
+
+        Ok(())
+    }
+
     /// # Select Course
-    /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
+    ///
+    /// **Note**: Only for late-selection. Pre-selection use `pre_select_course`
+    ///
+    /// **Note**: You cannot call login before calling this, otherwise the verification will fail
+    ///
+    /// - Input: `opt`: call `as_opt` on `SrsCourse` or `SrsSelected`
     pub async fn select_course<'a>(&self, opt: &'a SrsOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
         let body = _SrsBody::Form(opt);
@@ -58,7 +93,10 @@ impl super::SrsApi {
     }
 
     /// # Drop Course
-    /// Note that you cannot call the login to update the token before calling this function, otherwise the verification will fail
+    ///
+    /// **Note**: You cannot call login before calling this, otherwise the verification will fail
+    ///
+    /// - Input: `opt`: call `as_opt` on `SrsCourse` or `SrsSelected`
     pub async fn drop_course<'a>(&self, opt: &'a SrsOpt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
         let body = _SrsBody::Form(opt);
@@ -83,6 +121,10 @@ mod tests {
 
         let res = srs.query_course(&filter).await.unwrap();
         println!("{:?}", res);
+
+        let batch = srs.get_batch().await.unwrap();
+
+        srs.pre_select_course(&res.data[0], &filter, &batch, 1).await.unwrap();
     }
 
     #[ignore]
