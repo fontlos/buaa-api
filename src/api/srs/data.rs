@@ -51,7 +51,7 @@ pub struct SrsFilter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
     #[serde(serialize_with = "serialize_course_range")]
-    range: CourseRange,
+    pub(super) range: CourseRange,
     // 页码
     #[serde(rename = "pageNumber")]
     page: u8,
@@ -172,17 +172,10 @@ pub enum CourseRange {
     ALL,
 }
 
-// 序列化选课过滤器范围为对应的查询字符
-fn serialize_course_range<S>(range: &CourseRange, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_str(course_range_to_str(range))
-}
-
-#[inline]
-fn course_range_to_str(range: &CourseRange) -> &str {
-    match range {
+impl CourseRange{
+    #[inline]
+    pub fn as_str(&self) -> &'static str {
+        match self {
         CourseRange::SUGGEST => "TJKC",
         CourseRange::PLAN => "FANKC",
         CourseRange::EXTRA => "FAWKC",
@@ -193,6 +186,15 @@ fn course_range_to_str(range: &CourseRange) -> &str {
         CourseRange::RESEARCH => "KYKT",
         CourseRange::ALL => "ALLKC",
     }
+    }
+}
+
+// 序列化选课过滤器范围为对应的查询字符
+fn serialize_course_range<S>(range: &CourseRange, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(range.as_str())
 }
 
 /// # The nature of the course
@@ -317,11 +319,11 @@ pub struct SrsCourses {
     #[serde(rename = "total")]
     pub count: u16,
     #[serde(rename = "rows")]
-    pub data: Vec<Course>,
+    pub data: Vec<SrsCourse>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Course {
+pub struct SrsCourse {
     // 教学班 ID
     #[serde(rename = "JXBID")]
     pub(super) id: String,
@@ -393,10 +395,10 @@ pub struct CourseSchedule {
     pub place: String,
 }
 
-impl Course {
+impl SrsCourse {
     pub fn as_opt<'a>(&'a self, filter: &'a SrsFilter) -> SrsOpt<'a> {
         SrsOpt {
-            range: course_range_to_str(&filter.range),
+            range: filter.range.as_str(),
             id: &self.id,
             sum: &self.sum,
         }
@@ -470,6 +472,4 @@ pub struct SrsOpt<'a> {
     // 校验和
     #[serde(rename = "secretVal")]
     sum: &'a str,
-    // batchId
-    // chooseVolunteer
 }
