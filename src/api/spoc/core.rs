@@ -35,7 +35,8 @@ impl super::SpocApi {
             .ok_or_else(|| Error::server("[Spoc] Login failed. No token"))?;
         // 再次调用 next 获取 refreshToken, 但我们用不着, 使用我们自己的机制刷新登陆状态
 
-        self.cred.set(Location::Spoc, token.to_string());
+        // 提前加上前缀
+        self.cred.set(Location::Spoc, format!("Inco-{token}"));
         Ok(())
     }
 
@@ -51,18 +52,15 @@ impl super::SpocApi {
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        if self.cred.load().spoc_token.is_expired() {
+        let cred = &self.cred.load().spoc_token;
+        if cred.is_expired() {
             self.login().await?;
         }
 
-        let cred = self.cred.load();
-        let token: &String = match cred.spoc_token.value() {
+        let token = match cred.value() {
             Some(t) => t,
             None => return Err(Error::auth_expired(Location::Spoc)),
         };
-
-        // TODO: 考虑在储存时就加上前缀
-        let token = format!("Inco-{token}");
 
         // 初始化 AES
         let aes = crypto::aes::Aes128::new(SPOC_AES_KEY).unwrap();
@@ -77,7 +75,7 @@ impl super::SpocApi {
 
         let res = self
             .post(url)
-            .header("Token", &token)
+            .header("Token", token)
             .json(&body)
             .send()
             .await?
