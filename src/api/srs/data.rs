@@ -19,6 +19,21 @@ pub(super) enum _SrsBody<'a, Q: Serialize + ?Sized> {
     None,
 }
 
+fn deserialize_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    Ok(s == "1")
+}
+
+fn serialize_bool<S>(value: &bool, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str(if *value { "1" } else { "0" })
+}
+
 // ====================
 // 用于课程查询
 // ====================
@@ -50,8 +65,8 @@ impl<'de> Deserialize<'de> for _SrsCampus {
 pub struct SrsFilter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
-    #[serde(serialize_with = "serialize_course_range")]
-    pub(super) range: CourseRange,
+    #[serde(serialize_with = "serialize_course_scope")]
+    pub(super) scope: CourseScope,
     // 页码
     #[serde(rename = "pageNumber")]
     page: u8,
@@ -62,15 +77,16 @@ pub struct SrsFilter {
     campus: u8,
     // 是否显示冲突课程, 可选, 隐藏冲突为 0
     #[serde(rename = "SFCT")]
-    conflict: Option<u8>,
+    #[serde(serialize_with = "serialize_bool")]
+    display_conflict: bool,
     // 课程性质, 可选
     #[serde(rename = "KCXZ")]
-    #[serde(serialize_with = "serialize_course_nature")]
-    nature: Option<CourseNature>,
+    #[serde(serialize_with = "serialize_course_requirement")]
+    requirement: Option<CourseRequirement>,
     // 课程类型, 可选
     #[serde(rename = "KCLB")]
-    #[serde(serialize_with = "serialize_course_type")]
-    r#type: Option<CourseType>,
+    #[serde(serialize_with = "serialize_course_category")]
+    category: Option<CourseCategory>,
     // 搜索关键字, 可选
     #[serde(rename = "KEY")]
     key: Option<String>,
@@ -82,20 +98,20 @@ impl SrsFilter {
     /// - make sure the campus is correct, or you can use SrsAPI.gen_filter() to get the default campus
     pub fn new(campus: u8) -> Self {
         SrsFilter {
-            range: CourseRange::SUGGEST,
+            scope: CourseScope::Suggest,
             page: 1,
             size: 10,
             campus,
-            conflict: Some(0),
-            nature: None,
-            r#type: None,
+            display_conflict: false,
+            requirement: None,
+            category: None,
             key: None,
         }
     }
 
     /// Set up the range of the course query
-    pub fn set_range(&mut self, range: CourseRange) {
-        self.range = range;
+    pub fn set_range(&mut self, range: CourseScope) {
+        self.scope = range;
     }
 
     /// Set up the page number of the course query
@@ -120,24 +136,19 @@ impl SrsFilter {
         self.campus = 2;
     }
 
-    /// Display the conflict course
-    pub fn set_display_conflict(&mut self) {
-        self.conflict = Some(0);
-    }
-
-    /// Hide the conflict course
-    pub fn set_hide_conflict(&mut self) {
-        self.conflict = None;
+    /// Set display of the conflict course
+    pub fn set_display_conflict(&mut self, opt: bool) {
+        self.display_conflict = opt;
     }
 
     /// Set up the nature of the course
-    pub fn set_nature(&mut self, nature: Option<CourseNature>) {
-        self.nature = nature;
+    pub fn set_nature(&mut self, nature: Option<CourseRequirement>) {
+        self.requirement = nature;
     }
 
     /// Set up the type of the course
-    pub fn set_type(&mut self, r#type: Option<CourseType>) {
-        self.r#type = r#type;
+    pub fn set_type(&mut self, ctype: Option<CourseCategory>) {
+        self.category = ctype;
     }
 
     /// Set up the key word of the course
@@ -151,55 +162,54 @@ impl SrsFilter {
 // 离谱首字母命名法, 甚至有一个首字母都疑似拼错了
 // TJKC 班级课表推荐课程, FANKC 方案内课程, FAWKC 方案外课程, CXKC 重修课程, 只有重修课程可以选校区
 // YYKC 英语课程, TYKC 体育课程, XGKC 通识选修课程, KYKT 科研课堂, ALLKC 全校课程查询
-pub enum CourseRange {
+pub enum CourseScope {
     /// 班级课表推荐课程
-    SUGGEST,
+    Suggest,
     /// 方案内课程
-    PLAN,
+    WithinPlan,
     /// 方案外课程
-    EXTRA,
+    OutsidePlan,
     /// 重修课程
-    RETAKE,
+    Retake,
     /// 英语课程
     English,
     /// 体育课程
     PE,
     /// 通识选修课程
-    GENERAL,
+    General,
     /// 科研课堂
-    RESEARCH,
+    Research,
     /// 全校课程查询
-    ALL,
+    All,
 }
 
-impl CourseRange{
-    #[inline]
+impl CourseScope {
     pub fn as_str(&self) -> &'static str {
         match self {
-        CourseRange::SUGGEST => "TJKC",
-        CourseRange::PLAN => "FANKC",
-        CourseRange::EXTRA => "FAWKC",
-        CourseRange::RETAKE => "CXKC",
-        CourseRange::English => "YYKC",
-        CourseRange::PE => "TYKC",
-        CourseRange::GENERAL => "XGKC",
-        CourseRange::RESEARCH => "KYKT",
-        CourseRange::ALL => "ALLKC",
-    }
+            CourseScope::Suggest => "TJKC",
+            CourseScope::WithinPlan => "FANKC",
+            CourseScope::OutsidePlan => "FAWKC",
+            CourseScope::Retake => "CXKC",
+            CourseScope::English => "YYKC",
+            CourseScope::PE => "TYKC",
+            CourseScope::General => "XGKC",
+            CourseScope::Research => "KYKT",
+            CourseScope::All => "ALLKC",
+        }
     }
 }
 
 // 序列化选课过滤器范围为对应的查询字符
-fn serialize_course_range<S>(range: &CourseRange, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_course_scope<S>(scope: &CourseScope, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(range.as_str())
+    serializer.serialize_str(scope.as_str())
 }
 
-/// # The nature of the course
+/// # The requirement of the course
 /// Be sure to consult the corresponding notes in the document to know the specific type
-pub enum CourseNature {
+pub enum CourseRequirement {
     /// 必修
     Compulsory,
     /// 选修
@@ -211,32 +221,32 @@ pub enum CourseNature {
 }
 
 // 序列化选课过滤器性质为对应的查询字符
-fn serialize_course_nature<S>(
-    nature: &Option<CourseNature>,
+fn serialize_course_requirement<S>(
+    requirement: &Option<CourseRequirement>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    if let Some(n) = nature {
+    if let Some(n) = requirement {
         match n {
-            CourseNature::Compulsory => serializer.serialize_str("01"),
-            CourseNature::Elective => serializer.serialize_str("02"),
-            CourseNature::Limited => serializer.serialize_str("03"),
-            CourseNature::Optional => serializer.serialize_str("04"),
+            CourseRequirement::Compulsory => serializer.serialize_str("01"),
+            CourseRequirement::Elective => serializer.serialize_str("02"),
+            CourseRequirement::Limited => serializer.serialize_str("03"),
+            CourseRequirement::Optional => serializer.serialize_str("04"),
         }
     } else {
         serializer.serialize_none()
     }
 }
 
-/// # The type of course
+/// # The category of course
 /// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
 // 这抽象系统是什么惊为天人的脑回路能想出来的逆天命名方式, 字母混数字, 还有合并的, 还乱序, 简单起见直接按字母表顺序排了
 // A 数学与自然科学类, B 工程基础类, C 外语类, D 思政军理类, E 体育类, FG 素质教育通识限修课, K Office Hours
 // 011 数理基础课, 012 工程基础课, 013 外语课类, 021 思政课, 022 军理课, 023 体育课, 024 素质教育理论必修课
 // 025 素质教育实践必修课, 026 综合素养课, 031 核心专业类, 032 一般专业类, 01 自然科学类课程
-pub enum CourseType {
+pub enum CourseCategory {
     /// 数学与自然科学类
     A,
     /// 工程基础类
@@ -278,31 +288,34 @@ pub enum CourseType {
 }
 
 // 序列化选课过滤器类型为对应的查询字符
-fn serialize_course_type<S>(r#type: &Option<CourseType>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_course_category<S>(
+    category: &Option<CourseCategory>,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    if let Some(t) = r#type {
+    if let Some(t) = category {
         match t {
-            CourseType::A => serializer.serialize_str("A"),
-            CourseType::B => serializer.serialize_str("B"),
-            CourseType::C => serializer.serialize_str("C"),
-            CourseType::D => serializer.serialize_str("D"),
-            CourseType::E => serializer.serialize_str("E"),
-            CourseType::F => serializer.serialize_str("FG"),
-            CourseType::G => serializer.serialize_str("K"),
-            CourseType::H => serializer.serialize_str("011"),
-            CourseType::I => serializer.serialize_str("012"),
-            CourseType::J => serializer.serialize_str("013"),
-            CourseType::K => serializer.serialize_str("021"),
-            CourseType::L => serializer.serialize_str("022"),
-            CourseType::M => serializer.serialize_str("023"),
-            CourseType::N => serializer.serialize_str("024"),
-            CourseType::O => serializer.serialize_str("025"),
-            CourseType::P => serializer.serialize_str("026"),
-            CourseType::Q => serializer.serialize_str("031"),
-            CourseType::R => serializer.serialize_str("032"),
-            CourseType::S => serializer.serialize_str("01"),
+            CourseCategory::A => serializer.serialize_str("A"),
+            CourseCategory::B => serializer.serialize_str("B"),
+            CourseCategory::C => serializer.serialize_str("C"),
+            CourseCategory::D => serializer.serialize_str("D"),
+            CourseCategory::E => serializer.serialize_str("E"),
+            CourseCategory::F => serializer.serialize_str("FG"),
+            CourseCategory::G => serializer.serialize_str("K"),
+            CourseCategory::H => serializer.serialize_str("011"),
+            CourseCategory::I => serializer.serialize_str("012"),
+            CourseCategory::J => serializer.serialize_str("013"),
+            CourseCategory::K => serializer.serialize_str("021"),
+            CourseCategory::L => serializer.serialize_str("022"),
+            CourseCategory::M => serializer.serialize_str("023"),
+            CourseCategory::N => serializer.serialize_str("024"),
+            CourseCategory::O => serializer.serialize_str("025"),
+            CourseCategory::P => serializer.serialize_str("026"),
+            CourseCategory::Q => serializer.serialize_str("031"),
+            CourseCategory::R => serializer.serialize_str("032"),
+            CourseCategory::S => serializer.serialize_str("01"),
         }
     } else {
         serializer.serialize_none()
@@ -346,7 +359,8 @@ pub struct SrsCourse {
     pub department: String,
     // 是否已选, 0 否
     #[serde(rename = "SFYX")]
-    pub is_select: String,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub is_select: bool,
     // 学时
     #[serde(rename = "XS")]
     pub class_hours: String,
@@ -398,7 +412,7 @@ pub struct CourseSchedule {
 impl SrsCourse {
     pub fn as_opt<'a>(&'a self, filter: &'a SrsFilter) -> SrsOpt<'a> {
         SrsOpt {
-            range: filter.range.as_str(),
+            range: filter.scope.as_str(),
             id: &self.id,
             sum: &self.sum,
         }
@@ -433,19 +447,16 @@ pub struct SrsSelected {
     #[serde(rename = "XF")]
     pub credit: String,
     #[serde(rename = "SFKT")]
-    can_drop: String,
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub can_drop: bool,
     #[serde(rename = "secretVal")]
     pub sum: String,
 }
 
 impl SrsSelected {
-    pub fn can_drop(&self) -> bool {
-        self.can_drop == "1"
-    }
-
     /// # Warning!
     /// It can only be used to drop course,
-    /// and you need to make sure that `can_drop()` returns true,
+    /// and you need to make sure that `can_drop` is true,
     /// otherwise it will fail at 'drop_course' or there will be some other unknown error
     pub fn as_opt<'a>(&'a self) -> SrsOpt<'a> {
         SrsOpt {

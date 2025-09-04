@@ -1,6 +1,6 @@
 use crate::{Error, utils};
 
-use super::{_SrsBody, _SrsCampus, SrsCourses, SrsCourse, SrsFilter, SrsOpt, SrsSelected};
+use super::{_SrsBody, _SrsCampus, SrsCourse, SrsCourses, SrsFilter, SrsOpt, SrsSelected};
 
 impl super::SrsApi {
     /// Get the default course filter.
@@ -38,11 +38,6 @@ impl super::SrsApi {
 
     /// Query Selected Course
     pub async fn query_selected(&self) -> crate::Result<Vec<SrsSelected>> {
-        // 查询退选记录的 URL, 操作相同, 但感觉没啥用
-        // https://byxk.buaa.edu.cn/xsxk/elective/deselect
-
-        // 用于补选中查询已选, 预选中查询用
-        // https://byxk.buaa.edu.cn/xsxk/volunteer/select
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
         let body = _SrsBody::<'_, ()>::None;
         let res = self.universal_request(url, body).await?;
@@ -60,16 +55,22 @@ impl super::SrsApi {
     ///     - `f`: Filter current used
     ///     - `b`: Batch ID, obtained from `get_batch`
     ///     - `i`: Index ID
-    pub async fn pre_select_course(&self, c: &SrsCourse, f: &SrsFilter, b: &str, i: u8) -> crate::Result<()> {
+    pub async fn pre_select_course(
+        &self,
+        c: &SrsCourse,
+        f: &SrsFilter,
+        b: &str,
+        i: u8,
+    ) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
         // 什么 ** 玩意, 课程列表缺少 range 参数还得从过滤器里借一个,
         // 还比退选多了个莫名其妙的 batch 参数, 这玩意还写死在 HTML 里
         let form = [
-            ("clazzType", f.range.as_str()),
+            ("clazzType", f.scope.as_str()),
             ("clazzId", &c.id),
             ("secretVal", &c.sum),
             ("batchId", b),
-            ("chooseVolunteer", &i.to_string())
+            ("chooseVolunteer", &i.to_string()),
         ];
         let body = _SrsBody::Form(&form);
         let _: Option<()> = self.universal_request(url, body).await?;
@@ -124,7 +125,9 @@ mod tests {
 
         let batch = srs.get_batch().await.unwrap();
 
-        srs.pre_select_course(&res.data[0], &filter, &batch, 1).await.unwrap();
+        srs.pre_select_course(&res.data[0], &filter, &batch, 1)
+            .await
+            .unwrap();
     }
 
     #[ignore]
