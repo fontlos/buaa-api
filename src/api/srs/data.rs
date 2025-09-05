@@ -19,6 +19,10 @@ pub(super) enum _SrsBody<'a, Q: Serialize + ?Sized> {
     None,
 }
 
+// ====================
+// 反/序列化布尔值
+// ====================
+
 fn deserialize_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'de>,
@@ -79,7 +83,7 @@ pub struct SrsFilter {
     #[serde(rename = "SFCT")]
     #[serde(serialize_with = "serialize_bool")]
     display_conflict: bool,
-    // 课程性质, 可选
+    // 课程性质, 必修限修等, 可选
     #[serde(rename = "KCXZ")]
     #[serde(serialize_with = "serialize_course_requirement")]
     requirement: Option<CourseRequirement>,
@@ -109,9 +113,9 @@ impl SrsFilter {
         }
     }
 
-    /// Set up the range of the course query
-    pub fn set_range(&mut self, range: CourseScope) {
-        self.scope = range;
+    /// Set up the scope of the course query
+    pub fn set_scope(&mut self, scope: CourseScope) {
+        self.scope = scope;
     }
 
     /// Set up the page number of the course query
@@ -124,13 +128,13 @@ impl SrsFilter {
         self.size = size;
     }
 
-    /// # Warning, only range is RETAKE can set the campus
+    /// # Warning, only scope is RETAKE can set the campus
     /// Set up the campus as XueYuanLu
     pub fn set_campus_xueyuanlu(&mut self) {
         self.campus = 1;
     }
 
-    /// # Warning, only range is RETAKE can set the campus
+    /// # Warning, only scope is RETAKE can set the campus
     /// Set up the campus as ShaHe
     pub fn set_campus_shahe(&mut self) {
         self.campus = 2;
@@ -141,24 +145,24 @@ impl SrsFilter {
         self.display_conflict = opt;
     }
 
-    /// Set up the nature of the course
-    pub fn set_nature(&mut self, nature: Option<CourseRequirement>) {
-        self.requirement = nature;
+    /// Set up the requirement of the course
+    pub fn set_requirement(&mut self, req: Option<CourseRequirement>) {
+        self.requirement = req;
     }
 
-    /// Set up the type of the course
-    pub fn set_type(&mut self, ctype: Option<CourseCategory>) {
-        self.category = ctype;
+    /// Set up the category of the course
+    pub fn set_category(&mut self, category: Option<CourseCategory>) {
+        self.category = category;
     }
 
     /// Set up the key word of the course
-    pub fn set_key(&mut self, key: String) {
-        self.key = Some(key);
+    pub fn set_key(&mut self, key: Option<String>) {
+        self.key = key;
     }
 }
 
 /// # The scope of the course query
-/// Be sure to consult the corresponding notes in the document to know the specific type
+/// Be sure to consult the corresponding notes in the document to know the specific scope
 // 离谱首字母命名法, 甚至有一个首字母都疑似拼错了
 // TJKC 班级课表推荐课程, FANKC 方案内课程, FAWKC 方案外课程, CXKC 重修课程, 只有重修课程可以选校区
 // YYKC 英语课程, TYKC 体育课程, XGKC 通识选修课程, KYKT 科研课堂, ALLKC 全校课程查询
@@ -369,12 +373,12 @@ pub struct SrsCourse {
     pub credit: String,
     // 因为学校服务器逆天设计导致 JSON 不合法, 含有重复键
     // 手动截取会出现玄学问题, 索性直接抛弃不合法的键值对
-    // // 课程性质
+    // // 课程要求
     // #[serde(rename = "KCXZ")]
-    // pub nature: String,
+    // pub requirement: String,
     // // 课程类型
     // #[serde(rename = "KCLB")]
-    // pub r#type: String,
+    // pub category: String,
     // 教师
     #[serde(rename = "SKJSZC")]
     pub teacher: String,
@@ -410,13 +414,27 @@ pub struct CourseSchedule {
 }
 
 impl SrsCourse {
+    // 捏吗的为什么不给 Course 一个 Scope, 还得从 Filter 里借一个
     pub fn as_opt<'a>(&'a self, filter: &'a SrsFilter) -> SrsOpt<'a> {
         SrsOpt {
-            range: filter.scope.as_str(),
+            scope: filter.scope.as_str(),
             id: &self.id,
             sum: &self.sum,
         }
     }
+}
+
+// ====================
+// 用于查询预选
+// ====================
+
+// 预选会按组管理, 因为有志愿之分, 例如体育课这一组可以选择多个
+// _SrsRes<Vec<_SrsPreSelectedGroup>>
+#[derive(Debug, Deserialize)]
+pub(super) struct _SrsPreSelectedGroup {
+    // 教学班列表
+    #[serde(rename = "tcList")]
+    pub list: Vec<SrsSelected>,
 }
 
 // ====================
@@ -427,13 +445,19 @@ impl SrsCourse {
 #[derive(Debug, Deserialize)]
 pub struct SrsSelected {
     #[serde(rename = "JXBID")]
-    pub id: String,
+    pub(super) id: String,
     #[serde(rename = "teachingClassType")]
-    pub range: Option<String>,
+    pub scope: Option<String>,
+    // 课程类型
+    #[serde(rename = "KCLB")]
+    pub category: String,
+    // 课程性质, 必修限修等
+    #[serde(rename = "KCXZ")]
+    pub requirement: String,
     #[serde(rename = "XQ")]
     pub campus: String,
     #[serde(rename = "KCH")]
-    pub course_code: String,
+    pub course_id: String,
     #[serde(rename = "KXH")]
     pub course_index: String,
     #[serde(rename = "KCM")]
@@ -460,7 +484,7 @@ impl SrsSelected {
     /// otherwise it will fail at 'drop_course' or there will be some other unknown error
     pub fn as_opt<'a>(&'a self) -> SrsOpt<'a> {
         SrsOpt {
-            range: self.range.as_deref().unwrap_or(""),
+            scope: self.scope.as_deref().unwrap_or(""),
             id: &self.id,
             sum: &self.sum,
         }
@@ -474,9 +498,9 @@ impl SrsSelected {
 /// # Structure for course select and drop
 #[derive(Serialize)]
 pub struct SrsOpt<'a> {
-    // 类型
+    // 范围
     #[serde(rename = "clazzType")]
-    range: &'a str,
+    scope: &'a str,
     // 课程 ID
     #[serde(rename = "clazzId")]
     id: &'a str,

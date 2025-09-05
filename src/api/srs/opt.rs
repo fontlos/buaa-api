@@ -1,6 +1,6 @@
 use crate::{Error, utils};
 
-use super::{_SrsBody, _SrsCampus, SrsCourse, SrsCourses, SrsFilter, SrsOpt, SrsSelected};
+use super::{_SrsBody, _SrsCampus, _SrsPreSelectedGroup, SrsCourse, SrsCourses, SrsFilter, SrsOpt, SrsSelected};
 
 impl super::SrsApi {
     /// Get the default course filter.
@@ -33,6 +33,18 @@ impl super::SrsApi {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
         let body = _SrsBody::Json(filter);
         let res = self.universal_request(url, body).await?;
+        Ok(res)
+    }
+
+    /// Query Pre-Selected Course
+    pub async fn query_pre_selected(&self) -> crate::Result<Vec<SrsSelected>> {
+        // 查询退选记录的 URL, 操作相同, 但感觉没啥用
+        // https://byxk.buaa.edu.cn/xsxk/elective/deselect
+
+        let url = "https://byxk.buaa.edu.cn/xsxk/volunteer/select";
+        let body = _SrsBody::<'_, ()>::None;
+        let res: Vec<_SrsPreSelectedGroup> = self.universal_request(url, body).await?;
+        let res = res.into_iter().flat_map(|g| g.list).collect();
         Ok(res)
     }
 
