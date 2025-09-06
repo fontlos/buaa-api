@@ -2,7 +2,7 @@ use crate::api::Location;
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{CloudItem, CloudDir, CloudRootDir};
+use super::data::{CloudDir, CloudItem, CloudRootDir};
 
 impl super::CloudApi {
     /// Get directory by category, possible categories:
@@ -113,6 +113,16 @@ impl super::CloudApi {
 
         Ok(url)
     }
+
+    // 重复删掉文件也不会报错
+    pub async fn delete_item(&self) -> crate::Result<()> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
+        let data = serde_json::json!({
+            "docid": "gns://972DE460B3C34AF8A67358833195E5A3/9C9B4CE95AA943398B0B412785E26EA8",
+        });
+        self.universal_request(url, &data).await?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -120,23 +130,10 @@ mod tests {
     use crate::Context;
 
     #[tokio::test]
-    async fn test_get_list() {
-        let context = Context::with_auth("./data");
-
-        let cloud = context.cloud();
-
-        let dir = cloud.get_user_dir_id().await.unwrap();
-        let list = cloud.list_dir(&dir).await.unwrap();
-
-        println!("list: {list:?}");
-    }
-
-    #[tokio::test]
     async fn test_get_url() {
         let context = Context::with_auth("./data");
 
         let cloud = context.cloud();
-        cloud.login().await.unwrap();
 
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
@@ -144,6 +141,17 @@ mod tests {
         let download_url = cloud.get_muti_download_url(&list.files).await.unwrap();
 
         println!("download_url: {download_url}");
+
+        context.save_auth("./data");
+    }
+
+    #[tokio::test]
+    async fn test_delete() {
+        let context = Context::with_auth("./data");
+
+        let cloud = context.cloud();
+
+        cloud.delete_item().await.unwrap();
 
         context.save_auth("./data");
     }
