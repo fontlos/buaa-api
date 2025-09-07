@@ -9,7 +9,8 @@ impl super::SsoApi {
         // "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
         // "https://d.buaa.edu.cn/";
         let login_url = "https://sso.buaa.edu.cn/login";
-        let verify_url = "https://uc.buaa.edu.cn/#/user/login";
+        // 2025.09.07 后端更新, URL 没有 `#/user/login` 了
+        let verify_url = "https://uc.buaa.edu.cn/";
         let cred = self.cred.load();
         let un = match cred.username.as_ref() {
             Some(s) => s.as_str(),
@@ -22,6 +23,7 @@ impl super::SsoApi {
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;
         // 重定向到这里说明 Cookie 有效
+        // TODO: 也许需要 refresh
         if res.url().as_str() == verify_url {
             return Ok(());
         }
