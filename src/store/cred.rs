@@ -35,7 +35,10 @@ pub struct CredentialStore {
 
 impl CredentialStore {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
-        let file = OpenOptions::new().read(true).open(path).unwrap();
+        let file = match OpenOptions::new().read(true).open(path) {
+            Ok(file) => file,
+            Err(_) => return Self::default(),
+        };
         serde_json::from_reader(file).unwrap_or_default()
     }
 
