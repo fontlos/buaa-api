@@ -1,22 +1,14 @@
-use serde::{Deserialize, Deserializer, Serialize};
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 
 use crate::utils::deserialize_datatime;
 
 #[derive(Deserialize)]
-pub(super) struct _ClassLogin {
-    pub result: _ClassLoginResult,
-}
-
-#[derive(Deserialize)]
-pub(super) struct _ClassLoginResult {
-    pub id: String,
-}
-
-#[derive(Deserialize)]
-pub(super) struct _ClassCourses {
-    #[serde(deserialize_with = "deserialize_filtered_courses")]
-    pub result: Vec<ClassCourse>,
+pub(super) struct _ClassRes<T> {
+    #[serde(rename = "STATUS")]
+    pub status: String,
+    #[serde(rename = "ERRMSG")]
+    pub msg: Option<String>,
+    pub result: Option<T>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -27,29 +19,6 @@ pub struct ClassCourse {
     pub name: String,
     #[serde(rename = "teacher_name")]
     pub teacher: String,
-}
-
-fn deserialize_filtered_courses<'de, D>(deserializer: D) -> Result<Vec<ClassCourse>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let mut courses: Vec<ClassCourse> = Vec::new();
-    let values: Vec<Value> = Deserialize::deserialize(deserializer)?;
-
-    for value in values {
-        if let Ok(course) = serde_json::from_value::<ClassCourse>(value.clone()) {
-            if !course.teacher.is_empty() {
-                courses.push(course);
-            }
-        }
-    }
-
-    Ok(courses)
-}
-
-#[derive(Deserialize)]
-pub(super) struct _ClassSchedules {
-    pub result: Vec<ClassSchedule>,
 }
 
 #[derive(Debug, Deserialize)]

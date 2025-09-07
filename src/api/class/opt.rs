@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::utils;
 
-use super::{_ClassCourses, _ClassSchedules, ClassCourse, ClassSchedule};
+use super::{ClassCourse, ClassSchedule};
 
 impl super::ClassApi {
     /// # Smart Classroom query all course of a term
@@ -11,8 +11,13 @@ impl super::ClassApi {
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<ClassCourse>> {
         let url = "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action";
         let query = [("user_type", "1"), ("xq_code", id)];
-        let res: _ClassCourses = self.universal_request(url, &query).await?;
-        Ok(res.result)
+        let res: Vec<ClassCourse> = self.universal_request(url, &query).await?;
+        // 需要过滤掉 teacher 为空的字段, 那可能是错误的课程
+        let filtered = res
+            .into_iter()
+            .filter(|course| !course.teacher.is_empty())
+            .collect();
+        Ok(filtered)
     }
 
     /// # Smart Classroom query one course's all schedule
@@ -20,8 +25,8 @@ impl super::ClassApi {
     pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
         let url = "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action";
         let query = [("courseId", id)];
-        let res: _ClassSchedules = self.universal_request(url, &query).await?;
-        Ok(res.result)
+        let res: Vec<ClassSchedule> = self.universal_request(url, &query).await?;
+        Ok(res)
     }
 
     /// # Smart Classroom checkin schedule
@@ -50,6 +55,8 @@ mod tests {
 
         let res = class.query_course("202420252").await.unwrap();
         println!("{:#?}", res);
+
+        context.save_auth("./data");
     }
 
     #[tokio::test]
