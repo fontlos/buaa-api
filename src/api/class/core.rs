@@ -5,7 +5,7 @@ use crate::api::Location;
 use crate::error::Error;
 use crate::{crypto, utils};
 
-use super::_ClassLogin;
+use super::_ClassRes;
 
 /// From the reverse analysis of JS
 /// 2025.04.22
@@ -22,14 +22,21 @@ impl super::ClassApi {
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
 
         // 整个这一次请求的意义存疑, 但也许是为了验证 loginName 是否有效
+        // 2025.09.07 早期版本中 URL 末尾有 #/, 现在似乎去掉了
         let url = res.url().as_str();
         // 如果获取失败, 说明登录已过期, 则重新登录
-        let login_name = match utils::get_value_by_lable(url, "loginName=", "#/") {
-            Some(v) => v,
+        // 兼容性处理, 早期版本中 URL 末尾有 #/, 现在似乎去掉了
+        let session = match url.find("loginName=") {
+            Some(start) => {
+                let mut v = &url[start + "loginName=".len()..];
+                if let Some(stripped) = v.strip_suffix("#/") {
+                    v = stripped;
+                }
+                v
+            }
             None => return Err(Error::auth_expired(Location::Sso)),
         };
-        // 去掉最后的 #/
-        let url = &url[..url.len() - 2];
+
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
         let cipher = crypto::des::Des::new(CLASS_DES_KEY).unwrap();
         let url = cipher.encrypt_ecb(url.as_bytes());
@@ -41,7 +48,7 @@ impl super::ClassApi {
             .await?;
 
         let params = [
-            ("phone", login_name),
+            ("phone", session),
             ("password", ""),
             ("verificationType", "2"),
             ("verificationUrl", ""),
@@ -52,14 +59,18 @@ impl super::ClassApi {
             .query(&params)
             .send()
             .await?;
-        // TODO: 到时候还是用字符串匹配吧, 不关心其他错误
+
+        // 2025.09.07 后端更新, ClassApi 使用了双 token
+        // 因为其他 Api 没有这样的需要, 所以我们直接在这里把它们拼起来
+        // 至于具体使用见下面通用请求方法
+        // 尽管 res 里面也有 session, 但毕竟上面就解析出来使用过了, 这里就不解析了直接切割字符串
         let res = res.text().await?;
-        match serde_json::from_str::<_ClassLogin>(&res) {
-            Ok(res) => {
-                self.cred.set(Location::Class, res.result.id);
+        match utils::get_value_by_lable(&res, "\"id\":\"", "\"") {
+            Some(id) => {
+                self.cred.set(Location::Class, format!("{session}@{id}"));
                 Ok(())
             }
-            Err(_) => Err(Error::server("[Class] Login failed. No token")),
+            None => Err(Error::server("[Class] Login failed. No token")),
         }
     }
 
@@ -82,14 +93,30 @@ impl super::ClassApi {
                 return Err(Error::auth_expired(Location::Class));
             }
         };
-        // 在 URL 中硬编码 token
+        // 因为双 token 机制, 我们暂时只是简单的将其拼在一起
+        let (session, id) = token.split_once('@').unwrap();
+
+        // 在 URL 中硬编码 id
         let res = self
-            .post(format!("{url}?id={token}"))
+            .post(format!("{url}?id={id}"))
+            .header("Sessionid", session)
             .query(&query)
             .send()
             .await?
-            .json::<T>()
+            .bytes()
             .await?;
-        Ok(res)
+        let res = serde_json::from_slice::<_ClassRes<T>>(&res)?;
+
+        if res.status != "0" {
+            return Err(Error::server(format!(
+                "[Class] Response: {}",
+                res.msg.unwrap_or("Unknown error".to_string())
+            )));
+        }
+
+        match res.result {
+            Some(r) => Ok(r),
+            None => Err(Error::server("[Class] No result")),
+        }
     }
 }
