@@ -1,6 +1,6 @@
 # BUAA API
 
-> Make BUAA Great Again
+> An all in one library. Aim To Make BUAA Great Again
 
 > 注: 本项目只用于学习分享, 请于下载后 24 小时内删除, 使用产生的一切问题由使用者自行承担, 如有侵权我将删除此储存库和软件
 >
@@ -47,7 +47,9 @@
   - [x] Login
   - [x] Get filter
   - [x] Query courses with filter
+  - [x] Query pre-selected courses
   - [x] Query selected courses
+  - [x] Pre-select course
   - [x] Select course
   - [x] Drop course
 - [x] BUAA Teacher Evaluation System: `tes`
