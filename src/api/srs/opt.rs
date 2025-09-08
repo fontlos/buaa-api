@@ -1,6 +1,9 @@
 use crate::{Error, utils};
 
-use super::{_SrsBody, _SrsCampus, _SrsPreSelectedGroup, SrsCourse, SrsCourses, SrsFilter, SrsOpt, SrsSelected};
+use super::{
+    _SrsBody, _SrsCampus, _SrsPreSelectedGroup, SrsCourse, SrsCourses, SrsFilter, SrsOpt,
+    SrsSelected,
+};
 
 impl super::SrsApi {
     /// Get the default course filter.
@@ -19,9 +22,8 @@ impl super::SrsApi {
     /// **Note**: Do not need login
     pub async fn get_batch(&self) -> crate::Result<String> {
         let url = "https://byxk.buaa.edu.cn/xsxk/profile/index.html";
-        let res = self.client.get(url).send().await?;
-        let text = res.text().await?;
-        let id = utils::get_value_by_lable(&text, "\"code\":\"", "\"");
+        let res = self.client.get(url).send().await?.bytes().await?;
+        let id = utils::parse_by_tag(&res, "\"code\":\"", "\"");
         match id {
             Some(i) => Ok(i.to_string()),
             None => Err(Error::server("Cannot find batch id")),

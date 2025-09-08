@@ -23,6 +23,6 @@ pub struct CloudItem {
     pub name: String,
     #[serde(rename = "rev")]
     pub hash: String,
-    // 空文件夹大小为 -1
+    // 文件夹大小为 -1
     pub size: i64,
 }

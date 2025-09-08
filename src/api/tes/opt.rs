@@ -17,9 +17,8 @@ impl super::TesApi {
         let url = format!(
             "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10"
         );
-        let res = self.get(url).send().await?;
-        let text = res.text().await?;
-        let rwid = match utils::get_value_by_lable(&text, r#""rwid":""#, "\"") {
+        let res = self.get(url).send().await?.bytes().await?;
+        let rwid = match utils::parse_by_tag(&res, "\"rwid\":\"", "\"") {
             Some(rwid) => rwid,
             None => return Err(Error::server("[Tes] Get list failed. No rwid")),
         };
@@ -29,9 +28,18 @@ impl super::TesApi {
         let url = format!(
             "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireListToTask?rwid={rwid}"
         );
-        let list = self.get(url).send().await?;
-        let text = list.text().await?;
-        let wjids = utils::get_values_by_lable(&text, r#""wjid":""#, "\"");
+        let bytes = self.get(url).send().await?.bytes().await?;
+
+        // 这里需要循环匹配多个 wjid
+        let left = "\"wjid\":\"";
+        let right = "\"";
+        let mut wjids = Vec::new();
+        let mut start_index = 0;
+        while let Some(s) = utils::parse_by_tag(&bytes[start_index..], left, right) {
+            wjids.push(s);
+            // 跳过当前匹配的部分以及右标签
+            start_index = s.as_ptr() as usize - bytes.as_ptr() as usize + s.len() + right.len();
+        }
 
         // 考虑到一个课可能有很多老师, 需要评多次, 但 30 位应该足够多数人了
         let mut list = Vec::<EvaluationListItem>::with_capacity(30);
@@ -45,8 +53,9 @@ impl super::TesApi {
                 .get(url)
                 .send()
                 .await?
-                .json::<_EvaluationList>()
+                .bytes()
                 .await?;
+            let res = serde_json::from_slice::<_EvaluationList>(&res)?;
             list.extend(res.list);
         }
 
@@ -76,8 +85,9 @@ impl super::TesApi {
             .query(&query)
             .send()
             .await?
-            .json::<_EvaluationForm>()
+            .bytes()
             .await?;
+        let res = serde_json::from_slice::<_EvaluationForm>(&res)?;
         Ok(res.result)
     }
 

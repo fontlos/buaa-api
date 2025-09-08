@@ -22,24 +22,16 @@ impl super::ClassApi {
         let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
 
         // 整个这一次请求的意义存疑, 但也许是为了验证 loginName 是否有效
-        // 2025.09.07 早期版本中 URL 末尾有 #/, 现在似乎去掉了
-        let url = res.url().as_str();
-        // 如果获取失败, 说明登录已过期, 则重新登录
-        // 兼容性处理, 早期版本中 URL 末尾有 #/, 现在似乎去掉了
-        let session = match url.find("loginName=") {
-            Some(start) => {
-                let mut v = &url[start + "loginName=".len()..];
-                if let Some(stripped) = v.strip_suffix("#/") {
-                    v = stripped;
-                }
-                v
-            }
+        let url = res.url().as_str().as_bytes();
+        let session = match utils::parse_by_tag(url, "loginName=", "") {
+            Some(s) => s,
+            // 理论上这是个不该发生的错误
             None => return Err(Error::auth_expired(Location::Sso)),
         };
 
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
         let cipher = crypto::des::Des::new(CLASS_DES_KEY).unwrap();
-        let url = cipher.encrypt_ecb(url.as_bytes());
+        let url = cipher.encrypt_ecb(url);
         let url = crypto::bytes2hex(&url);
         let params = [("method", "html5GetPrivateUserInfo"), ("url", &url)];
         self.get("https://iclass.buaa.edu.cn:8346/wc/auth/html5GetPrivateUserInfo")
@@ -58,14 +50,15 @@ impl super::ClassApi {
             .get("https://iclass.buaa.edu.cn:8346/app/user/login.action")
             .query(&params)
             .send()
+            .await?
+            .bytes()
             .await?;
 
         // 2025.09.07 后端更新, ClassApi 使用了双 token
         // 因为其他 Api 没有这样的需要, 所以我们直接在这里把它们拼起来
         // 至于具体使用见下面通用请求方法
         // 尽管 res 里面也有 session, 但毕竟上面就解析出来使用过了, 这里就不解析了直接切割字符串
-        let res = res.text().await?;
-        match utils::get_value_by_lable(&res, "\"id\":\"", "\"") {
+        match utils::parse_by_tag(&res, "\"id\":\"", "\"") {
             Some(id) => {
                 self.cred.set(Location::Class, format!("{session}@{id}"));
                 Ok(())

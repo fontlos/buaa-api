@@ -79,8 +79,10 @@ impl super::SpocApi {
             .json(&body)
             .send()
             .await?
-            .json::<_SpocRes<T>>()
+            .bytes()
             .await?;
+
+        let res = serde_json::from_slice::<_SpocRes<T>>(&res)?;
 
         if res.code != 200 {
             return Err(Error::server(format!(

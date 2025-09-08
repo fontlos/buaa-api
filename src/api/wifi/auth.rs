@@ -73,8 +73,8 @@ impl super::WifiApi {
             }
         };
 
-        let url = res.url().as_str();
-        let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
+        let url = res.url().as_str().as_bytes();
+        let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
             Some(s) => s,
             None => return Err(Error::server("[Wifi] No AC ID")),
         };
@@ -96,8 +96,8 @@ impl super::WifiApi {
         if !res.status().is_success() {
             return Err(Error::server("[Wifi] Request for challenge value failed"));
         };
-        let html = res.text().await.unwrap();
-        let token = match utils::get_value_by_lable(&html, "\"challenge\":\"", "\"") {
+        let bytes = res.bytes().await.unwrap();
+        let token = match utils::parse_by_tag(&bytes, "\"challenge\":\"", "\"") {
             Some(s) => s,
             None => return Err(Error::server("[Wifi] No challenge value")),
         };
@@ -221,8 +221,8 @@ impl super::WifiApi {
             }
         };
 
-        let url = res.url().as_str();
-        let ac_id = match utils::get_value_by_lable(url, "ac_id=", "&") {
+        let url = res.url().as_str().as_bytes();
+        let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
             Some(s) => s,
             None => return Err(Error::server("[Wifi] No AC ID")),
         };

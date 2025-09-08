@@ -1,5 +1,6 @@
 use rand::Rng;
 
+// 生成随机字符, 做密钥用
 pub(crate) fn gen_rand_str(size: u8) -> String {
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let mut rng = rand::rng();
@@ -12,42 +13,16 @@ pub(crate) fn gen_rand_str(size: u8) -> String {
 }
 
 // 用于匹配一个字符串中的某个标签对之间的内容
-pub(crate) fn get_value_by_lable<'a>(text: &'a str, right: &str, left: &str) -> Option<&'a str> {
-    if let Some(start) = text.find(right) {
-        // 计算开始位置
-        let value_start = start + right.len();
-        // 查找结束位置
-        if let Some(end) = text[value_start..].find(left) {
-            // 返回字符串切片
-            Some(&text[value_start..value_start + end])
-        } else {
-            // 理论上不可能出错
-            None
-        }
-    } else {
-        None
+// 右空则匹配到底, 左空报错, 因为暂时没必要有这个功能
+pub(crate) fn parse_by_tag<'a>(bytes: &'a [u8], left: &str, right: &str) -> Option<&'a str> {
+    let left = left.as_bytes();
+    let right = right.as_bytes();
+    let start = bytes.windows(left.len()).position(|w| w == left)?;
+    let start = start + left.len();
+    if right.is_empty() {
+        return std::str::from_utf8(&bytes[start..]).ok();
     }
-}
-
-// 用于匹配一个字符串中的多组标签对之间的内容
-pub(crate) fn get_values_by_lable<'a>(text: &'a str, right: &str, left: &str) -> Vec<&'a str> {
-    let mut values = Vec::new();
-    let mut start_index = 0;
-
-    while let Some(start) = text[start_index..].find(right) {
-        // 计算值的起始位置
-        let value_start = start_index + start + right.len();
-        // 查找结束位置
-        if let Some(end) = text[value_start..].find(left) {
-            // 提取值并添加到 Vec 中
-            values.push(&text[value_start..value_start + end]);
-            // 更新 start_index 为当前匹配结束的位置，继续查找下一对标签
-            start_index = value_start + end + left.len();
-        } else {
-            // 如果没有找到结束标签，退出循环
-            break;
-        }
-    }
-
-    values
+    let rest = &bytes[start..];
+    let end = rest.windows(right.len()).position(|w| w == right)?;
+    std::str::from_utf8(&rest[..end]).ok()
 }

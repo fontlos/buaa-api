@@ -108,12 +108,15 @@ impl super::CloudApi {
             .ok_or_else(|| Error::auth_expired(Location::Cloud))
     }
 
-    pub async fn universal_request(&self, url: &str, data: &Value) -> crate::Result<String> {
+    pub async fn universal_request(
+        &self,
+        url: &str,
+        data: &Value,
+    ) -> crate::Result<reqwest::Response> {
         let token = self.token().await?;
 
         let res = self.post(url).bearer_auth(token).json(data).send().await?;
-        let text = res.text().await?;
 
-        Ok(text)
+        Ok(res)
     }
 }
