@@ -24,8 +24,9 @@ impl super::CloudApi {
             .query(&query)
             .send()
             .await?
-            .json::<Vec<CloudRootDir>>()
+            .bytes()
             .await?;
+        let res = serde_json::from_slice::<Vec<CloudRootDir>>(&res)?;
         Ok(res)
     }
 
@@ -52,8 +53,8 @@ impl super::CloudApi {
             "docid": id,
             "sort": "asc" // desc
         });
-        let text = self.universal_request(url, &data).await?;
-        let res = serde_json::from_str::<CloudDir>(&text)?;
+        let res = self.universal_request(url, &data).await?.bytes().await?;
+        let res = serde_json::from_slice::<CloudDir>(&res)?;
 
         Ok(res)
     }
@@ -65,8 +66,8 @@ impl super::CloudApi {
             "docid": item.id,
             "authtype": "QUERY_STRING",
         });
-        let text = self.universal_request(url, &data).await?;
-        let res = match utils::get_value_by_lable(&text, ",\"", "\"") {
+        let bytes = self.universal_request(url, &data).await?.bytes().await?;
+        let res = match utils::parse_by_tag(&bytes, ",\"", "\"") {
             Some(url) => url,
             None => {
                 return Err(Error::server("[Cloud] Can not get download url"));
@@ -95,8 +96,8 @@ impl super::CloudApi {
             "name": "download.zip",
             "doc": ids
         });
-        let text = self.universal_request(url, &data).await?;
-        let raw_url = match utils::get_value_by_lable(&text, "address\":\"", "\"") {
+        let bytes = self.universal_request(url, &data).await?.bytes().await?;
+        let raw_url = match utils::parse_by_tag(&bytes, "package_address\":\"", "\"") {
             Some(url) => url,
             None => {
                 return Err(Error::server("[Cloud] Can not get download url"));

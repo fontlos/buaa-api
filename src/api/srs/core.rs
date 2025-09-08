@@ -59,8 +59,8 @@ impl super::SrsApi {
             _SrsBody::None => res,
         };
 
-        let res = res.send().await?;
-        let res = res.json::<_SrsRes<T>>().await?;
+        let res = res.send().await?.bytes().await?;
+        let res = serde_json::from_slice::<_SrsRes<T>>(&res)?;
         if res.code != 200 {
             return Err(Error::server(format!("[Srs] Response: {}", res.msg)));
         }
