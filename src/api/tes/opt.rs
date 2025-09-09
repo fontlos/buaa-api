@@ -49,12 +49,7 @@ impl super::TesApi {
             let url = format!(
                 "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData?wjid={wjid}"
             );
-            let res = self
-                .get(url)
-                .send()
-                .await?
-                .bytes()
-                .await?;
+            let res = self.get(url).send().await?.bytes().await?;
             let res = serde_json::from_slice::<_EvaluationList>(&res)?;
             list.extend(res.list);
         }
@@ -80,13 +75,7 @@ impl super::TesApi {
             ("rwh", &item.rwh),
         ];
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
-        let res = self
-            .get(url)
-            .query(&query)
-            .send()
-            .await?
-            .bytes()
-            .await?;
+        let res = self.get(url).query(&query).send().await?.bytes().await?;
         let res = serde_json::from_slice::<_EvaluationForm>(&res)?;
         Ok(res.result)
     }
