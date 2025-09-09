@@ -18,6 +18,10 @@ impl Md5 {
     }
 
     fn transform(&mut self) {
+        // 前导零仅为了排列美观, 包括下面禁用格式化一样
+        // 不过在类 C 语言中前导零表示八进制
+        // 而 Rust 没有这个问题, 所以禁用警告
+        #[allow(clippy::zero_prefixed_literal)]
         #[rustfmt::skip]
         const S: [u32; 64] = [
             07, 12, 17, 22, 07, 12, 17, 22,

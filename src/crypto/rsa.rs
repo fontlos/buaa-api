@@ -141,21 +141,3 @@ impl RsaPkcs1v15 {
         c.to_bytes_be()
     }
 }
-
-// RSA Crate 有一个安全问题, 所以我们暂时不使用
-// use rsa::pkcs8::DecodePublicKey;
-// use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
-
-// use base64::{Engine as _, engine::general_purpose};
-
-// pub fn rsa(data: &str) -> String {
-//     let key = crate::consts::BOYA_RSA_KEY;
-//     let mut rng = rand::thread_rng();
-//
-//     let public_key = RsaPublicKey::from_public_key_pem(key).expect("Failed to parse public key");
-//     let enc_data = public_key
-//         .encrypt(&mut rng, Pkcs1v15Encrypt, data.as_bytes())
-//         .expect("failed to encrypt");
-//
-//     general_purpose::STANDARD.encode(&enc_data)
-// }

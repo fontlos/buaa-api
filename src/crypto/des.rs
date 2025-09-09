@@ -21,6 +21,11 @@ impl Des {
     /// Generate a 16-wheel subkey
     fn generate_subkeys(&mut self, key: &[u8]) {
         // PC-1 置换表 (56位)
+
+        // 前导零仅为了排列美观, 包括下面禁用格式化一样
+        // 不过在类 C 语言中前导零表示八进制
+        // 而 Rust 没有这个问题, 所以禁用警告
+        #[allow(clippy::zero_prefixed_literal)]
         #[rustfmt::skip]
         const PC1: [usize; 56] = [
             57, 49, 41, 33, 25, 17, 09,
@@ -34,6 +39,11 @@ impl Des {
         ];
 
         // PC-2 置换表 (48位)
+
+        // 前导零仅为了排列美观, 包括下面禁用格式化一样
+        // 不过在类 C 语言中前导零表示八进制
+        // 而 Rust 没有这个问题, 所以禁用警告
+        #[allow(clippy::zero_prefixed_literal)]
         #[rustfmt::skip]
         const PC2: [usize; 48] = [
             14, 17, 11, 24, 01, 05,
@@ -64,10 +74,10 @@ impl Des {
         let mut right = pc1_result & 0x0FFFFFFF;
 
         // 生成 16 轮子密钥
-        for round in 0..16 {
+        for (round, &shift) in SHIFTS.iter().enumerate() {
             // 左循环移位
-            left = ((left << SHIFTS[round]) | (left >> (28 - SHIFTS[round]))) & 0x0FFFFFFF;
-            right = ((right << SHIFTS[round]) | (right >> (28 - SHIFTS[round]))) & 0x0FFFFFFF;
+            left = ((left << shift) | (left >> (28 - shift))) & 0x0FFFFFFF;
+            right = ((right << shift) | (right >> (28 - shift))) & 0x0FFFFFFF;
 
             // 合并并应用 PC-2 置换
             let combined = (left << 28) | right;
@@ -85,6 +95,7 @@ impl Des {
 
     /// S-box replacement
     fn s_box(&self, box_num: usize, input: u8) -> u8 {
+        // S 盒已经对其, 不再添加前导零
         #[rustfmt::skip]
         const S_BOXES: [[[u8; 16]; 4]; 8] = [
             // S1
@@ -154,6 +165,11 @@ impl Des {
     /// Feistel 函数
     fn feistel(&self, right: u32, subkey: u64) -> u32 {
         // 扩展置换表 E
+
+        // 前导零仅为了排列美观, 包括下面禁用格式化一样
+        // 不过在类 C 语言中前导零表示八进制
+        // 而 Rust 没有这个问题, 所以禁用警告
+        #[allow(clippy::zero_prefixed_literal)]
         #[rustfmt::skip]
         const E: [usize; 48] = [
             32, 01, 02, 03, 04, 05,
@@ -167,6 +183,11 @@ impl Des {
         ];
 
         // P 置换表
+
+        // 前导零仅为了排列美观, 包括下面禁用格式化一样
+        // 不过在类 C 语言中前导零表示八进制
+        // 而 Rust 没有这个问题, 所以禁用警告
+        #[allow(clippy::zero_prefixed_literal)]
         #[rustfmt::skip]
         const P: [usize; 32] = [
             16, 07, 20, 21,
@@ -210,6 +231,11 @@ impl Des {
     /// Encrypt a single 8-byte block
     pub fn encrypt_block(&self, block: &[u8]) -> [u8; 8] {
         // 初始置换表 IP
+
+        // 前导零仅为了排列美观, 包括下面禁用格式化一样
+        // 不过在类 C 语言中前导零表示八进制
+        // 而 Rust 没有这个问题, 所以禁用警告
+        #[allow(clippy::zero_prefixed_literal)]
         #[rustfmt::skip]
         const IP: [usize; 64] = [
             58, 50, 42, 34, 26, 18, 10, 02,
@@ -223,6 +249,11 @@ impl Des {
         ];
 
         // 最终置换表 IP^-1
+
+        // 前导零仅为了排列美观, 包括下面禁用格式化一样
+        // 不过在类 C 语言中前导零表示八进制
+        // 而 Rust 没有这个问题, 所以禁用警告
+        #[allow(clippy::zero_prefixed_literal)]
         #[rustfmt::skip]
         const FP: [usize; 64] = [
             40, 08, 48, 16, 56, 24, 64, 32,

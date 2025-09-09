@@ -34,16 +34,16 @@ impl Aes128 {
             temp.rotate_left(1);
 
             // SubWord
-            for j in 0..4 {
-                temp[j] = self.sub_byte(temp[j]);
+            for t in &mut temp {
+                *t = self.sub_byte(*t);
             }
 
             // XOR with Rcon
             temp[0] ^= RCON[i - 1];
 
             // 生成新的轮密钥
-            for j in 0..4 {
-                self.round_keys[i][j] = self.round_keys[i - 1][j] ^ temp[j];
+            for (j, &t) in temp.iter().enumerate() {
+                self.round_keys[i][j] = self.round_keys[i - 1][j] ^ t;
             }
 
             for j in 4..16 {
@@ -106,15 +106,15 @@ impl Aes128 {
 
     /// 字节替换
     fn sub_bytes(&self, state: &mut [u8; 16]) {
-        for i in 0..16 {
-            state[i] = self.sub_byte(state[i]);
+        for s in state.iter_mut() {
+            *s = self.sub_byte(*s);
         }
     }
 
     /// 逆字节替换
     fn inv_sub_bytes(&self, state: &mut [u8; 16]) {
-        for i in 0..16 {
-            state[i] = self.inv_sub_byte(state[i]);
+        for s in state.iter_mut() {
+            *s = self.inv_sub_byte(*s);
         }
     }
 
@@ -236,8 +236,8 @@ impl Aes128 {
 
     /// 轮密钥加
     fn add_round_key(&self, state: &mut [u8; 16], round: usize) {
-        for i in 0..16 {
-            state[i] ^= self.round_keys[round][i];
+        for (i, s) in state.iter_mut().enumerate() {
+            *s ^= self.round_keys[round][i];
         }
     }
 
