@@ -4,6 +4,8 @@ mod core;
 mod data;
 mod opt;
 
+pub use data::*;
+
 /// # BUAA Cloud Disk API Group
 ///
 /// Obtain a context view via [`Context.cloud()`],

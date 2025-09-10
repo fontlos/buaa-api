@@ -4,22 +4,23 @@ use crate::api::Location;
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{CloudDir, CloudItem, CloudRootDir};
+use super::data::{CloudDir, CloudItem, CloudRoot, CloudRootDir};
 
 impl super::CloudApi {
-    /// Get directory by category, possible categories:
-    /// - `""`: All directories
-    /// - `"user_doc_lib"`: User's personal directory
-    /// - `"shared_user_doc_lib"`: Shared directory
-    /// - `"department_doc_lib"`: Department directory
-    /// - `"custom_doc_lib"`: Other directory
-    pub async fn get_root_dir(&self, category: &str) -> crate::Result<Vec<CloudRootDir>> {
+    /// Get root directory by [CloudRoot]
+    pub async fn get_root_dir(&self, root: CloudRoot) -> crate::Result<Vec<CloudRootDir>> {
         let token = self.token().await?;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
-        let mut query = vec![("sort", "doc_lib_name"), ("direction", "asc")];
-        if !category.is_empty() {
-            query.push(("type", category));
-        }
+        let root = root.as_str();
+        let query: &[(&str, &str)] = if root.is_empty() {
+            &[("sort", "doc_lib_name"), ("direction", "asc")]
+        } else {
+            &[
+                ("sort", "doc_lib_name"),
+                ("direction", "asc"),
+                ("type", root),
+            ]
+        };
         let res = self
             .get(url)
             .bearer_auth(token)
@@ -28,18 +29,14 @@ impl super::CloudApi {
             .await?
             .bytes()
             .await?;
+        println!("res: {}", String::from_utf8_lossy(&res));
         let res = serde_json::from_slice::<Vec<CloudRootDir>>(&res)?;
         Ok(res)
     }
 
-    /// Return All Type Root directory
-    pub async fn get_all_dir(&self) -> crate::Result<Vec<CloudRootDir>> {
-        self.get_root_dir("").await
-    }
-
     /// Return User Root directory ID
     pub async fn get_user_dir_id(&self) -> crate::Result<String> {
-        let res = self.get_root_dir("user_doc_lib").await?;
+        let res = self.get_root_dir(CloudRoot::User).await?;
         let id = res
             .into_iter()
             .next()
@@ -48,6 +45,7 @@ impl super::CloudApi {
         Ok(id)
     }
 
+    /// List the contents of a directory by its ID. Contain [CloudItem::id] and [CloudRootDir::id].
     pub async fn list_dir(&self, id: &str) -> crate::Result<CloudDir> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/list";
         let data = serde_json::json!({
@@ -142,7 +140,7 @@ impl super::CloudApi {
 
         // 下载单个文件只能用这个, 不然得到的链接无法使用
         // 但如果下载单个文件夹不能用这个, 不然得到的链接也无法使用
-        if items.len() == 1 && items[0].size != -1 {
+        if items.len() == 1 && !items[0].is_dir() {
             return self.get_single_download_url(items[0]).await;
         } else {
             return self.get_muti_download_url(&items).await;
@@ -150,6 +148,7 @@ impl super::CloudApi {
     }
 
     // 重复删掉文件也不会报错
+    /// Delete a file or directory by its ID. [CloudItem::id]
     pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
         let data = serde_json::json!({
@@ -172,10 +171,9 @@ mod tests {
 
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
-        println!("list: {list:#?}");
-        let download_url = cloud.get_download_url(&list.files, &[0]).await.unwrap();
+        let url = cloud.get_download_url(&list.files, &[0]).await.unwrap();
 
-        println!("download_url: {download_url}");
+        println!("Download URL: {url}");
 
         context.save_auth("./data");
     }
@@ -185,8 +183,10 @@ mod tests {
         let context = Context::with_auth("./data");
 
         let cloud = context.cloud();
+        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        cloud.delete_item("gns://972DE460B3C34AF8A67358833195E5A3/9C9B4CE95AA943398B0B412785E26EA8").await.unwrap();
+        cloud.delete_item(&list.files[0].id).await.unwrap();
 
         context.save_auth("./data");
     }
