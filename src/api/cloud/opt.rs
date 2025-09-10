@@ -1,3 +1,5 @@
+use serde_json::Value;
+
 use crate::api::Location;
 use crate::error::Error;
 use crate::utils;
@@ -60,7 +62,9 @@ impl super::CloudApi {
     }
 
     /// Get a download URL for a single file.
-    pub async fn get_download_url(&self, item: &CloudItem) -> crate::Result<String> {
+    ///
+    /// **Note**: If you pass a dir, it will return a bad URL.
+    async fn get_single_download_url(&self, item: &CloudItem) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osdownload";
         let data = serde_json::json!({
             "docid": item.id,
@@ -77,10 +81,12 @@ impl super::CloudApi {
         Ok(res.to_string())
     }
 
-    /// Get a download URL of a zip package for multiple files.
-    pub async fn get_muti_download_url(&self, items: &[CloudItem]) -> crate::Result<String> {
+    /// Get a download URL of a zip package for multiple files or a dir.
+    ///
+    /// **Note**: If you pass a single file(not a dir), it will return a bad URL.
+    async fn get_muti_download_url(&self, items: &[&CloudItem]) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/open-doc/v1/file-download";
-        let ids: Vec<_> = items
+        let ids: Vec<Value> = items
             .iter()
             .map(|item| {
                 // 从文件路径 id 反向找到文件 id, 找不到就用原 id, 这不会引起错误, 只会导致无法下载这个文件
@@ -115,6 +121,34 @@ impl super::CloudApi {
         Ok(url)
     }
 
+    /// Get a download URL with the indexes of items.
+    ///
+    /// **Note**: If indexes is empty, it means all items.
+    pub async fn get_download_url(
+        &self,
+        items: &[CloudItem],
+        indexes: &[usize],
+    ) -> crate::Result<String> {
+        let items: Vec<&CloudItem> = if indexes.is_empty() {
+            // 全部文件
+            items.iter().collect()
+        } else {
+            indexes.iter().filter_map(|&idx| items.get(idx)).collect()
+        };
+
+        if items.is_empty() {
+            return Err(Error::Other("No valid file selected".into()));
+        }
+
+        // 下载单个文件只能用这个, 不然得到的链接无法使用
+        // 但如果下载单个文件夹不能用这个, 不然得到的链接也无法使用
+        if items.len() == 1 && items[0].size != -1 {
+            return self.get_single_download_url(items[0]).await;
+        } else {
+            return self.get_muti_download_url(&items).await;
+        }
+    }
+
     // 重复删掉文件也不会报错
     pub async fn delete_item(&self) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
@@ -138,8 +172,7 @@ mod tests {
 
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
-        // let download_url = cloud.get_download_url(&list.files[0]).await.unwrap();
-        let download_url = cloud.get_muti_download_url(&list.files).await.unwrap();
+        let download_url = cloud.get_download_url(&list.files, &[0]).await.unwrap();
 
         println!("download_url: {download_url}");
 
