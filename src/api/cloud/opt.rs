@@ -150,10 +150,10 @@ impl super::CloudApi {
     }
 
     // 重复删掉文件也不会报错
-    pub async fn delete_item(&self) -> crate::Result<()> {
+    pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
         let data = serde_json::json!({
-            "docid": "gns://972DE460B3C34AF8A67358833195E5A3/9C9B4CE95AA943398B0B412785E26EA8",
+            "docid": id,
         });
         self.universal_request(url, &data).await?;
         Ok(())
@@ -172,6 +172,7 @@ mod tests {
 
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
+        println!("list: {list:#?}");
         let download_url = cloud.get_download_url(&list.files, &[0]).await.unwrap();
 
         println!("download_url: {download_url}");
@@ -185,7 +186,7 @@ mod tests {
 
         let cloud = context.cloud();
 
-        cloud.delete_item().await.unwrap();
+        cloud.delete_item("gns://972DE460B3C34AF8A67358833195E5A3/9C9B4CE95AA943398B0B412785E26EA8").await.unwrap();
 
         context.save_auth("./data");
     }
