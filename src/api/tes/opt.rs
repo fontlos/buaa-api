@@ -11,7 +11,7 @@ impl super::TesApi {
         // 考虑到 rwid 只有这一个地方用到, 所以直接在这里获取
         // 获取账号
         let cred = self.cred.load();
-        let username = cred.username.as_ref().unwrap();
+        let username = cred.username()?;
         // 获取 rwid
         // 省略的无用查询参数 &rwmc=&sfyp=0
         let url = format!(

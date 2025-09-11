@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
 use crate::cell::{AtomicCell, AtomicType};
+use crate::error::{AuthError, Error, Result};
 use crate::utils;
 
 impl AtomicType for AtomicU64 {
@@ -17,8 +18,8 @@ impl AtomicType for AtomicU64 {
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialStore {
-    pub username: Option<String>,
-    pub password: Option<String>,
+    pub(crate) username: Option<String>,
+    pub(crate) password: Option<String>,
     /// Token for Boya API
     pub boya_token: CredentialItem,
     /// Token for Class API
@@ -69,6 +70,18 @@ impl CredentialStore {
             // 内部方法, 我们自己保证绝对不会出现其他分支
             _ => unreachable!(),
         }
+    }
+
+    pub fn username(&self) -> Result<&str> {
+        self.username
+            .as_deref()
+            .ok_or(Error::Auth(AuthError::NoUsername))
+    }
+
+    pub fn password(&self) -> Result<&str> {
+        self.password
+            .as_deref()
+            .ok_or(Error::Auth(AuthError::NoPassword))
     }
 }
 

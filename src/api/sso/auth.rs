@@ -1,5 +1,5 @@
 use crate::api::Location;
-use crate::error::{AuthError, Error};
+use crate::error::Error;
 use crate::utils;
 
 impl super::SsoApi {
@@ -11,14 +11,8 @@ impl super::SsoApi {
         let login_url = "https://sso.buaa.edu.cn/login";
         let verify_url = "https://uc.buaa.edu.cn/";
         let cred = self.cred.load();
-        let un = match cred.username.as_ref() {
-            Some(s) => s.as_str(),
-            None => return Err(Error::Auth(AuthError::NoUsername)),
-        };
-        let pw = match cred.password.as_ref() {
-            Some(s) => s.as_str(),
-            None => return Err(Error::Auth(AuthError::NoPassword)),
-        };
+        let un = cred.username()?;
+        let pw = cred.password()?;
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;
         // 重定向到这里说明 Cookie 有效
