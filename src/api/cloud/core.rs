@@ -1,7 +1,11 @@
-use serde_json::Value;
+use bytes::Bytes;
+use reqwest::Method;
+use serde::Serialize;
 
 use crate::api::Location;
 use crate::error::Error;
+
+use super::data::_CloudBody;
 
 // 手动登录用 RSA 密钥, 但我们使用 SSO 登录
 // From https://bhpan.buaa.edu.cn/oauth2/_next/static/chunks/pages/signin-2a57b4f57ddbb54dc27e.js
@@ -99,23 +103,30 @@ impl super::CloudApi {
         }
     }
 
-    pub(crate) async fn token(&self) -> crate::Result<&String> {
+    pub(super) async fn universal_request<'a, Q>(
+        &self,
+        m: Method,
+        url: &str,
+        body: &_CloudBody<'a, Q>,
+    ) -> crate::Result<Bytes>
+    where
+        Q: Serialize + ?Sized,
+    {
         let cred = &self.cred.load().cloud_token;
         if cred.is_expired() {
             self.login().await?;
         }
-        cred.value()
-            .ok_or_else(|| Error::auth_expired(Location::Cloud))
-    }
+        let token = cred
+            .value()
+            .ok_or_else(|| Error::auth_expired(Location::Cloud))?;
 
-    pub async fn universal_request(
-        &self,
-        url: &str,
-        data: &Value,
-    ) -> crate::Result<reqwest::Response> {
-        let token = self.token().await?;
+        let res = self.request(m, url).bearer_auth(token);
 
-        let res = self.post(url).bearer_auth(token).json(data).send().await?;
+        let res = match body {
+            _CloudBody::Query(f) => res.query(f),
+            _CloudBody::Json(j) => res.json(j),
+        };
+        let res = res.send().await?.bytes().await?;
 
         Ok(res)
     }

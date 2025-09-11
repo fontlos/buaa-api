@@ -1,35 +1,19 @@
+use reqwest::Method;
 use serde_json::Value;
 
 use crate::api::Location;
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{CloudDir, CloudItem, CloudRoot, CloudRootDir};
+use super::data::{_CloudBody, CloudDir, CloudItem, CloudRoot, CloudRootDir};
 
 impl super::CloudApi {
     /// Get root directory by [CloudRoot]
     pub async fn get_root_dir(&self, root: CloudRoot) -> crate::Result<Vec<CloudRootDir>> {
-        let token = self.token().await?;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
-        let root = root.as_str();
-        let query: &[(&str, &str)] = if root.is_empty() {
-            &[("sort", "doc_lib_name"), ("direction", "asc")]
-        } else {
-            &[
-                ("sort", "doc_lib_name"),
-                ("direction", "asc"),
-                ("type", root),
-            ]
-        };
-        let res = self
-            .get(url)
-            .bearer_auth(token)
-            .query(&query)
-            .send()
-            .await?
-            .bytes()
-            .await?;
-        println!("res: {}", String::from_utf8_lossy(&res));
+        let query = root.as_query();
+        let body = _CloudBody::Query(&query);
+        let res = self.universal_request(Method::GET, url, &body).await?;
         let res = serde_json::from_slice::<Vec<CloudRootDir>>(&res)?;
         Ok(res)
     }
@@ -53,9 +37,9 @@ impl super::CloudApi {
             "docid": id,
             "sort": "asc" // desc
         });
-        let res = self.universal_request(url, &data).await?.bytes().await?;
+        let body = _CloudBody::Json(&data);
+        let res = self.universal_request(Method::POST, url, &body).await?;
         let res = serde_json::from_slice::<CloudDir>(&res)?;
-
         Ok(res)
     }
 
@@ -68,14 +52,10 @@ impl super::CloudApi {
             "docid": item.id,
             "authtype": "QUERY_STRING",
         });
-        let bytes = self.universal_request(url, &data).await?.bytes().await?;
-        let res = match utils::parse_by_tag(&bytes, ",\"", "\"") {
-            Some(url) => url,
-            None => {
-                return Err(Error::server("[Cloud] Can not get download url"));
-            }
-        };
-
+        let body = _CloudBody::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let res = utils::parse_by_tag(&bytes, ",\"", "\"")
+            .ok_or_else(|| Error::server("[Cloud] Can not get download url"))?;
         Ok(res.to_string())
     }
 
@@ -100,21 +80,18 @@ impl super::CloudApi {
             "name": "download.zip",
             "doc": ids
         });
-        let bytes = self.universal_request(url, &data).await?.bytes().await?;
-        let raw_url = match utils::parse_by_tag(&bytes, "package_address\":\"", "\"") {
-            Some(url) => url,
-            None => {
-                return Err(Error::server("[Cloud] Can not get download url"));
-            }
-        };
+        let body = _CloudBody::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let raw_url = utils::parse_by_tag(&bytes, "package_address\":\"", "\"")
+            .ok_or_else(|| Error::server("[Cloud] Can not get download url"))?;
 
-        // 在获取下载链接请求发出后获取 cred, 通过其自动刷新机制保证 token 正常情况是存在的
-        let cred = match self.cred.load().cloud_token.value() {
+        // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
+        let token = match self.cred.load().cloud_token.value() {
             Some(token) => token,
             None => return Err(Error::auth_expired(Location::Cloud)),
         };
 
-        let url = format!("{raw_url}?token={cred}");
+        let url = format!("{raw_url}?token={token}");
 
         Ok(url)
     }
@@ -154,7 +131,8 @@ impl super::CloudApi {
         let data = serde_json::json!({
             "docid": id,
         });
-        self.universal_request(url, &data).await?;
+        let body = _CloudBody::Json(&data);
+        self.universal_request(Method::POST, url, &body).await?;
         Ok(())
     }
 }

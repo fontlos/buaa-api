@@ -1,4 +1,9 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+pub(super) enum _CloudBody<'a, Q: Serialize + ?Sized> {
+    Query(&'a Q),
+    Json(&'a Q),
+}
 
 pub enum CloudRoot {
     /// All directories
@@ -14,13 +19,15 @@ pub enum CloudRoot {
 }
 
 impl CloudRoot {
-    pub(super) fn as_str(&self) -> &'static str {
+    pub(super) const fn as_query(&self) -> &[(&str, &str)] {
+        const SORT: (&str, &str) = ("sort", "doc_lib_name");
+        const DIRECTION: (&str, &str) = ("direction", "asc");
         match self {
-            CloudRoot::All => "",
-            CloudRoot::User => "user_doc_lib",
-            CloudRoot::Shared => "shared_user_doc_lib",
-            CloudRoot::Department => "department_doc_lib",
-            CloudRoot::Group => "custom_doc_lib",
+            CloudRoot::All => &[SORT, DIRECTION],
+            CloudRoot::User => &[SORT, DIRECTION, ("type", "user_doc_lib")],
+            CloudRoot::Shared => &[SORT, DIRECTION, ("type", "shared_user_doc_lib")],
+            CloudRoot::Department => &[SORT, DIRECTION, ("type", "department_doc_lib")],
+            CloudRoot::Group => &[SORT, DIRECTION, ("type", "custom_doc_lib")],
         }
     }
 }
