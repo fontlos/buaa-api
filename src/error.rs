@@ -6,6 +6,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    // 在自动刷新机制的帮助下, 这通常不会发生
     /// Auth error.
     #[error("Auth Error: {0}")]
     Auth(AuthError),
@@ -47,6 +48,10 @@ pub enum AuthError {
     NoUsername,
     #[error("No Password")]
     NoPassword,
+    #[error("No Token: {0}")]
+    NoToken(Location),
+    #[error("Unknown Error")]
+    Unknown,
     /// Relevant Cookies or Token expires
     #[error("Auth Expired at: {0}")]
     Expired(Location),

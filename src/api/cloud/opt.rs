@@ -1,7 +1,6 @@
 use reqwest::Method;
 use serde_json::Value;
 
-use crate::api::Location;
 use crate::error::Error;
 use crate::utils;
 
@@ -86,10 +85,7 @@ impl super::CloudApi {
             .ok_or_else(|| Error::server("[Cloud] Can not get download url"))?;
 
         // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
-        let token = match self.cred.load().cloud_token.value() {
-            Some(token) => token,
-            None => return Err(Error::auth_expired(Location::Cloud)),
-        };
+        let token = self.cred.load().value::<crate::api::Cloud>()?;
 
         let url = format!("{raw_url}?token={token}");
 

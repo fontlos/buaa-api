@@ -3,6 +3,7 @@ use reqwest::Method;
 use serde::Serialize;
 
 use crate::api::Location;
+use crate::api::{Cloud, Sso};
 use crate::error::Error;
 
 use super::data::_CloudBody;
@@ -30,8 +31,8 @@ use super::data::_CloudBody;
 
 impl super::CloudApi {
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().sso.is_expired() {
-            self.api::<crate::api::Sso>().login().await?;
+        if self.cred.load().is_expired::<Sso>() {
+            self.api::<Sso>().login().await?;
         }
 
         let mut is_ok = false;
@@ -112,13 +113,11 @@ impl super::CloudApi {
     where
         Q: Serialize + ?Sized,
     {
-        let cred = &self.cred.load().cloud_token;
-        if cred.is_expired() {
+        let cred = &self.cred.load();
+        if cred.is_expired::<Cloud>() {
             self.login().await?;
         }
-        let token = cred
-            .value()
-            .ok_or_else(|| Error::auth_expired(Location::Cloud))?;
+        let token = cred.value::<Cloud>()?;
 
         let res = self.request(m, url).bearer_auth(token);
 

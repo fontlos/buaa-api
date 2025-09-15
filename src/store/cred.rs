@@ -5,6 +5,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
+use crate::api::{Boya, Class, Cloud, Spoc, Srs, Sso};
 use crate::cell::{AtomicCell, AtomicType};
 use crate::error::{AuthError, Error, Result};
 use crate::utils;
@@ -33,6 +34,41 @@ pub struct CredentialStore {
     /// Mark login expiration time of SSO
     pub sso: CredentialItem,
 }
+
+pub(crate) trait Token {
+    const EXPIRATION: u64;
+    fn field(store: &CredentialStore) -> &CredentialItem;
+    fn as_location() -> Location;
+}
+
+macro_rules! impl_token {
+    ($type:ident, $field:ident, $expiration:expr) => {
+        impl Token for $type {
+            const EXPIRATION: u64 = $expiration;
+            #[inline]
+            fn field(store: &CredentialStore) -> &CredentialItem {
+                &store.$field
+            }
+            #[inline]
+            fn as_location() -> Location {
+                Location::$type
+            }
+        }
+    };
+}
+
+// 经验证 15 分钟内过期, 我们这里用 10 分钟
+impl_token!(Boya, boya_token, 600);
+// 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
+impl_token!(Class, class_token, 604800);
+// TODO: 我们先默认十分钟过期, 待测试
+impl_token!(Cloud, cloud_token, 600);
+// 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
+impl_token!(Spoc, spoc_token, 604800);
+// TODO: 我们先默认十分钟过期, 待测试
+impl_token!(Srs, srs_token, 600);
+// 经验证 1.5 小时过期
+impl_token!(Sso, sso, 5400);
 
 impl CredentialStore {
     pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
@@ -72,16 +108,27 @@ impl CredentialStore {
         }
     }
 
-    pub fn username(&self) -> Result<&str> {
+    pub(crate) fn username(&self) -> Result<&str> {
         self.username
             .as_deref()
             .ok_or(Error::Auth(AuthError::NoUsername))
     }
 
-    pub fn password(&self) -> Result<&str> {
+    pub(crate) fn password(&self) -> Result<&str> {
         self.password
             .as_deref()
             .ok_or(Error::Auth(AuthError::NoPassword))
+    }
+
+    pub(crate) fn value<T: Token>(&self) -> Result<&str> {
+        T::field(self)
+            .value
+            .as_deref()
+            .ok_or(Error::Auth(AuthError::NoToken(T::as_location())))
+    }
+
+    pub(crate) fn is_expired<T: Token>(&self) -> bool {
+        T::field(self).expiration.load(Ordering::Relaxed) < utils::get_time_secs()
     }
 }
 
@@ -112,14 +159,4 @@ impl AtomicCell<CredentialStore> {
 pub struct CredentialItem {
     value: Option<String>,
     expiration: AtomicU64,
-}
-
-impl CredentialItem {
-    pub fn value(&self) -> Option<&String> {
-        self.value.as_ref()
-    }
-
-    pub fn is_expired(&self) -> bool {
-        self.expiration.load(Ordering::Relaxed) < utils::get_time_secs()
-    }
 }

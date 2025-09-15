@@ -1,11 +1,12 @@
 use crate::api::Location;
+use crate::api::Sso;
 use crate::error::Error;
 
 impl super::TesApi {
     /// Teacher Evaluation System Login
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().sso.is_expired() {
-            self.api::<crate::api::Sso>().login().await?;
+        if self.cred.load().is_expired::<Sso>() {
+            self.api::<Sso>().login().await?;
         }
 
         // 登录
