@@ -27,7 +27,7 @@ impl super::ClassApi {
         let session = match utils::parse_by_tag(url, "loginName=", "") {
             Some(s) => s,
             // 理论上这是个不该发生的错误
-            None => return Err(Error::auth_expired(Location::Sso)),
+            None => return Err(Error::server("[Class] No LoginName found")),
         };
 
         // 使用 DES 加密 URL, 这是下一步请求的参数之一

@@ -29,9 +29,9 @@ impl super::BoyaApi {
         let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
         // 获取 JSESSIONID
         let res = self.get(url).send().await?;
-        // 未转跳就证明登录过期
+        // 自动刷新机制保证了正常情况下不会发生这种情况
         if res.url().as_str() == url {
-            return Err(Error::auth_expired(Location::Sso));
+            return Err(Error::server("[Boya] Redirect failed"));
         }
         let mut query = res.url().query_pairs();
         let token = query
@@ -142,16 +142,9 @@ impl super::BoyaApi {
         let res = aes_cipher.decrypt_ecb(&res);
         let res = serde_json::from_slice::<_BoyaRes<T>>(&res)?;
 
-        if res.status == "98005399" {
-            // 刷新登录 Token 的操作无需在这里执行, 如果上面刷新了, 这里还能报这个状态码那应该不是 Token 的问题
-            return Err(Error::auth_expired(Location::Boya));
-        }
-        if res.status == "1" {
-            // TODO 这个错误值得重新看一下是因为什么
-            return Err(Error::server(format!("[Boya] Response: {}", res.errmsg)));
-        }
+        // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
         if res.status != "0" {
-            return Err(Error::server(format!("[Boya] Response: {}", res.errmsg)));
+            return Err(Error::server(format!("[Boya] Status: {}. Response: {}", res.status, res.errmsg)));
         }
 
         // 刷新 Token 时效
