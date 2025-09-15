@@ -14,7 +14,7 @@ impl super::TesApi {
             "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fspoc.buaa.edu.cn%2Fpjxt%2Fcas";
         let res = self.get(login_url).send().await?;
         if res.url().as_str() == login_url {
-            return Err(Error::auth_expired(Location::Sso));
+            return Err(Error::server("[Tes] Redirect failed"));
         }
         self.cred.refresh(Location::Sso);
         Ok(())

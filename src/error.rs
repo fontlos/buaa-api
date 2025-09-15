@@ -6,7 +6,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    // 在自动刷新机制的帮助下, 这通常不会发生
     /// Auth error.
     #[error("Auth Error: {0}")]
     Auth(AuthError),
@@ -32,11 +31,6 @@ pub enum Error {
 
 impl Error {
     #[inline]
-    pub(crate) fn auth_expired(location: Location) -> Self {
-        Error::Auth(AuthError::Expired(location))
-    }
-
-    #[inline]
     pub(crate) fn server(msg: impl Into<Cow<'static, str>>) -> Self {
         Error::Server(msg.into())
     }
@@ -48,11 +42,7 @@ pub enum AuthError {
     NoUsername,
     #[error("No Password")]
     NoPassword,
+    // 在自动刷新机制的帮助下, 这通常不会发生
     #[error("No Token: {0}")]
     NoToken(Location),
-    #[error("Unknown Error")]
-    Unknown,
-    /// Relevant Cookies or Token expires
-    #[error("Auth Expired at: {0}")]
-    Expired(Location),
 }

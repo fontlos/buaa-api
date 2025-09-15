@@ -18,7 +18,7 @@ impl super::SrsApi {
         let res = self.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
-            return Err(Error::auth_expired(Location::Sso));
+            return Err(Error::server("[Srs] Redirect failed"));
         }
         // 储存 token
         let cookie = self.cookies.load();

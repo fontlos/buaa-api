@@ -27,7 +27,7 @@ impl super::SpocApi {
             .send()
             .await?;
         if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
-            return Err(Error::auth_expired(Location::Sso));
+            return Err(Error::server("[Spoc] Redirect failed"));
         }
         let mut query = res.url().query_pairs();
         let token = query
