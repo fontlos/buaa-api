@@ -2,14 +2,15 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use crate::api::Location;
+use crate::api::{Srs, Sso};
 use crate::error::Error;
 
 use super::{_SrsBody, _SrsRes};
 
 impl super::SrsApi {
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().sso.is_expired() {
-            self.api::<crate::api::Sso>().login().await?;
+        if self.cred.load().is_expired::<Sso>() {
+            self.api::<Sso>().login().await?;
         }
 
         let url = "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fbyxk.buaa.edu.cn%2Fxsxk%2Fauth%2Fcas";
@@ -39,16 +40,11 @@ impl super::SrsApi {
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let cred = &self.cred.load().srs_token;
-        if cred.is_expired() {
+        let cred = &self.cred.load();
+        if cred.is_expired::<Srs>() {
             self.login().await?;
         }
-
-        // 获取 token
-        let token = match cred.value() {
-            Some(t) => t,
-            None => return Err(Error::auth_expired(Location::Srs)),
-        };
+        let token = cred.value::<Srs>()?;
 
         let res = self.post(url).header("Authorization", token);
 

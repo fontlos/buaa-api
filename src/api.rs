@@ -36,14 +36,7 @@ pub struct User;
 /// Marker type for BUAA WiFi API Group
 pub struct Wifi;
 
-// TODO: 也许可以用 Trait + 上面的标记结构体来替代下面的枚举
-// ```
-// pub trait ApiGroup {
-//     type Field;
-//     const EXPIRATION: u64;
-//     fn get_field(store: &mut CredentialStore) -> &mut Self::Field;
-// }
-// ```
+// 这必须和 Marker 一一对应, 因为 Token trait 使用宏进行转化
 #[derive(Debug, Eq, PartialEq)]
 pub enum Location {
     Aas,

@@ -2,6 +2,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use crate::api::Location;
+use crate::api::{Spoc, Sso};
 use crate::crypto;
 use crate::error::Error;
 
@@ -17,8 +18,8 @@ const SPOC_AES_IV: &[u8] = b"ocni12345678inco";
 impl super::SpocApi {
     /// # Spoc Login
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().sso.is_expired() {
-            self.api::<crate::api::Sso>().login().await?;
+        if self.cred.load().is_expired::<Sso>() {
+            self.api::<Sso>().login().await?;
         }
 
         let res = self
@@ -52,15 +53,11 @@ impl super::SpocApi {
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let cred = &self.cred.load().spoc_token;
-        if cred.is_expired() {
+        let cred = &self.cred.load();
+        if cred.is_expired::<Spoc>() {
             self.login().await?;
         }
-
-        let token = match cred.value() {
-            Some(t) => t,
-            None => return Err(Error::auth_expired(Location::Spoc)),
-        };
+        let token = cred.value::<Spoc>()?;
 
         // 初始化 AES
         let aes = crypto::aes::Aes128::new(SPOC_AES_KEY).unwrap();

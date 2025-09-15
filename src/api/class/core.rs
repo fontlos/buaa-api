@@ -2,6 +2,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use crate::api::Location;
+use crate::api::{Class, Sso};
 use crate::error::Error;
 use crate::{crypto, utils};
 
@@ -14,8 +15,8 @@ const CLASS_DES_KEY: &[u8] = b"Jyd#351*";
 impl super::ClassApi {
     /// # Smart Classroom Login
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().sso.is_expired() {
-            self.api::<crate::api::Sso>().login().await?;
+        if self.cred.load().is_expired::<Sso>() {
+            self.api::<Sso>().login().await?;
         }
 
         // 获取 JSESSIONID
@@ -76,16 +77,12 @@ impl super::ClassApi {
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        if self.cred.load().class_token.is_expired() {
+        let cred = self.cred.load();
+        if cred.is_expired::<Class>() {
             self.login().await?;
         }
-        let cred = self.cred.load();
-        let token = match cred.class_token.value() {
-            Some(t) => t,
-            None => {
-                return Err(Error::auth_expired(Location::Class));
-            }
-        };
+        let token = cred.value::<Class>()?;
+
         // 因为双 token 机制, 我们暂时只是简单的将其拼在一起
         let (session, id) = token.split_once('@').unwrap();
 

@@ -2,6 +2,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use crate::api::Location;
+use crate::api::{Boya, Sso};
 use crate::error::Error;
 use crate::{crypto, utils};
 
@@ -19,8 +20,8 @@ Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
 impl super::BoyaApi {
     /// # Boya Login
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().sso.is_expired() {
-            self.api::<crate::api::Sso>().login().await?;
+        if self.cred.load().is_expired::<Sso>() {
+            self.api::<Sso>().login().await?;
         }
 
         // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
@@ -90,16 +91,11 @@ impl super::BoyaApi {
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let cred = &self.cred.load().boya_token;
-        if cred.is_expired() {
+        let cred = &self.cred.load();
+        if cred.is_expired::<Boya>() {
             self.login().await?;
         }
-
-        // 首先尝试获取 token, 如果没有就可以直接返回了
-        let token = match cred.value() {
-            Some(t) => t,
-            None => return Err(Error::auth_expired(Location::Boya)),
-        };
+        let token = cred.value::<Boya>()?;
 
         // 初始化 RSA, 设置公钥
         let rsa_cipher = crypto::rsa::RsaPkcs1v15::from_pem(BOYA_RSA_KEY);
