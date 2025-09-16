@@ -88,7 +88,7 @@ impl super::SpocApi {
             )));
         }
 
-        self.cred.refresh(Location::Spoc);
+        cred.refresh::<Spoc>();
 
         Ok(res.content)
     }

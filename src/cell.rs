@@ -3,12 +3,6 @@ use std::marker::PhantomData;
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicPtr, Ordering};
 
-/// You need to implement this trait if you want to use `update_atomic` method
-pub trait AtomicType: Send + Sync {
-    type Wrapped;
-    fn store(&self, value: Self::Wrapped, order: Ordering);
-}
-
 /// A conditional thread-safe cell optimized for frequent reads, some guarded updates, and rare atomic replacements.
 ///
 /// # Thread Safety Model
@@ -101,52 +95,6 @@ where
         let _guard = self.update_lock.lock();
         let ptr = self.data.load(Ordering::Acquire);
         updater(unsafe { &mut *(*ptr).get() });
-    }
-    /// If the field is atomic and implements the [AtomicType] trait,
-    /// you can use this method to update the corresponding field atomically without locking.
-    ///
-    /// The closure must return a mutable reference to the atomic field and the new value.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use std::sync::atomic::{AtomicU64, Ordering};
-    ///
-    /// impl AtomicType for AtomicU64 {
-    ///     type Wrapped = u64;
-    ///     fn store(&self, value: u64, order: Ordering) { self.store(value, order); }
-    /// }
-    /// struct Data {
-    ///     non_atomic_value: String,
-    ///     atomic_value: AtomicU64,
-    /// }
-    ///
-    /// let cell = AtomicCell::new(Data {
-    ///     non_atomic_value: "test".to_string(),
-    ///     atomic_value: AtomicU64::new(0),
-    /// });
-    ///
-    /// // Update
-    /// cell.update(|data| {
-    ///     data.non_atomic_value = "updated".to_string();
-    /// });
-    /// // Update atomic field
-    /// cell.update_atomic(|data| (&data.atomic_value, 42));
-    ///
-    /// let data = cell.load();
-    /// assert_eq!(data.non_atomic_value, "updated");
-    /// assert_eq!(data.atomic_value.load(Ordering::Relaxed), 42);
-    /// ```
-    pub fn update_atomic<A, F>(&self, updater: F)
-    where
-        // The constraint field must implement AtomicType
-        A: AtomicType,
-        // The closure must return a mutable reference to the atomic field and the new value.
-        F: FnOnce(&mut T) -> (&A, A::Wrapped),
-    {
-        let ptr = self.data.load(Ordering::Acquire);
-        let (atomic_ref, value) = updater(unsafe { &mut *(*ptr).get() });
-        atomic_ref.store(value, Ordering::Release);
     }
 }
 

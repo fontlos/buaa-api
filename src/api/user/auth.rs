@@ -1,11 +1,11 @@
-use crate::api::Location;
 use crate::api::Sso;
 use crate::utils;
 
 impl super::UserApi {
     /// # User Center Login
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().is_expired::<Sso>() {
+        let cred = self.cred.load();
+        if cred.is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
         }
 
@@ -21,7 +21,7 @@ impl super::UserApi {
         self.get("https://uc.buaa.edu.cn/api/login?target=https://uc.buaa.edu.cn/#/user/login")
             .send()
             .await?;
-        self.cred.refresh(Location::Sso);
+        cred.refresh::<Sso>();
         Ok(())
     }
 }

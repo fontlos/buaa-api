@@ -1,11 +1,11 @@
-use crate::api::Location;
 use crate::api::Sso;
 use crate::error::Error;
 
 impl super::TesApi {
     /// Teacher Evaluation System Login
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().is_expired::<Sso>() {
+        let cred = self.cred.load();
+        if cred.is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
         }
 
@@ -16,7 +16,7 @@ impl super::TesApi {
         if res.url().as_str() == login_url {
             return Err(Error::server("[Tes] Redirect failed"));
         }
-        self.cred.refresh(Location::Sso);
+        cred.refresh::<Sso>();
         Ok(())
     }
 }
