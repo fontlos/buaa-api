@@ -1,7 +1,6 @@
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::api::Location;
 use crate::api::{Class, Sso};
 use crate::error::Error;
 use crate::{crypto, utils};
@@ -61,7 +60,9 @@ impl super::ClassApi {
         // 尽管 res 里面也有 session, 但毕竟上面就解析出来使用过了, 这里就不解析了直接切割字符串
         match utils::parse_by_tag(&res, "\"id\":\"", "\"") {
             Some(id) => {
-                self.cred.set(Location::Class, format!("{session}@{id}"));
+                self.cred.update(|s| {
+                    s.update::<Class>(format!("{session}@{id}"));
+                });
                 Ok(())
             }
             None => Err(Error::server("[Class] Login failed. No token")),

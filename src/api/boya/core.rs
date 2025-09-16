@@ -1,7 +1,6 @@
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::api::Location;
 use crate::api::{Boya, Sso};
 use crate::error::Error;
 use crate::{crypto, utils};
@@ -39,7 +38,10 @@ impl super::BoyaApi {
             .and_then(|t| if t.0 == "token" { Some(t.1) } else { None })
             .ok_or_else(|| Error::server("[Boya] Login failed. No token"))?;
 
-        self.cred.set(Location::Boya, token.to_string());
+        self.cred.update(|s| {
+            s.update::<Boya>(token.to_string());
+        });
+
         Ok(())
     }
 

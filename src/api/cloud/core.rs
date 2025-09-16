@@ -2,7 +2,6 @@ use bytes::Bytes;
 use reqwest::Method;
 use serde::Serialize;
 
-use crate::api::Location;
 use crate::api::{Cloud, Sso};
 use crate::error::Error;
 
@@ -86,19 +85,21 @@ impl super::CloudApi {
 
         if is_ok {
             // is_previous_login_3rd_party=true 和 oauth2.isSkip=true 两个 cookie 似乎没有用, 这里就不添加了
-            let token =
-                match self
-                    .cookies
-                    .load()
-                    .get("bhpan.buaa.edu.cn", "/", "client.oauth2_token")
-                {
-                    Some(t) => t.value().to_string(),
-                    None => {
-                        return Err(Error::server("[Cloud] Login failed. No token"));
-                    }
-                };
-            self.cred.set(Location::Cloud, token);
-            Ok(())
+            match self
+                .cookies
+                .load()
+                .get("bhpan.buaa.edu.cn", "/", "client.oauth2_token")
+            {
+                Some(t) => {
+                    self.cred.update(|s| {
+                        s.update::<Cloud>(t.value().to_string());
+                    });
+                    Ok(())
+                }
+                None => {
+                    return Err(Error::server("[Cloud] Login failed. No token"));
+                }
+            }
         } else {
             Err(Error::server("[Cloud] Login failed. Unknown error"))
         }

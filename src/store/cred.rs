@@ -6,7 +6,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
 use crate::api::{Boya, Class, Cloud, Spoc, Srs, Sso};
-use crate::cell::AtomicCell;
 use crate::error::{AuthError, Error, Result};
 use crate::utils;
 
@@ -31,6 +30,7 @@ pub struct CredentialStore {
 pub(crate) trait Token {
     const EXPIRATION: u64;
     fn field(store: &CredentialStore) -> &CredentialItem;
+    fn mut_field(store: &mut CredentialStore) -> &mut CredentialItem;
     fn as_location() -> Location;
 }
 
@@ -41,6 +41,10 @@ macro_rules! impl_token {
             #[inline]
             fn field(store: &CredentialStore) -> &CredentialItem {
                 &store.$field
+            }
+            #[inline]
+            fn mut_field(store: &mut CredentialStore) -> &mut CredentialItem {
+                &mut store.$field
             }
             #[inline]
             fn as_location() -> Location {
@@ -82,25 +86,6 @@ impl CredentialStore {
         serde_json::to_writer(file, self).unwrap();
     }
 
-    const fn item(&mut self, loc: Location) -> (&mut CredentialItem, u64) {
-        match loc {
-            // 经验证 15 分钟内过期, 我们这里用 10 分钟
-            Location::Boya => (&mut self.boya_token, 600),
-            // 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
-            Location::Class => (&mut self.class_token, 604800),
-            // TODO: 我们先默认十分钟过期, 待测试
-            Location::Cloud => (&mut self.cloud_token, 600),
-            // 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
-            Location::Spoc => (&mut self.spoc_token, 604800),
-            // TODO: 我们先默认十分钟过期, 待测试
-            Location::Srs => (&mut self.srs_token, 600),
-            // 经验证 1.5 小时过期
-            Location::Sso => (&mut self.sso, 5400),
-            // 内部方法, 我们自己保证绝对不会出现其他分支
-            _ => unreachable!(),
-        }
-    }
-
     pub(crate) fn username(&self) -> Result<&str> {
         self.username
             .as_deref()
@@ -131,20 +116,18 @@ impl CredentialStore {
             .expiration
             .store(utils::get_time_secs() + T::EXPIRATION, Ordering::Relaxed);
     }
-}
 
-impl AtomicCell<CredentialStore> {
-    pub(crate) fn set(&self, loc: Location, value: String) {
-        self.update(|store| {
-            let now = utils::get_time_secs();
-            let (item, expiration) = store.item(loc);
-            item.expiration.store(now + expiration, Ordering::Relaxed);
-            item.value = Some(value);
-            // 能用上 set 方法一定伴随着 Sso 的刷新
-            // 而且 Sso 一定不会用上 set 方法
-            // 所以这里可以放心的做一次 Sso 的刷新
-            store.sso.expiration.store(now + 5400, Ordering::Relaxed);
-        });
+    // Update 动作包含 Refresh
+    pub(crate) fn update<T: Token>(&mut self, value: String) {
+        let now = utils::get_time_secs();
+        let item = T::mut_field(self);
+        item.expiration
+            .store(now + T::EXPIRATION, Ordering::Relaxed);
+        item.value = Some(value);
+        // 能用上 set 方法一定伴随着 Sso 的刷新
+        // 而且 Sso 一定不会用上 set 方法
+        // 所以这里可以放心的做一次 Sso 的刷新
+        self.sso.expiration.store(now + 5400, Ordering::Relaxed);
     }
 }
 

@@ -1,7 +1,6 @@
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::api::Location;
 use crate::api::{Spoc, Sso};
 use crate::crypto;
 use crate::error::Error;
@@ -37,7 +36,9 @@ impl super::SpocApi {
         // 再次调用 next 获取 refreshToken, 但我们用不着, 使用我们自己的机制刷新登陆状态
 
         // 提前加上前缀
-        self.cred.set(Location::Spoc, format!("Inco-{token}"));
+        self.cred.update(|s| {
+            s.update::<Spoc>(format!("Inco-{token}"));
+        });
         Ok(())
     }
 
