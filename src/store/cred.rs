@@ -6,16 +6,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
 use crate::api::{Boya, Class, Cloud, Spoc, Srs, Sso};
-use crate::cell::{AtomicCell, AtomicType};
+use crate::cell::AtomicCell;
 use crate::error::{AuthError, Error, Result};
 use crate::utils;
-
-impl AtomicType for AtomicU64 {
-    type Wrapped = u64;
-    fn store(&self, value: u64, order: Ordering) {
-        self.store(value, order);
-    }
-}
 
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialStore {
@@ -130,6 +123,14 @@ impl CredentialStore {
     pub(crate) fn is_expired<T: Token>(&self) -> bool {
         T::field(self).expiration.load(Ordering::Relaxed) < utils::get_time_secs()
     }
+
+    // 原子类型可以直接在不可变引用上更新
+    // 如果调用了 Update 就不需要这个方法了
+    pub(crate) fn refresh<T: Token>(&self) {
+        T::field(self)
+            .expiration
+            .store(utils::get_time_secs() + T::EXPIRATION, Ordering::Relaxed);
+    }
 }
 
 impl AtomicCell<CredentialStore> {
@@ -143,14 +144,6 @@ impl AtomicCell<CredentialStore> {
             // 而且 Sso 一定不会用上 set 方法
             // 所以这里可以放心的做一次 Sso 的刷新
             store.sso.expiration.store(now + 5400, Ordering::Relaxed);
-        });
-    }
-
-    pub(crate) fn refresh(&self, loc: Location) {
-        self.update_atomic(|store| {
-            let now = utils::get_time_secs();
-            let (item, expiration) = store.item(loc);
-            (&item.expiration, now + expiration)
         });
     }
 }

@@ -1,4 +1,4 @@
-use crate::api::Location;
+use crate::api::Sso;
 use crate::error::Error;
 use crate::utils;
 
@@ -37,7 +37,7 @@ impl super::SsoApi {
         ];
         let res = self.post(login_url).form(&form).send().await?;
         if res.status().as_u16() == 200 {
-            self.cred.refresh(Location::Sso);
+            cred.refresh::<Sso>();
             Ok(())
         } else {
             Err(Error::server(

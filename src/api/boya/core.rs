@@ -144,11 +144,14 @@ impl super::BoyaApi {
 
         // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
         if res.status != "0" {
-            return Err(Error::server(format!("[Boya] Status: {}. Response: {}", res.status, res.errmsg)));
+            return Err(Error::server(format!(
+                "[Boya] Status: {}. Response: {}",
+                res.status, res.errmsg
+            )));
         }
 
         // 刷新 Token 时效
-        self.cred.refresh(Location::Boya);
+        cred.refresh::<Boya>();
 
         Ok(res.data)
     }
