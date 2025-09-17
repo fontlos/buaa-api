@@ -82,14 +82,13 @@ impl super::SpocApi {
 
         let res = serde_json::from_slice::<_SpocRes<T>>(&res)?;
 
+        // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if res.code != 200 {
             return Err(Error::server(format!(
                 "[Spoc] Response: {}",
                 res.msg.unwrap_or("Unknown Error".into())
             )));
         }
-
-        cred.refresh::<Spoc>();
 
         Ok(res.content)
     }

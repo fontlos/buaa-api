@@ -21,7 +21,7 @@ impl super::ClassApi {
     }
 
     /// # Smart Classroom query one course's all schedule
-    /// - Input: Course ID, from [ClassCourse]
+    /// - Input: Course ID, from [ClassCourse::id]
     pub async fn query_schedule(&self, id: &str) -> crate::Result<Vec<ClassSchedule>> {
         let url = "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action";
         let query = [("courseId", id)];
@@ -30,7 +30,7 @@ impl super::ClassApi {
     }
 
     /// # Smart Classroom checkin schedule
-    /// - Input: Schedule ID, from [ClassSchedule]
+    /// - Input: Schedule ID, from [ClassSchedule::id]
     pub async fn checkin(&self, id: &str) -> crate::Result<Value> {
         let url = "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action";
         let query = [
