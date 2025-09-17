@@ -3,7 +3,6 @@
 //! # For more information, check:
 //!
 //! - [`AasApi`](./api/aas/type.AasApi.html)
-//! - [`AppApi`](./api/app/type.AppApi.html)
 //! - [`BoyaApi`](./api/boya/type.BoyaApi.html)
 //! - [`ClassApi`](./api/class/type.ClassApi.html)
 //! - [`CloudApi`](./api/cloud/type.CloudApi.html)
