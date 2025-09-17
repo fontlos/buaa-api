@@ -12,8 +12,6 @@
   - [x] Login: built in `Context`
 - [ ] BUAA Academic Affairs System: `aas`
   - [ ] Login
-- [ ] BUAA App: `app`
-  - [x] Login
 - [x] BUAA Boya Course: `boya`
   - [x] Login
   - [x] Query courses
