@@ -54,17 +54,19 @@ macro_rules! impl_token {
     };
 }
 
-// 经验证 15 分钟内过期, 我们这里用 10 分钟
+// 我们这里做保守估计防止 token 意外失效
+
+// 测得 15 分钟以内有效, 这里用 10 分钟. 使用可刷新时效
 impl_token!(Boya, boya_token, 600);
-// 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
-impl_token!(Class, class_token, 604800);
-// TODO: 我们先默认十分钟过期, 待测试
-impl_token!(Cloud, cloud_token, 600);
-// 至少 7 天, 但即使更多对我们也用处不大了, 也许以后有时间我会测一测极限时间
-impl_token!(Spoc, spoc_token, 604800);
-// TODO: 我们先默认十分钟过期, 待测试
-impl_token!(Srs, srs_token, 600);
-// 经验证 1.5 小时过期
+// 测得 7 天内有效, 但 24 小时就够用了
+impl_token!(Class, class_token, 86400);
+// 测得 40 分钟以内有效, 这里用 30 分钟. 使用可刷新时效
+impl_token!(Cloud, cloud_token, 1800);
+// 测得 7 天内有效, 但 24 小时就够用了. 使用不可刷新时效
+impl_token!(Spoc, spoc_token, 86400);
+// 测得 25 分钟以内有效, 这里用 20 分钟. 使用不可刷新时效
+impl_token!(Srs, srs_token, 1200);
+// 测得 90 分钟以内有效. 使用可刷新时效
 impl_token!(Sso, sso, 5400);
 
 impl CredentialStore {

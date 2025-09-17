@@ -15,8 +15,7 @@ impl super::SsoApi {
         let pw = cred.password()?;
         // 获取登录页 execution 值
         let res = self.get(login_url).send().await?;
-        // 重定向到这里说明 Cookie 有效
-        // TODO: 也许需要 refresh
+        // 重定向到这里说明 Cookie 有效, 但无法刷新
         if res.url().as_str() == verify_url {
             return Ok(());
         }

@@ -128,6 +128,8 @@ impl super::CloudApi {
         };
         let res = res.send().await?.bytes().await?;
 
+        cred.refresh::<Cloud>();
+
         Ok(res)
     }
 }
