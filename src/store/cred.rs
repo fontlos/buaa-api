@@ -58,12 +58,12 @@ macro_rules! impl_token {
 
 // 测得 15 分钟以内有效, 这里用 10 分钟. 使用可刷新时效
 impl_token!(Boya, boya_token, 600);
-// 测得 7 天内有效, 但 24 小时就够用了
+// 测得 7 天以内有效, 但 24 小时就够用了
 impl_token!(Class, class_token, 86400);
 // 测得 40 分钟以内有效, 这里用 30 分钟. 使用可刷新时效
 impl_token!(Cloud, cloud_token, 1800);
-// 测得 7 天内有效, 但 24 小时就够用了. 使用不可刷新时效
-impl_token!(Spoc, spoc_token, 86400);
+// 测得 5 小时以内有效, 这里用 3 小时. 使用不可刷新时效
+impl_token!(Spoc, spoc_token, 10800);
 // 测得 25 分钟以内有效, 这里用 20 分钟. 使用不可刷新时效
 impl_token!(Srs, srs_token, 1200);
 // 测得 90 分钟以内有效. 使用可刷新时效

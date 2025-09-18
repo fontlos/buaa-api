@@ -1,5 +1,4 @@
 use serde::{Deserialize, Deserializer};
-use serde_json::Value;
 use time::{PrimitiveDateTime, Weekday, format_description};
 
 #[derive(Deserialize)]
@@ -47,6 +46,10 @@ pub struct SpocSchedule {
     pub position: String,
     #[serde(rename = "jsxm")]
     pub teacher: String,
+    /// Help ClassApi to filter today's classes
+    #[serde(deserialize_with = "deserialize_spoc_class_id")]
+    #[serde(rename = "bjmc")]
+    pub class_id: String,
     #[serde(rename = "kcmc")]
     pub name: String,
     #[serde(deserialize_with = "deserialize_time_range")]
@@ -54,19 +57,30 @@ pub struct SpocSchedule {
     pub time: SpocTimeRange,
 }
 
+fn deserialize_spoc_class_id<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: String = Deserialize::deserialize(deserializer)?;
+    let class_id = s.strip_prefix("教学班:").ok_or(serde::de::Error::custom(
+        "Unexpected value in SpocSchedule class_id",
+    ))?;
+    Ok(class_id.to_string())
+}
+
 fn deserialize_spoc_day<'de, D>(deserializer: D) -> Result<Weekday, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value: Value = Deserialize::deserialize(deserializer)?;
+    let value: String = Deserialize::deserialize(deserializer)?;
     match value.as_str() {
-        Some("monday") => Ok(Weekday::Monday),
-        Some("tuesday") => Ok(Weekday::Tuesday),
-        Some("wednesday") => Ok(Weekday::Wednesday),
-        Some("thursday") => Ok(Weekday::Thursday),
-        Some("friday") => Ok(Weekday::Friday),
-        Some("saturday") => Ok(Weekday::Saturday),
-        Some("sunday") => Ok(Weekday::Sunday),
+        "monday" => Ok(Weekday::Monday),
+        "tuesday" => Ok(Weekday::Tuesday),
+        "wednesday" => Ok(Weekday::Wednesday),
+        "thursday" => Ok(Weekday::Thursday),
+        "friday" => Ok(Weekday::Friday),
+        "saturday" => Ok(Weekday::Saturday),
+        "sunday" => Ok(Weekday::Sunday),
         _ => Err(serde::de::Error::custom(
             "Unexpected value in SpocSchedule weekday",
         )),
