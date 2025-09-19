@@ -16,20 +16,3 @@ impl super::UserApi {
         Ok(state)
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::Context;
-
-    #[ignore]
-    #[tokio::test]
-    async fn test_user() {
-        let context = Context::with_auth("./data");
-
-        let user = context.user();
-        user.login().await.unwrap();
-
-        let state = user.get_state().await.unwrap();
-        println!("{}", state);
-    }
-}
