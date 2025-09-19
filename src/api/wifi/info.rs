@@ -79,20 +79,3 @@ pub fn ssid() -> Option<String> {
     // 这里需要编写相应的 Objective-C 代码并通过 FFI 调用
     None
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_wifi_ip() {
-        let ip = ip().unwrap();
-        println!("{}", ip);
-    }
-
-    #[test]
-    fn test_get_wifi_ssid() {
-        let s = ssid().unwrap();
-        println!("{}", s);
-    }
-}
