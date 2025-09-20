@@ -12,7 +12,7 @@ use super::_ClassRes;
 const CLASS_DES_KEY: &[u8] = b"Jyd#351*";
 
 impl super::ClassApi {
-    /// # Smart Classroom Login
+    /// # Login to ClassApi
     pub async fn login(&self) -> crate::Result<()> {
         if self.cred.load().is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
@@ -69,8 +69,8 @@ impl super::ClassApi {
         }
     }
 
-    // 似乎没有什么公开的必要
-    /// Class Universal Request API
+    // 内部方法不公开
+    /// Universal Request for ClassApi
     ///
     /// **Note**: `token` parameter is already included
     pub(crate) async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
@@ -101,7 +101,7 @@ impl super::ClassApi {
         if res.status != "0" {
             return Err(Error::server(format!(
                 "[Class] Response: {}",
-                res.msg.unwrap_or("Unknown error".to_string())
+                res.msg.as_deref().unwrap_or("Unknown error")
             )));
         }
 
