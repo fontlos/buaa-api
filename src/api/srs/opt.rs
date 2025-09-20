@@ -1,19 +1,24 @@
 use crate::{Error, utils};
 
 use super::{
-    _SrsBody, _SrsCampus, _SrsPreSelectedGroup, SrsCourse, SrsCourses, SrsFilter, SrsOpt,
-    SrsSelected,
+    _SrsBody, _SrsPreSelectedGroup, SrsCourse, SrsCourses, SrsFilter, SrsOpt, SrsSelected,
 };
 
 impl super::SrsApi {
     /// Get the default course filter.
     /// If you know your campus,
-    /// you can create the filter by `SrsFilter::new` directly.
+    /// you can create the filter by [SrsFilter::new()] directly.
     pub async fn get_default_filter(&self) -> crate::Result<SrsFilter> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
         let body = _SrsBody::<'_, ()>::QueryToken;
-        let res: _SrsCampus = self.universal_request(url, body).await?;
-        Ok(SrsFilter::new(res.0))
+        let res: serde_json::Value = self.universal_request(url, body).await?;
+        let campus = res
+            .pointer("/student/campus")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| Error::server("Missing campus field"))?
+            .parse::<u8>()
+            .map_err(|_| Error::Other("Failed to parse campus".into()))?;
+        Ok(SrsFilter::new(campus))
     }
 
     // 预选所需, 有病吧嵌在 HTML 里

@@ -1,13 +1,6 @@
 use serde::{Deserialize, Deserializer};
 use time::{PrimitiveDateTime, Weekday, format_description};
 
-#[derive(Deserialize)]
-pub(super) struct _SpocRes<T> {
-    pub code: u32,
-    pub msg: Option<String>,
-    pub content: T,
-}
-
 // ====================
 // 用于 get_week
 // ====================

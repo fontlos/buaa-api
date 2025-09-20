@@ -4,13 +4,6 @@ use time::PrimitiveDateTime;
 
 use crate::utils::deserialize_datatime;
 
-#[derive(Debug, Deserialize)]
-pub(super) struct _BoyaRes<T> {
-    pub status: String,
-    pub errmsg: String,
-    pub data: T,
-}
-
 // 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
 #[derive(Debug)]
 pub(super) struct _BoyaData<T>(pub T);

@@ -2,16 +2,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::utils::deserialize_datatime;
 
-/// Response wrapper for ClassApi
-#[derive(Deserialize)]
-pub(super) struct _ClassRes<T> {
-    #[serde(rename = "STATUS")]
-    pub status: String,
-    #[serde(rename = "ERRMSG")]
-    pub msg: Option<String>,
-    pub result: Option<T>,
-}
-
 /// Course info
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClassCourse {

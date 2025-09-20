@@ -42,6 +42,7 @@ impl super::CloudApi {
         Ok(res)
     }
 
+    // 内部方法
     /// Get a download URL for a single file.
     ///
     /// **Note**: If you pass a dir, it will return a bad URL.
@@ -58,6 +59,7 @@ impl super::CloudApi {
         Ok(res.to_string())
     }
 
+    // 内部方法
     /// Get a download URL of a zip package for multiple files or a dir.
     ///
     /// **Note**: If you pass a single file(not a dir), it will return a bad URL.

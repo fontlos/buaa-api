@@ -1,11 +1,9 @@
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::api::{Spoc, Sso};
 use crate::crypto;
 use crate::error::Error;
-
-use super::_SpocRes;
 
 // 逆向出来的密钥和初始向量, 用于 AES 加密请求体,
 // 不过既然写死了为什么不用 ECB 而用 CBC 模式啊
@@ -80,7 +78,7 @@ impl super::SpocApi {
             .bytes()
             .await?;
 
-        let res = serde_json::from_slice::<_SpocRes<T>>(&res)?;
+        let res = serde_json::from_slice::<Res<T>>(&res)?;
 
         // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if res.code != 200 {
@@ -92,4 +90,11 @@ impl super::SpocApi {
 
         Ok(res.content)
     }
+}
+
+#[derive(Deserialize)]
+struct Res<T> {
+    code: u32,
+    msg: Option<String>,
+    content: T,
 }
