@@ -76,15 +76,9 @@ impl super::BoyaApi {
         Ok(res)
     }
 
-    // 不再公开, 因为本来也只是用于辅助签到和签退, 没有其他用途
-    // 这个接口只在 Android UA 时才能找到, 但不妨碍使用, 在浏览器调试时可以尝试修改 UA
-    // TODO: 也许我可以考虑全局使用 Android UA 避免一些痕迹
-    async fn sign_course(
-        &self,
-        id: u32,
-        coordinate: &BoyaCoordinate,
-        s_type: u8,
-    ) -> crate::Result<BoyaSign> {
+    // 内部方法
+    // 这个接口只在 Android UA 时才能找到, 但不妨碍使用
+    async fn sign_course(&self, id: u32, c: &BoyaCoordinate, t: u8) -> crate::Result<BoyaSign> {
         let mut rng = rand::rng();
         let offset = 1e-5;
 
@@ -94,9 +88,9 @@ impl super::BoyaApi {
         // signType 1 为签到, 2 为签退
         let query = serde_json::json!({
             "courseId": id,
-            "signLat": coordinate.latitude + lat_offset,
-            "signLng": coordinate.longitude + lng_offset,
-            "signType": s_type,
+            "signLat": c.latitude + lat_offset,
+            "signLng": c.longitude + lng_offset,
+            "signType": t,
         });
         let url = "https://bykc.buaa.edu.cn/sscv/signCourseByUser";
         let res: _BoyaData<BoyaSign> = self.universal_request(url, &query).await?;

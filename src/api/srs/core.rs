@@ -1,10 +1,10 @@
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::api::{Srs, Sso};
 use crate::error::Error;
 
-use super::{_SrsBody, _SrsRes};
+use super::_SrsBody;
 
 impl super::SrsApi {
     pub async fn login(&self) -> crate::Result<()> {
@@ -57,10 +57,17 @@ impl super::SrsApi {
         };
 
         let res = res.send().await?.bytes().await?;
-        let res = serde_json::from_slice::<_SrsRes<T>>(&res)?;
+        let res = serde_json::from_slice::<Res<T>>(&res)?;
         if res.code != 200 {
             return Err(Error::server(format!("[Srs] Response: {}", res.msg)));
         }
         Ok(res.data)
     }
+}
+
+#[derive(Deserialize)]
+struct Res<T> {
+    code: u16,
+    msg: String,
+    data: T,
 }

@@ -1,16 +1,9 @@
-use serde::de::{self, Deserializer};
+use serde::de::Deserializer;
 use serde::{Deserialize, Serialize, Serializer};
 
 // ====================
 // 用于请求
 // ====================
-
-#[derive(Deserialize)]
-pub(super) struct _SrsRes<T> {
-    pub code: u16,
-    pub msg: String,
-    pub data: T,
-}
 
 pub(super) enum _SrsBody<'a, Q: Serialize + ?Sized> {
     QueryToken,
@@ -41,28 +34,6 @@ where
 // ====================
 // 用于课程查询
 // ====================
-
-// 用于提取校区的临时结构
-pub(super) struct _SrsCampus(pub u8);
-
-impl<'de> Deserialize<'de> for _SrsCampus {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct I {
-            student: J,
-        }
-        #[derive(Deserialize)]
-        struct J {
-            campus: String,
-        }
-        let i = I::deserialize(deserializer)?;
-        let campus = i.student.campus.parse::<u8>().map_err(de::Error::custom)?;
-        Ok(_SrsCampus(campus))
-    }
-}
 
 /// # A filter for querying courses
 #[derive(Serialize)]

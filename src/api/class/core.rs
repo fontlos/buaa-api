@@ -1,11 +1,9 @@
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::api::{Class, Sso};
 use crate::error::Error;
 use crate::{crypto, utils};
-
-use super::_ClassRes;
 
 /// From the reverse analysis of JS
 /// 2025.04.22
@@ -96,7 +94,7 @@ impl super::ClassApi {
             .await?
             .bytes()
             .await?;
-        let res = serde_json::from_slice::<_ClassRes<T>>(&res)?;
+        let res = serde_json::from_slice::<Res<T>>(&res)?;
 
         if res.status != "0" {
             return Err(Error::server(format!(
@@ -110,4 +108,13 @@ impl super::ClassApi {
             None => Err(Error::server("[Class] No result")),
         }
     }
+}
+
+#[derive(Deserialize)]
+struct Res<T> {
+    #[serde(rename = "STATUS")]
+    status: String,
+    #[serde(rename = "ERRMSG")]
+    msg: Option<String>,
+    result: Option<T>,
 }

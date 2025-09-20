@@ -1,11 +1,9 @@
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 
 use crate::api::{Boya, Sso};
 use crate::error::Error;
 use crate::{crypto, utils};
-
-use super::_BoyaRes;
 
 /// From hard-coded in JS
 /// 2025.04.22
@@ -142,7 +140,7 @@ impl super::BoyaApi {
         let res = &res[1..res.len() - 1];
         let res = crypto::decode_base64(res);
         let res = aes_cipher.decrypt_ecb(&res);
-        let res = serde_json::from_slice::<_BoyaRes<T>>(&res)?;
+        let res = serde_json::from_slice::<Res<T>>(&res)?;
 
         // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
         if res.status != "0" {
@@ -157,4 +155,11 @@ impl super::BoyaApi {
 
         Ok(res.data)
     }
+}
+
+#[derive(Deserialize)]
+struct Res<T> {
+    status: String,
+    errmsg: String,
+    data: T,
 }
