@@ -14,7 +14,7 @@ impl super::SrsApi {
 
         let url = "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fbyxk.buaa.edu.cn%2Fxsxk%2Fauth%2Fcas";
         // 获取 JSESSIONID
-        let res = self.get(url).send().await?;
+        let res = self.client.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
             return Err(Error::server("[Srs] Redirect failed"));
@@ -47,7 +47,7 @@ impl super::SrsApi {
         }
         let token = cred.value::<Srs>()?;
 
-        let res = self.post(url).header("Authorization", token);
+        let res = self.client.post(url).header("Authorization", token);
 
         let res = match body {
             _SrsBody::QueryToken => res.query(&[("token", token)]),

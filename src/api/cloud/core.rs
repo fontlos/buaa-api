@@ -120,7 +120,7 @@ impl super::CloudApi {
         }
         let token = cred.value::<Cloud>()?;
 
-        let res = self.request(m, url).bearer_auth(token);
+        let res = self.client.request(m, url).bearer_auth(token);
 
         let res = match body {
             _CloudBody::Query(f) => res.query(f),

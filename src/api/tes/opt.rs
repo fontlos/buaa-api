@@ -17,7 +17,7 @@ impl super::TesApi {
         let url = format!(
             "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks?yhdm={username}&pageNum=1&pageSize=10"
         );
-        let res = self.get(url).send().await?.bytes().await?;
+        let res = self.client.get(url).send().await?.bytes().await?;
         let rwid = match utils::parse_by_tag(&res, "\"rwid\":\"", "\"") {
             Some(rwid) => rwid,
             None => return Err(Error::server("[Tes] Get list failed. No rwid")),
@@ -28,7 +28,7 @@ impl super::TesApi {
         let url = format!(
             "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireListToTask?rwid={rwid}"
         );
-        let bytes = self.get(url).send().await?.bytes().await?;
+        let bytes = self.client.get(url).send().await?.bytes().await?;
 
         // 这里需要循环匹配多个 wjid
         let left = "\"wjid\":\"";
@@ -49,7 +49,7 @@ impl super::TesApi {
             let url = format!(
                 "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData?wjid={wjid}"
             );
-            let res = self.get(url).send().await?.bytes().await?;
+            let res = self.client.get(url).send().await?.bytes().await?;
             let res = serde_json::from_slice::<_EvaluationList>(&res)?;
             list.extend(res.list);
         }
@@ -75,7 +75,14 @@ impl super::TesApi {
             ("rwh", &item.rwh),
         ];
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
-        let res = self.get(url).query(&query).send().await?.bytes().await?;
+        let res = self
+            .client
+            .get(url)
+            .query(&query)
+            .send()
+            .await?
+            .bytes()
+            .await?;
         let res = serde_json::from_slice::<_EvaluationForm>(&res)?;
         Ok(res.result)
     }
@@ -85,19 +92,21 @@ impl super::TesApi {
         complete: EvaluationCompleted<'_>,
     ) -> crate::Result<reqwest::Response> {
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/submitSaveEvaluation";
-        let res = self.post(url).json(&complete).send().await?;
+        let res = self.client.post(url).json(&complete).send().await?;
 
         let rwid = complete.rwid();
         let wjid = complete.wjid();
         // 也许是用于验证是否提交成功的
         let query = [("rwid", rwid), ("wjid", wjid)];
-        self.post(
-            "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/checkWhetherTheTaskIsEvaluable",
-        )
-        .query(&query)
-        .send()
-        .await?;
-        self.post("https://spoc.buaa.edu.cn/pjxt/system/property")
+        self.client
+            .post(
+                "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/checkWhetherTheTaskIsEvaluable",
+            )
+            .query(&query)
+            .send()
+            .await?;
+        self.client
+            .post("https://spoc.buaa.edu.cn/pjxt/system/property")
             .send()
             .await?;
 

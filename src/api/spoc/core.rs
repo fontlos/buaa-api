@@ -20,6 +20,7 @@ impl super::SpocApi {
         }
 
         let res = self
+            .client
             .get("https://spoc.buaa.edu.cn/spocnewht/cas")
             .send()
             .await?;
@@ -70,6 +71,7 @@ impl super::SpocApi {
         });
 
         let res = self
+            .client
             .post(url)
             .header("Token", token)
             .json(&body)

@@ -25,7 +25,7 @@ impl super::BoyaApi {
         // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/cas/login
         let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
         // 获取 JSESSIONID
-        let res = self.get(url).send().await?;
+        let res = self.client.get(url).send().await?;
         // 自动刷新机制保证了正常情况下不会发生这种情况
         if res.url().as_str() == url {
             return Err(Error::server("[Boya] Redirect failed"));
@@ -125,6 +125,7 @@ impl super::BoyaApi {
         let time = utils::get_time_millis();
 
         let res = self
+            .client
             .post(url)
             .header("Auth_token", token)
             .header("Authtoken", token)

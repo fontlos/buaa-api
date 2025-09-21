@@ -11,14 +11,16 @@ impl super::UserApi {
 
         let time = utils::get_time_millis();
         // 获取 JSESSIONID
-        self.get(format!(
-            "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={time}"
-        ))
-        .send()
-        .await?;
+        self.client
+            .get(format!(
+                "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={time}"
+            ))
+            .send()
+            .await?;
         // 验证  JSESSIONID
         // 会经历 4 次重定向
-        self.get("https://uc.buaa.edu.cn/api/login?target=https://uc.buaa.edu.cn/#/user/login")
+        self.client
+            .get("https://uc.buaa.edu.cn/api/login?target=https://uc.buaa.edu.cn/#/user/login")
             .send()
             .await?;
         cred.refresh::<Sso>();
