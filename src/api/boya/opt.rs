@@ -34,7 +34,6 @@ impl super::BoyaApi {
     /// # Query Selected Courses
     /// Date should like `year-month-day`
     pub async fn query_selected(&self, start: Date, end: Date) -> crate::Result<Vec<BoyaSelected>> {
-        // TODO: 查询其他时间范围也没用, 找个接口查询本学期时间范围, 封装进去无需参数算了
         let query = serde_json::json!({
             "startDate": format!("{} 00:00:00", start),
             "endDate": format!("{} 00:00:00", end),

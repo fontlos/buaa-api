@@ -1,5 +1,4 @@
 use std::marker::PhantomData;
-use std::ops::Deref;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -186,10 +185,30 @@ impl Context {
     }
 }
 
-impl<G> Deref for Context<G> {
-    type Target = Client;
+impl<G> crate::Context<G> {
+    /// Obtains a type-state view for the specified API group
+    ///
+    /// This zero-cost conversion provides access to group-specific APIs
+    /// while sharing the same underlying context.
+    ///
+    /// # Safety
+    ///
+    /// The cast is safe because:
+    ///
+    /// 1. `PhantomData<G>` has no runtime representation
+    /// 2. All context data is stored in `Arc`-wrapped fields
+    /// 3. The original context remains accessible
+    #[inline]
+    pub const fn api<N>(&self) -> &crate::Context<N> {
+        unsafe {
+            // Safety: PhantomData 不改变实际内存布局
+            &*(self as *const crate::Context<G> as *const crate::Context<N>)
+        }
+    }
 
-    fn deref(&self) -> &Self::Target {
+    /// Get inner HTTP client.
+    /// You can use this to make custom requests
+    pub fn client(&self) -> &Client {
         &self.client
     }
 }

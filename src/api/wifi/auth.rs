@@ -48,7 +48,7 @@ impl super::WifiApi {
         // 从重定向 URL 中获取 ACID 接入点
         // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = match self.get("http://gw.buaa.edu.cn").send().await {
+        let res = match self.client.get("http://gw.buaa.edu.cn").send().await {
             Ok(res) => res,
             Err(e) => {
                 let err = e
@@ -81,6 +81,7 @@ impl super::WifiApi {
             ("_", time),
         ];
         let res = self
+            .client
             .get("https://gw.buaa.edu.cn/cgi-bin/get_challenge")
             .query(&params)
             .send()
@@ -138,6 +139,7 @@ impl super::WifiApi {
             ("_", time),
         ];
         let res = self
+            .client
             .get("https://gw.buaa.edu.cn/cgi-bin/srun_portal")
             .query(&params)
             .send()
@@ -193,7 +195,7 @@ impl super::WifiApi {
         // 从重定向 URL 中获取 ACID 接入点
         // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = match self.get("http://gw.buaa.edu.cn").send().await {
+        let res = match self.client.get("http://gw.buaa.edu.cn").send().await {
             Ok(res) => res,
             Err(e) => {
                 let err = e
@@ -230,6 +232,7 @@ impl super::WifiApi {
         ];
 
         let res = self
+            .client
             .get("https://gw.buaa.edu.cn/cgi-bin/srun_portal")
             .query(&params)
             .send()

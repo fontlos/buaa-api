@@ -14,7 +14,7 @@ impl super::SsoApi {
         let un = cred.username()?;
         let pw = cred.password()?;
         // 获取登录页 execution 值
-        let res = self.get(login_url).send().await?;
+        let res = self.client.get(login_url).send().await?;
         // 重定向到这里说明 Cookie 有效, 但无法刷新
         if res.url().as_str() == verify_url {
             return Ok(());
@@ -34,7 +34,7 @@ impl super::SsoApi {
             ("execution", execution),
             ("_eventId", "submit"),
         ];
-        let res = self.post(login_url).form(&form).send().await?;
+        let res = self.client.post(login_url).form(&form).send().await?;
         if res.status().as_u16() == 200 {
             cred.refresh::<Sso>();
             Ok(())

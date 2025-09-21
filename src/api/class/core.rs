@@ -17,7 +17,11 @@ impl super::ClassApi {
         }
 
         // 获取 JSESSIONID
-        let res = self.get("https://iclass.buaa.edu.cn:8346/").send().await?;
+        let res = self
+            .client
+            .get("https://iclass.buaa.edu.cn:8346/")
+            .send()
+            .await?;
 
         // 整个这一次请求的意义存疑, 但也许是为了验证 loginName 是否有效
         let url = res.url().as_str().as_bytes();
@@ -32,7 +36,8 @@ impl super::ClassApi {
         let url = cipher.encrypt_ecb(url);
         let url = crypto::bytes2hex(&url);
         let params = [("method", "html5GetPrivateUserInfo"), ("url", &url)];
-        self.get("https://iclass.buaa.edu.cn:8346/wc/auth/html5GetPrivateUserInfo")
+        self.client
+            .get("https://iclass.buaa.edu.cn:8346/wc/auth/html5GetPrivateUserInfo")
             .query(&params)
             .send()
             .await?;
@@ -45,6 +50,7 @@ impl super::ClassApi {
             ("userLevel", "1"),
         ];
         let res = self
+            .client
             .get("https://iclass.buaa.edu.cn:8346/app/user/login.action")
             .query(&params)
             .send()
@@ -87,6 +93,7 @@ impl super::ClassApi {
 
         // 在 URL 中硬编码 id
         let res = self
+            .client
             .post(format!("{url}?id={id}"))
             .header("Sessionid", session)
             .query(&query)

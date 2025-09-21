@@ -7,6 +7,7 @@ impl super::UserApi {
         let time = utils::get_time_millis();
         // 获取登录状态
         let res = self
+            .client
             .get(format!(
                 "https://uc.buaa.edu.cn/api/uc/status?selfTimestamp={time}"
             ))
