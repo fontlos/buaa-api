@@ -5,10 +5,10 @@ use time::{PrimitiveDateTime, Weekday, format_description};
 // 用于 get_week
 // ====================
 
-// _SpocRes<SpocWeek>
+// Res<Week>
 /// For `get_week_schedule`, you can get it through `get_week`, and manual builds are generally not recommended
 #[derive(Debug, Deserialize)]
-pub struct SpocWeek {
+pub struct Week {
     #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "pjmrrq")]
     pub date: (String, String),
@@ -30,27 +30,27 @@ where
 // 用于 get_week_schedule
 // ====================
 
-// _SpocRes<Vec<SpocSchedule>>
+// Res<Vec<Schedule>>
 #[derive(Debug, Deserialize)]
-pub struct SpocSchedule {
-    #[serde(deserialize_with = "deserialize_spoc_day")]
+pub struct Schedule {
+    #[serde(deserialize_with = "deserialize_weekday")]
     pub weekday: Weekday,
     #[serde(rename = "skdd")]
     pub position: String,
     #[serde(rename = "jsxm")]
     pub teacher: String,
     /// Help ClassApi to filter today's classes
-    #[serde(deserialize_with = "deserialize_spoc_class_id")]
+    #[serde(deserialize_with = "deserialize_class_id")]
     #[serde(rename = "bjmc")]
     pub class_id: String,
     #[serde(rename = "kcmc")]
     pub name: String,
     #[serde(deserialize_with = "deserialize_time_range")]
     #[serde(rename = "kcsj")]
-    pub time: SpocTimeRange,
+    pub time: TimeRange,
 }
 
-fn deserialize_spoc_class_id<'de, D>(deserializer: D) -> Result<String, D::Error>
+fn deserialize_class_id<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -61,7 +61,7 @@ where
     Ok(class_id.to_string())
 }
 
-fn deserialize_spoc_day<'de, D>(deserializer: D) -> Result<Weekday, D::Error>
+fn deserialize_weekday<'de, D>(deserializer: D) -> Result<Weekday, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -81,12 +81,12 @@ where
 }
 
 #[derive(Debug)]
-pub struct SpocTimeRange {
+pub struct TimeRange {
     pub start: PrimitiveDateTime,
     pub end: PrimitiveDateTime,
 }
 
-fn deserialize_time_range<'de, D>(deserializer: D) -> Result<SpocTimeRange, D::Error>
+fn deserialize_time_range<'de, D>(deserializer: D) -> Result<TimeRange, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -113,5 +113,5 @@ where
     let end =
         PrimitiveDateTime::parse(&end_time, &format_string).map_err(serde::de::Error::custom)?;
 
-    Ok(SpocTimeRange { start, end })
+    Ok(TimeRange { start, end })
 }

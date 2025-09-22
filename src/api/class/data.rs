@@ -4,8 +4,8 @@ use crate::utils::deserialize_datatime;
 
 /// Course info
 #[derive(Debug, Deserialize, Serialize)]
-pub struct ClassCourse {
-    /// Course id. Only use to query [ClassSchedule]
+pub struct Course {
+    /// Course id. Only use to query [Schedule]
     #[serde(rename = "course_id")]
     pub id: String,
     // [学期号][课程代码][课程号]
@@ -21,9 +21,9 @@ pub struct ClassCourse {
     pub teacher: String,
 }
 
-/// Course's Schedule
+/// Course Schedule
 #[derive(Debug, Deserialize)]
-pub struct ClassSchedule {
+pub struct Schedule {
     /// Schedule ID, only use to checkin
     #[serde(rename = "courseSchedId")]
     pub id: String,
@@ -45,8 +45,6 @@ where
     match s.as_str() {
         "1" => Ok(1),
         "0" => Ok(0),
-        _ => Err(serde::de::Error::custom(
-            "Unexpected status in ClassSchedule",
-        )),
+        _ => Err(serde::de::Error::custom("Unexpected status in Schedule")),
     }
 }

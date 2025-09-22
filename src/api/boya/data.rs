@@ -6,135 +6,144 @@ use crate::utils::deserialize_datatime;
 
 // 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
 #[derive(Debug)]
-pub(super) struct _BoyaData<T>(pub T);
+pub(super) struct Data<T>(pub T);
 
 // ====================
 // 用于 query_courses
 // ====================
 
-// _BoyaRes<_BoyaData<Vec<BoyaCourse>>>
-impl<'de> Deserialize<'de> for _BoyaData<Vec<BoyaCourse>> {
+// Res<Data<Vec<Course>>>
+impl<'de> Deserialize<'de> for Data<Vec<Course>> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         #[derive(Deserialize)]
         struct I {
-            content: Vec<BoyaCourse>,
+            content: Vec<Course>,
         }
         let i = I::deserialize(deserializer)?;
-        Ok(_BoyaData(i.content))
+        Ok(Data(i.content))
     }
 }
 
+/// Course info
 #[derive(Debug, Deserialize)]
-pub struct BoyaCourse {
-    // 课程 ID
+pub struct Course {
+    /// Course ID, for sign rule, select and drop
     pub id: u32,
-    // 课程名
+    /// Course name
     #[serde(rename = "courseName")]
     pub name: String,
-    // 地点
+    /// Course location
     #[serde(rename = "coursePosition")]
-    pub position: String,
-    // 开始结束和预选时间
+    pub location: String,
+    /// Course schedule
     #[serde(flatten)]
-    pub time: BoyaTime,
-    #[serde(deserialize_with = "deserialize_boya_kind")]
+    pub schedule: Schedule,
+    #[serde(deserialize_with = "deserialize_category")]
     #[serde(rename = "courseNewKind2")]
-    // 课程种类
-    pub kind: BoyaKind,
+    /// Course category
+    pub category: Category,
+    /// Course capacity
     #[serde(flatten)]
-    pub capacity: BoyaCapacity,
-    // 开设校区
-    #[serde(deserialize_with = "deserialize_boya_campus")]
+    pub capacity: Capacity,
+    /// Course campus
+    #[serde(deserialize_with = "deserialize_campus")]
     #[serde(rename = "courseCampus")]
-    pub campus: BoyaCampus,
-    // 是否已选
+    pub campus: Campus,
+    /// Whether the course is selected
     pub selected: bool,
 }
 
-/// Boya course's start, end, pre-selection and cancellation times
+/// Schedule of course's start, end, pre-selection and cancellation
 #[derive(Debug, Deserialize)]
-pub struct BoyaTime {
+pub struct Schedule {
+    /// Course start time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseStartDate")]
     pub course_start: PrimitiveDateTime,
+    /// Course end time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseEndDate")]
     pub course_end: PrimitiveDateTime,
+    /// Course pre-selection start time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseSelectStartDate")]
     pub select_start: PrimitiveDateTime,
+    /// Course pre-selection end time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseSelectEndDate")]
     pub select_end: PrimitiveDateTime,
+    /// Course cancellation end time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "courseCancelEndDate")]
     pub cancel_end: PrimitiveDateTime,
 }
 
-/// Boya course's kind
+/// Course category
 #[derive(Debug, Deserialize)]
-pub enum BoyaKind {
-    /// 美育
+pub enum Category {
+    /// `美育`
     Arts,
-    /// 德育
+    /// `德育`
     Ethics,
-    /// 劳动教育
+    /// `劳动教育`
     Labor,
-    /// 安全健康
+    /// `安全健康`
     Safety,
-    /// 其他
+    /// `其他`
     Other,
 }
 
-fn deserialize_boya_kind<'de, D>(deserializer: D) -> Result<BoyaKind, D::Error>
+fn deserialize_category<'de, D>(deserializer: D) -> Result<Category, D::Error>
 where
     D: Deserializer<'de>,
 {
     let value: Value = Deserialize::deserialize(deserializer)?;
     match value.get("kindName").and_then(Value::as_str) {
         Some(kind_name) => match kind_name {
-            "美育" => Ok(BoyaKind::Arts),
-            "德育" => Ok(BoyaKind::Ethics),
-            "劳动教育" => Ok(BoyaKind::Labor),
-            "安全健康" => Ok(BoyaKind::Safety),
-            _ => Ok(BoyaKind::Other),
+            "美育" => Ok(Category::Arts),
+            "德育" => Ok(Category::Ethics),
+            "劳动教育" => Ok(Category::Labor),
+            "安全健康" => Ok(Category::Safety),
+            _ => Ok(Category::Other),
         },
         None => Err(serde::de::Error::custom("missing field `kindName`")),
     }
 }
 
-/// Boya course's capacity
+/// Course capacity
 #[derive(Debug, Deserialize)]
-pub struct BoyaCapacity {
+pub struct Capacity {
+    /// Maximum capacity
     #[serde(rename = "courseMaxCount")]
     pub max: u32,
+    /// Current selected count
     #[serde(rename = "courseCurrentCount")]
     pub current: u32,
 }
 
-/// Boya course's campus
+/// Course campus
 #[derive(Debug, Deserialize)]
-pub enum BoyaCampus {
+pub enum Campus {
     XueYuanLu,
     ShaHe,
     All,
     Other,
 }
 
-fn deserialize_boya_campus<'de, D>(deserializer: D) -> Result<BoyaCampus, D::Error>
+fn deserialize_campus<'de, D>(deserializer: D) -> Result<Campus, D::Error>
 where
     D: Deserializer<'de>,
 {
     let value: &str = Deserialize::deserialize(deserializer)?;
     match value {
-        "[1]" => Ok(BoyaCampus::XueYuanLu),
-        "[2]" => Ok(BoyaCampus::ShaHe),
+        "[1]" => Ok(Campus::XueYuanLu),
+        "[2]" => Ok(Campus::ShaHe),
         // 那我问你, 你一共就俩校区, 你这 ALL 和 [1]|[2] 有**区别啊
-        "ALL" | "[1]|[2]" => Ok(BoyaCampus::All),
-        _ => Ok(BoyaCampus::Other),
+        "ALL" | "[1]|[2]" => Ok(Campus::All),
+        _ => Ok(Campus::Other),
     }
 }
 
@@ -143,7 +152,7 @@ where
 // ====================
 
 // 由于学校的**设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
-impl<'de> Deserialize<'de> for _BoyaData<Vec<BoyaSelected>> {
+impl<'de> Deserialize<'de> for Data<Vec<Selected>> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -156,40 +165,40 @@ impl<'de> Deserialize<'de> for _BoyaData<Vec<BoyaSelected>> {
         #[derive(Deserialize)]
         struct J {
             #[serde(rename = "courseInfo")]
-            info: BoyaSelected,
+            info: Selected,
         }
         let i = I::deserialize(deserializer)?;
         let list = i.content.into_iter().map(|x| x.info).collect();
 
-        Ok(_BoyaData(list))
+        Ok(Data(list))
     }
 }
 
-/// Selected Boya courses
+/// Selected course info
 #[derive(Debug, Deserialize)]
-pub struct BoyaSelected {
-    // 课程 ID
+pub struct Selected {
+    /// Course ID, for drop
     pub id: u32,
-    // 课程名
+    /// Course name
     #[serde(rename = "courseName")]
     pub name: String,
-    // 地点
+    /// Course location
     #[serde(rename = "coursePosition")]
-    pub position: String,
-    // 开始结束和预选时间
+    pub location: String,
+    /// Course schedule
     #[serde(flatten)]
-    pub time: BoyaTime,
-    #[serde(deserialize_with = "deserialize_boya_kind")]
+    pub schedule: Schedule,
+    #[serde(deserialize_with = "deserialize_category")]
     #[serde(rename = "courseNewKind2")]
-    // 课程种类
-    pub kind: BoyaKind,
+    /// Course category
+    pub category: Category,
 }
 
 // ====================
 // 用于 query_statistic
 // ====================
 
-impl<'de> Deserialize<'de> for _BoyaData<BoyaStatistic> {
+impl<'de> Deserialize<'de> for Data<Statistic> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -202,38 +211,38 @@ impl<'de> Deserialize<'de> for _BoyaData<BoyaStatistic> {
         #[derive(Deserialize)]
         struct J {
             #[serde(rename = "60|博雅课程")]
-            data: BoyaStatistic,
+            data: Statistic,
         }
 
         let i = I::deserialize(deserializer)?;
 
-        Ok(_BoyaData(i.statistical.data))
+        Ok(Data(i.statistical.data))
     }
 }
 
-/// Boya course's Statistics
+/// Course Statistics
 #[derive(Debug, Deserialize)]
-pub struct BoyaStatistic {
+pub struct Statistic {
     /// 德育
     #[serde(rename = "55|德育")]
-    pub ethics: BoyaAssessment,
+    pub ethics: Assessment,
     /// 美育
     #[serde(rename = "56|美育")]
-    pub arts: BoyaAssessment,
+    pub arts: Assessment,
     /// 劳动教育
     #[serde(rename = "57|劳动教育")]
-    pub labor: BoyaAssessment,
+    pub labor: Assessment,
     /// 安全健康
     #[serde(rename = "58|安全健康")]
-    pub safety: BoyaAssessment,
+    pub safety: Assessment,
 }
 
-/// Boya course's assessment.
+/// Course assessment.
 /// Includes required quantity,
 /// selected quantity, completed quantity,
 /// incomplete quantity, and failed quantity
 #[derive(Debug, Deserialize)]
-pub struct BoyaAssessment {
+pub struct Assessment {
     #[serde(rename = "assessmentCount")]
     pub require: u8,
     #[serde(rename = "selectAssessmentCount")]
@@ -247,10 +256,10 @@ pub struct BoyaAssessment {
 }
 
 // ====================
-// 用于 query_attend_rule
+// 用于 query_sign_rule
 // ====================
 
-impl<'de> Deserialize<'de> for _BoyaData<Option<BoyaSignRule>> {
+impl<'de> Deserialize<'de> for Data<Option<SignRule>> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -268,18 +277,19 @@ impl<'de> Deserialize<'de> for _BoyaData<Option<BoyaSignRule>> {
 
         let i = I::deserialize(deserializer)?;
         if i.rule.is_empty() {
-            return Ok(_BoyaData(None));
+            return Ok(Data(None));
         }
         let rule = i.rule.replace("\\\"", "\"");
-        match serde_json::from_str::<BoyaSignRule>(&rule) {
-            Ok(r) => Ok(_BoyaData(Some(r))),
-            Err(_) => Ok(_BoyaData(None)),
+        match serde_json::from_str::<SignRule>(&rule) {
+            Ok(r) => Ok(Data(Some(r))),
+            Err(_) => Ok(Data(None)),
         }
     }
 }
 
+/// Sign rule info
 #[derive(Debug, Deserialize)]
-pub struct BoyaSignRule {
+pub struct SignRule {
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "signStartDate")]
     pub checkin_start: PrimitiveDateTime,
@@ -292,13 +302,14 @@ pub struct BoyaSignRule {
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "signOutEndDate")]
     pub checkout_end: PrimitiveDateTime,
-    #[serde(deserialize_with = "deserialize_boya_sign_coordinate")]
+    #[serde(deserialize_with = "deserialize_coordinate")]
     #[serde(rename = "signPointList")]
-    pub coordinate: BoyaCoordinate,
+    pub coordinate: Coordinate,
 }
 
+/// Coordinate in [SignRule]
 #[derive(Debug, Deserialize)]
-pub struct BoyaCoordinate {
+pub struct Coordinate {
     #[serde(rename = "lng")]
     pub longitude: f64,
     #[serde(rename = "lat")]
@@ -306,23 +317,23 @@ pub struct BoyaCoordinate {
     pub radius: i32,
 }
 
-fn deserialize_boya_sign_coordinate<'de, D>(deserializer: D) -> Result<BoyaCoordinate, D::Error>
+fn deserialize_coordinate<'de, D>(deserializer: D) -> Result<Coordinate, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let mut value: Vec<BoyaCoordinate> = Deserialize::deserialize(deserializer)?;
+    let mut value: Vec<Coordinate> = Deserialize::deserialize(deserializer)?;
     // 搞不懂, 但经过两次测试似乎使用的是列表的最后一个值
     if !value.is_empty() {
         return Ok(value.pop().unwrap());
     }
-    Err(serde::de::Error::custom("No proper `coordinate`"))
+    Err(serde::de::Error::custom("[Boya] No Coordinate"))
 }
 
 // ====================
 // 用于 sign_course
 // ====================
 
-impl<'de> Deserialize<'de> for _BoyaData<BoyaSign> {
+impl<'de> Deserialize<'de> for Data<SignRes> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -335,23 +346,25 @@ impl<'de> Deserialize<'de> for _BoyaData<BoyaSign> {
 
         let i = I::deserialize(deserializer)?;
         let i = i.info.replace("\\\"", "\"");
-        match serde_json::from_str::<BoyaSign>(&i) {
-            Ok(s) => Ok(_BoyaData(s)),
-            Err(_) => Err(serde::de::Error::custom("failed to deserialize SignInfo")),
+        match serde_json::from_str::<SignRes>(&i) {
+            Ok(s) => Ok(Data(s)),
+            Err(_) => Err(serde::de::Error::custom("[Boya] Bad SignInfo")),
         }
     }
 }
 
+/// Sign result
 #[derive(Debug, Deserialize)]
-pub struct BoyaSign {
+pub struct SignRes {
     #[serde(rename = "signIn")]
-    pub checkin: BoyaSignInfo,
+    pub checkin: SignInfo,
     #[serde(rename = "signOut")]
-    pub checkout: BoyaSignInfo,
+    pub checkout: SignInfo,
 }
 
+/// Sign in/out info
 #[derive(Debug, Deserialize)]
-pub struct BoyaSignInfo {
+pub struct SignInfo {
     /// longitude
     #[serde(rename = "lng")]
     pub lon: f64,

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize, Serializer};
 // 用于请求
 // ====================
 
-pub(super) enum _SrsBody<'a, Q: Serialize + ?Sized> {
+pub(super) enum Body<'a, Q: Serialize + ?Sized> {
     QueryToken,
     Form(&'a Q),
     Json(&'a Q),
@@ -35,9 +35,9 @@ where
 // 用于课程查询
 // ====================
 
-/// # A filter for querying courses
+/// # Filter for querying courses
 #[derive(Serialize)]
-pub struct SrsFilter {
+pub struct Filter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
     #[serde(serialize_with = "serialize_course_scope")]
@@ -67,12 +67,12 @@ pub struct SrsFilter {
     key: Option<String>,
 }
 
-impl SrsFilter {
+impl Filter {
     /// Create a default course filter
-    /// # Warning
-    /// - make sure the campus is correct, or you can use SrsAPI.gen_filter() to get the default campus
+    ///
+    /// **Warning:** make sure the campus is correct, or you can use SrsAPI.gen_filter() to get the default campus
     pub fn new(campus: u8) -> Self {
-        SrsFilter {
+        Filter {
             scope: CourseScope::Suggest,
             page: 1,
             size: 10,
@@ -99,13 +99,15 @@ impl SrsFilter {
         self.size = size;
     }
 
-    /// # Warning, only scope is RETAKE can set the campus
+    /// **Warning**: only scope is RETAKE can set the campus
+    ///
     /// Set up the campus as XueYuanLu
     pub fn set_campus_xueyuanlu(&mut self) {
         self.campus = 1;
     }
 
-    /// # Warning, only scope is RETAKE can set the campus
+    /// **Warning**: only scope is RETAKE can set the campus
+    ///
     /// Set up the campus as ShaHe
     pub fn set_campus_shahe(&mut self) {
         self.campus = 2;
@@ -132,29 +134,31 @@ impl SrsFilter {
     }
 }
 
-/// # The scope of the course query
-/// Be sure to consult the corresponding notes in the document to know the specific scope
 // 离谱首字母命名法, 甚至有一个首字母都疑似拼错了
 // TJKC 班级课表推荐课程, FANKC 方案内课程, FAWKC 方案外课程, CXKC 重修课程, 只有重修课程可以选校区
 // YYKC 英语课程, TYKC 体育课程, XGKC 通识选修课程, KYKT 科研课堂, ALLKC 全校课程查询
+
+/// # The scope of the course query
+///
+/// Be sure to consult the corresponding notes in the document to know the specific scope
 pub enum CourseScope {
-    /// 班级课表推荐课程
+    /// `班级课表推荐课程`
     Suggest,
-    /// 方案内课程
+    /// `方案内课程`
     WithinPlan,
-    /// 方案外课程
+    /// `方案外课程`
     OutsidePlan,
-    /// 重修课程
+    /// `重修课程`
     Retake,
-    /// 英语课程
+    /// `英语课程`
     English,
-    /// 体育课程
+    /// `体育课程`
     PE,
-    /// 通识选修课程
+    /// `通识选修课程`
     General,
-    /// 科研课堂
+    /// `科研课堂`
     Research,
-    /// 全校课程查询
+    /// `全校课程查询`
     All,
 }
 
@@ -183,15 +187,16 @@ where
 }
 
 /// # The requirement of the course
+///
 /// Be sure to consult the corresponding notes in the document to know the specific type
 pub enum CourseRequirement {
-    /// 必修
+    /// `必修`
     Compulsory,
-    /// 选修
+    /// `选修`
     Elective,
-    /// 限修
+    /// `限修`
     Limited,
-    /// 任修
+    /// `任修`
     Optional,
 }
 
@@ -215,50 +220,52 @@ where
     }
 }
 
-/// # The category of course
-/// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
 // 这抽象系统是什么惊为天人的脑回路能想出来的逆天命名方式, 字母混数字, 还有合并的, 还乱序, 简单起见直接按字母表顺序排了
 // A 数学与自然科学类, B 工程基础类, C 外语类, D 思政军理类, E 体育类, FG 素质教育通识限修课, K Office Hours
 // 011 数理基础课, 012 工程基础课, 013 外语课类, 021 思政课, 022 军理课, 023 体育课, 024 素质教育理论必修课
 // 025 素质教育实践必修课, 026 综合素养课, 031 核心专业类, 032 一般专业类, 01 自然科学类课程
+
+/// # The category of course
+///
+/// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
 pub enum CourseCategory {
-    /// 数学与自然科学类
+    /// `数学与自然科学类`
     A,
-    /// 工程基础类
+    /// `工程基础类`
     B,
-    /// 外语类
+    /// `外语类`
     C,
-    /// 思政军理类
+    /// `思政军理类`
     D,
-    /// 体育类
+    /// `体育类`
     E,
-    /// 素质教育通识限修课
+    /// `素质教育通识限修课`
     F,
-    /// Office Hours
+    /// `Office Hours`
     G,
-    /// 数理基础课
+    /// `数理基础课`
     H,
-    /// 工程基础课
+    /// `工程基础课`
     I,
-    /// 外语课类
+    /// `外语课类`
     J,
-    /// 思政课
+    /// `思政课`
     K,
-    /// 军理课
+    /// `军理课`
     L,
-    /// 体育课
+    /// `体育课`
     M,
-    /// 素质教育理论必修课
+    /// `素质教育理论必修课`
     N,
-    /// 素质教育实践必修课
+    /// `素质教育实践必修课`
     O,
-    /// 综合素养课
+    /// `综合素养课`
     P,
-    /// 核心专业类
+    /// `核心专业类`
     Q,
-    /// 一般专业类
+    /// `一般专业类`
     R,
-    /// 自然科学类课程
+    /// `自然科学类课程`
     S,
 }
 
@@ -301,17 +308,17 @@ where
 // 用于课程查询
 // ====================
 
-// _SrsRes<SrsCourses>
+// Res<Courses>
 #[derive(Debug, Deserialize)]
-pub struct SrsCourses {
+pub struct Courses {
     #[serde(rename = "total")]
     pub count: u16,
     #[serde(rename = "rows")]
-    pub data: Vec<SrsCourse>,
+    pub data: Vec<Course>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct SrsCourse {
+pub struct Course {
     // 教学班 ID
     #[serde(rename = "JXBID")]
     pub(super) id: String,
@@ -328,7 +335,7 @@ pub struct SrsCourse {
     pub name: String,
     // 上课时间表
     #[serde(rename = "SKSJ")]
-    pub schedule: Option<Vec<CourseSchedule>>,
+    pub schedule: Option<Vec<Schedule>>,
     // 开课单位
     #[serde(rename = "KKDW")]
     pub department: String,
@@ -371,7 +378,7 @@ pub struct SrsCourse {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct CourseSchedule {
+pub struct Schedule {
     #[serde(rename = "SKZCMC")]
     pub week: String,
     #[serde(rename = "SKXQ")]
@@ -384,10 +391,10 @@ pub struct CourseSchedule {
     pub place: String,
 }
 
-impl SrsCourse {
-    // 捏吗的为什么不给 Course 一个 Scope, 还得从 Filter 里借一个
-    pub fn as_opt<'a>(&'a self, filter: &'a SrsFilter) -> SrsOpt<'a> {
-        SrsOpt {
+impl Course {
+    // **的为什么不给 Course 一个 Scope, 还得从 Filter 里借一个
+    pub fn as_opt<'a>(&'a self, filter: &'a Filter) -> Opt<'a> {
+        Opt {
             scope: filter.scope.as_str(),
             id: &self.id,
             sum: &self.sum,
@@ -400,21 +407,21 @@ impl SrsCourse {
 // ====================
 
 // 预选会按组管理, 因为有志愿之分, 例如体育课这一组可以选择多个
-// _SrsRes<Vec<_SrsPreSelectedGroup>>
+// Res<Vec<_PreSelecteds>>
 #[derive(Debug, Deserialize)]
-pub(super) struct _SrsPreSelectedGroup {
+pub(super) struct _PreSelecteds {
     // 教学班列表
     #[serde(rename = "tcList")]
-    pub list: Vec<SrsSelected>,
+    pub list: Vec<Selected>,
 }
 
 // ====================
 // 用于查询已选
 // ====================
 
-// _SrsRes<Vec<SrsSelected>>
+// Res<Vec<Selected>>
 #[derive(Debug, Deserialize)]
-pub struct SrsSelected {
+pub struct Selected {
     #[serde(rename = "JXBID")]
     pub(super) id: String,
     #[serde(rename = "teachingClassType")]
@@ -448,13 +455,14 @@ pub struct SrsSelected {
     pub sum: String,
 }
 
-impl SrsSelected {
+impl Selected {
     /// # Warning!
+    ///
     /// It can only be used to drop course,
     /// and you need to make sure that `can_drop` is true,
     /// otherwise it will fail at 'drop_course' or there will be some other unknown error
-    pub fn as_opt<'a>(&'a self) -> SrsOpt<'a> {
-        SrsOpt {
+    pub fn as_opt<'a>(&'a self) -> Opt<'a> {
+        Opt {
             scope: self.scope.as_deref().unwrap_or(""),
             id: &self.id,
             sum: &self.sum,
@@ -466,9 +474,9 @@ impl SrsSelected {
 // 用于选退操作
 // ====================
 
-/// # Structure for course select and drop
+/// Structure for course select and drop
 #[derive(Serialize)]
-pub struct SrsOpt<'a> {
+pub struct Opt<'a> {
     // 范围
     #[serde(rename = "clazzType")]
     scope: &'a str,

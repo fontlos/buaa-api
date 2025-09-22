@@ -2,7 +2,7 @@ use crate::api::Sso;
 use crate::utils;
 
 impl super::UserApi {
-    /// # User Center Login
+    /// # Login to UserApi
     pub async fn login(&self) -> crate::Result<()> {
         let cred = self.cred.load();
         if cred.is_expired::<Sso>() {

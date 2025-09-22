@@ -13,7 +13,7 @@ const SPOC_AES_KEY: &[u8] = b"inco12345678ocni";
 const SPOC_AES_IV: &[u8] = b"ocni12345678inco";
 
 impl super::SpocApi {
-    /// # Spoc Login
+    /// # Login to SpocApi
     pub async fn login(&self) -> crate::Result<()> {
         if self.cred.load().is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
@@ -41,7 +41,7 @@ impl super::SpocApi {
         Ok(())
     }
 
-    /// # Spoc Universal Request API
+    /// # Universal Request for SpocApi
     ///
     /// **Note**: You should use other existing APIs first.
     ///
