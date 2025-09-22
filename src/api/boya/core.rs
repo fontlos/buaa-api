@@ -15,7 +15,9 @@ Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
 -----END PUBLIC KEY-----";
 
 impl super::BoyaApi {
-    /// # Boya Login
+    /// # Login to BoyaApi
+    ///
+    /// **Note:** Boya expiration time is fast, so if you write a script to grab course, it is recommended to call this manually 30 seconds before
     pub async fn login(&self) -> crate::Result<()> {
         if self.cred.load().is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
@@ -23,27 +25,27 @@ impl super::BoyaApi {
 
         // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
         // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/cas/login
-        let url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
+        let login_url = "https://sso.buaa.edu.cn/login?noAutoRedirect=true&service=https%3A%2F%2Fbykc.buaa.edu.cn%2Fsscv%2Fcas%2Flogin";
         // 获取 JSESSIONID
-        let res = self.client.get(url).send().await?;
+        let res = self.client.get(login_url).send().await?;
+
+        // 从重定向 URL 中获取 token
+        let url = res.url().as_str();
         // 自动刷新机制保证了正常情况下不会发生这种情况
-        if res.url().as_str() == url {
-            return Err(Error::server("[Boya] Redirect failed"));
+        if url == login_url {
+            Err(Error::server("[Boya] Redirect failed"))
+        } else {
+            let token = utils::parse_by_tag(url.as_bytes(), "token=", "")
+                .ok_or_else(|| Error::server("[Boya] Login failed. No token"))?;
+            self.cred.update(|s| {
+                s.update::<Boya>(token.to_string());
+            });
+
+            Ok(())
         }
-        let mut query = res.url().query_pairs();
-        let token = query
-            .next()
-            .and_then(|t| if t.0 == "token" { Some(t.1) } else { None })
-            .ok_or_else(|| Error::server("[Boya] Login failed. No token"))?;
-
-        self.cred.update(|s| {
-            s.update::<Boya>(token.to_string());
-        });
-
-        Ok(())
     }
 
-    /// # Boya Universal Request API
+    /// # Universal Request for BoyaApi
     ///
     /// **Note**: You should use other existing APIs first.
     /// If you really need additional APIs, open Issue or PR firstly

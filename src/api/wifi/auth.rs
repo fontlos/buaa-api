@@ -9,7 +9,7 @@ use super::info;
 static CHECK: &[u8] = b"\"error\":\"ok\"";
 
 impl super::WifiApi {
-    /// # BUAA WiFi Login
+    /// # Login to BUAA WiFi
     ///
     /// This API is independent of other APIs and does not require cookies,
     /// so you need to provide a separate username and password
@@ -157,7 +157,7 @@ impl super::WifiApi {
         }
     }
 
-    /// # BUAA WiFi Logout
+    /// # Logout from BUAA WiFi
     ///
     /// This API is independent of other APIs and does not require cookies,
     /// so you need to provide a separate username

@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::api::{Cloud, Sso};
 use crate::error::Error;
 
-use super::data::_CloudBody;
+use super::data::Body;
 
 // 手动登录用 RSA 密钥, 但我们使用 SSO 登录
 // From https://bhpan.buaa.edu.cn/oauth2/_next/static/chunks/pages/signin-2a57b4f57ddbb54dc27e.js
@@ -29,6 +29,7 @@ use super::data::_CloudBody;
 // -----END PUBLIC KEY-----";
 
 impl super::CloudApi {
+    /// # Login to CloudApi
     pub async fn login(&self) -> crate::Result<()> {
         if self.cred.load().is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
@@ -105,11 +106,12 @@ impl super::CloudApi {
         }
     }
 
+    /// Universal Request for CloudApi (Internal)
     pub(super) async fn universal_request<'a, Q>(
         &self,
         m: Method,
         url: &str,
-        body: &_CloudBody<'a, Q>,
+        body: &Body<'a, Q>,
     ) -> crate::Result<Bytes>
     where
         Q: Serialize + ?Sized,
@@ -123,8 +125,8 @@ impl super::CloudApi {
         let res = self.client.request(m, url).bearer_auth(token);
 
         let res = match body {
-            _CloudBody::Query(f) => res.query(f),
-            _CloudBody::Json(j) => res.json(j),
+            Body::Query(f) => res.query(f),
+            Body::Json(j) => res.json(j),
         };
         let res = res.send().await?.bytes().await?;
 

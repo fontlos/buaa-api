@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::api::{Srs, Sso};
 use crate::error::Error;
 
-use super::_SrsBody;
+use super::Body;
 
 impl super::SrsApi {
     pub async fn login(&self) -> crate::Result<()> {
@@ -35,7 +35,7 @@ impl super::SrsApi {
     pub(super) async fn universal_request<'a, Q, T>(
         &self,
         url: &str,
-        body: _SrsBody<'a, Q>,
+        body: Body<'a, Q>,
     ) -> crate::Result<T>
     where
         Q: Serialize + ?Sized,
@@ -50,10 +50,10 @@ impl super::SrsApi {
         let res = self.client.post(url).header("Authorization", token);
 
         let res = match body {
-            _SrsBody::QueryToken => res.query(&[("token", token)]),
-            _SrsBody::Form(f) => res.form(f),
-            _SrsBody::Json(j) => res.json(j),
-            _SrsBody::None => res,
+            Body::QueryToken => res.query(&[("token", token)]),
+            Body::Form(f) => res.form(f),
+            Body::Json(j) => res.json(j),
+            Body::None => res,
         };
 
         let res = res.send().await?.bytes().await?;

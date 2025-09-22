@@ -4,22 +4,22 @@ use serde_json::Value;
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{_CloudBody, CloudDir, CloudItem, CloudRoot, CloudRootDir};
+use super::data::{Body, Dir, Item, Root, RootDir};
 
 impl super::CloudApi {
     /// Get root directory by [CloudRoot]
-    pub async fn get_root_dir(&self, root: CloudRoot) -> crate::Result<Vec<CloudRootDir>> {
+    pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
-        let body = _CloudBody::Query(&query);
+        let body = Body::Query(&query);
         let res = self.universal_request(Method::GET, url, &body).await?;
-        let res = serde_json::from_slice::<Vec<CloudRootDir>>(&res)?;
+        let res = serde_json::from_slice::<Vec<RootDir>>(&res)?;
         Ok(res)
     }
 
     /// Return User Root directory ID
     pub async fn get_user_dir_id(&self) -> crate::Result<String> {
-        let res = self.get_root_dir(CloudRoot::User).await?;
+        let res = self.get_root_dir(Root::User).await?;
         let id = res
             .into_iter()
             .next()
@@ -29,16 +29,16 @@ impl super::CloudApi {
     }
 
     /// List the contents of a directory by its ID. Contain [CloudItem::id] and [CloudRootDir::id].
-    pub async fn list_dir(&self, id: &str) -> crate::Result<CloudDir> {
+    pub async fn list_dir(&self, id: &str) -> crate::Result<Dir> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/list";
         let data = serde_json::json!({
             "by": "name", // time/size
             "docid": id,
             "sort": "asc" // desc
         });
-        let body = _CloudBody::Json(&data);
+        let body = Body::Json(&data);
         let res = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<CloudDir>(&res)?;
+        let res = serde_json::from_slice::<Dir>(&res)?;
         Ok(res)
     }
 
@@ -46,13 +46,13 @@ impl super::CloudApi {
     /// Get a download URL for a single file.
     ///
     /// **Note**: If you pass a dir, it will return a bad URL.
-    async fn get_single_download_url(&self, item: &CloudItem) -> crate::Result<String> {
+    async fn get_single_download_url(&self, item: &Item) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osdownload";
         let data = serde_json::json!({
             "docid": item.id,
             "authtype": "QUERY_STRING",
         });
-        let body = _CloudBody::Json(&data);
+        let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
         let res = utils::parse_by_tag(&bytes, ",\"", "\"")
             .ok_or_else(|| Error::server("[Cloud] Can not get download url"))?;
@@ -63,7 +63,7 @@ impl super::CloudApi {
     /// Get a download URL of a zip package for multiple files or a dir.
     ///
     /// **Note**: If you pass a single file(not a dir), it will return a bad URL.
-    async fn get_muti_download_url(&self, items: &[&CloudItem]) -> crate::Result<String> {
+    async fn get_muti_download_url(&self, items: &[&Item]) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/open-doc/v1/file-download";
         let ids: Vec<Value> = items
             .iter()
@@ -81,7 +81,7 @@ impl super::CloudApi {
             "name": "download.zip",
             "doc": ids
         });
-        let body = _CloudBody::Json(&data);
+        let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
         let raw_url = utils::parse_by_tag(&bytes, "package_address\":\"", "\"")
             .ok_or_else(|| Error::server("[Cloud] Can not get download url"))?;
@@ -99,10 +99,10 @@ impl super::CloudApi {
     /// **Note**: If indexes is empty, it means all items.
     pub async fn get_download_url(
         &self,
-        items: &[CloudItem],
+        items: &[Item],
         indexes: &[usize],
     ) -> crate::Result<String> {
-        let items: Vec<&CloudItem> = if indexes.is_empty() {
+        let items: Vec<&Item> = if indexes.is_empty() {
             // 全部文件
             items.iter().collect()
         } else {
@@ -129,7 +129,7 @@ impl super::CloudApi {
         let data = serde_json::json!({
             "docid": id,
         });
-        let body = _CloudBody::Json(&data);
+        let body = Body::Json(&data);
         self.universal_request(Method::POST, url, &body).await?;
         Ok(())
     }

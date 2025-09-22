@@ -17,20 +17,13 @@ impl super::ClassApi {
         }
 
         // 获取 JSESSIONID
-        let res = self
-            .client
-            .get("https://iclass.buaa.edu.cn:8346/")
-            .send()
-            .await?;
+        let url = "https://iclass.buaa.edu.cn:8346/";
+        let res = self.client.get(url).send().await?;
 
         // 整个这一次请求的意义存疑, 但也许是为了验证 loginName 是否有效
         let url = res.url().as_str().as_bytes();
-        let session = match utils::parse_by_tag(url, "loginName=", "") {
-            Some(s) => s,
-            // 理论上这是个不该发生的错误
-            None => return Err(Error::server("[Class] No LoginName found")),
-        };
-
+        let session = utils::parse_by_tag(url, "loginName=", "")
+            .ok_or_else(|| Error::server("[Class] No loginName found"))?;
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
         let cipher = crypto::des::Des::new(CLASS_DES_KEY).unwrap();
         let url = cipher.encrypt_ecb(url);
@@ -42,6 +35,7 @@ impl super::ClassApi {
             .send()
             .await?;
 
+        // 最终登录
         let params = [
             ("phone", session),
             ("password", ""),
@@ -73,8 +67,7 @@ impl super::ClassApi {
         }
     }
 
-    // 内部方法不公开
-    /// Universal Request for ClassApi
+    /// Universal Request for ClassApi (Internal)
     ///
     /// **Note**: `token` parameter is already included
     pub(crate) async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
