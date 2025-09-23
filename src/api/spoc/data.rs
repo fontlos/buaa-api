@@ -35,6 +35,8 @@ where
 pub struct Schedule {
     #[serde(deserialize_with = "deserialize_weekday")]
     pub weekday: Weekday,
+    // 极少数课程可能为空. 那我问你, 提供个空字符串保证结构会死吗
+    #[serde(default)]
     #[serde(rename = "skdd")]
     pub position: String,
     #[serde(rename = "jsxm")]
