@@ -3,26 +3,32 @@ use time::{Date, OffsetDateTime, PrimitiveDateTime, UtcOffset, format_descriptio
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+/// Get current timestamp
 #[inline]
 pub fn get_timestamp() -> Duration {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
 }
 
+/// Get current time in seconds
 pub fn get_time_secs() -> u64 {
     get_timestamp().as_secs()
 }
 
+
+/// Get current time in milliseconds
 pub fn get_time_millis() -> u128 {
     get_timestamp().as_millis()
 }
 
-pub fn get_datatime() -> PrimitiveDateTime {
+/// Get current local datetime
+pub fn get_datetime() -> PrimitiveDateTime {
     let now_utc = OffsetDateTime::now_utc();
     let local_offset = UtcOffset::from_hms(8, 0, 0).unwrap();
     let now_local = now_utc.to_offset(local_offset);
     PrimitiveDateTime::new(now_local.date(), now_local.time())
 }
 
+/// Parse a date string in "YYYY-MM-DD" format to a `Date` object
 pub fn parse_date(data: &str) -> Date {
     let format_string = time::format_description::parse("[year]-[month]-[day]").unwrap();
     Date::parse(data, &format_string).unwrap()

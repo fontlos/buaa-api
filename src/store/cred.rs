@@ -1,3 +1,5 @@
+//! Credential manager
+
 use serde::{Deserialize, Serialize};
 
 use std::fs::OpenOptions;
@@ -9,6 +11,7 @@ use crate::api::{Boya, Class, Cloud, Spoc, Srs, Sso};
 use crate::error::{AuthError, Error, Result};
 use crate::utils;
 
+/// Store for credentials
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialStore {
     pub(crate) username: Option<String>,
@@ -70,6 +73,7 @@ impl_token!(Srs, srs_token, 1200);
 impl_token!(Sso, sso, 5400);
 
 impl CredentialStore {
+    /// Load credential store from file, if file not exist or invalid, return default store
     pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
         let file = match OpenOptions::new().read(true).open(path) {
             Ok(file) => file,
@@ -78,6 +82,7 @@ impl CredentialStore {
         serde_json::from_reader(file).unwrap_or_default()
     }
 
+    /// Save credential store to file
     pub fn to_file<P: AsRef<Path>>(&self, path: P) {
         let file = OpenOptions::new()
             .write(true)
@@ -133,6 +138,7 @@ impl CredentialStore {
     }
 }
 
+/// Credential item
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct CredentialItem {
     value: Option<String>,

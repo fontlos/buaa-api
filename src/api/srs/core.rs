@@ -7,6 +7,7 @@ use crate::error::Error;
 use super::Body;
 
 impl super::SrsApi {
+    /// Login to SrsApi
     pub async fn login(&self) -> crate::Result<()> {
         if self.cred.load().is_expired::<Sso>() {
             self.api::<Sso>().login().await?;

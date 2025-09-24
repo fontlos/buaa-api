@@ -102,6 +102,7 @@ impl Context {
         self.sso().login().await
     }
 
+    /// Set account
     pub fn set_account(&self, username: &str, password: &str) {
         self.cred.update(|c| {
             c.username = Some(username.to_string());
@@ -109,18 +110,21 @@ impl Context {
         });
     }
 
+    /// Set username
     pub fn set_username(&self, username: &str) {
         self.cred.update(|c| {
             c.username = Some(username.to_string());
         });
     }
 
+    /// Set password
     pub fn set_password(&self, password: &str) {
         self.cred.update(|c| {
             c.password = Some(password.to_string());
         });
     }
 
+    /// Set cookies
     pub fn set_cookies(&self, cookies: cookie_store::CookieStore) {
         // 这在理论上是安全的
         // 因为没有理由在多线程中频繁切换 cookie
@@ -130,14 +134,17 @@ impl Context {
         self.cookies.store(cookies);
     }
 
+    /// Set credentials
     pub fn set_cred(&self, cred: CredentialStore) {
         self.cred.store(cred);
     }
 
+    /// Get cookies
     pub fn get_cookies(&self) -> &AtomicCookieStore {
         &self.cookies
     }
 
+    /// Get credentials
     pub fn get_cred(&self) -> &CredentialStore {
         self.cred.load()
     }

@@ -127,9 +127,13 @@ pub struct Capacity {
 /// Course campus
 #[derive(Debug, Deserialize)]
 pub enum Campus {
+    /// `学院路`
     XueYuanLu,
+    /// `沙河`
     ShaHe,
+    /// `全部校区`
     All,
+    /// `错误`
     Other,
 }
 
@@ -240,17 +244,22 @@ pub struct Statistic {
 /// Course assessment.
 /// Includes required quantity,
 /// selected quantity, completed quantity,
-/// incomplete quantity, and failed quantity
+/// failed quantity, and undone quantity
 #[derive(Debug, Deserialize)]
 pub struct Assessment {
+    /// Required quantity
     #[serde(rename = "assessmentCount")]
     pub require: u8,
+    /// Selected quantity
     #[serde(rename = "selectAssessmentCount")]
     pub select: u8,
+    /// Completed quantity
     #[serde(rename = "completeAssessmentCount")]
     pub complete: u8,
+    /// Failed quantity
     #[serde(rename = "failAssessmentCount")]
     pub fail: u8,
+    /// Undone quantity
     #[serde(rename = "undoneAssessmentCount")]
     pub undone: u8,
 }
@@ -290,18 +299,23 @@ impl<'de> Deserialize<'de> for Data<Option<SignRule>> {
 /// Sign rule info
 #[derive(Debug, Deserialize)]
 pub struct SignRule {
+    /// Check in start time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "signStartDate")]
     pub checkin_start: PrimitiveDateTime,
+    /// Check in end time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "signEndDate")]
     pub checkin_end: PrimitiveDateTime,
+    /// Check out start time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "signOutStartDate")]
     pub checkout_start: PrimitiveDateTime,
+    /// Check out end time
     #[serde(deserialize_with = "deserialize_datatime")]
     #[serde(rename = "signOutEndDate")]
     pub checkout_end: PrimitiveDateTime,
+    /// Coordinate for check in/out
     #[serde(deserialize_with = "deserialize_coordinate")]
     #[serde(rename = "signPointList")]
     pub coordinate: Coordinate,
@@ -310,10 +324,13 @@ pub struct SignRule {
 /// Coordinate in [SignRule]
 #[derive(Debug, Deserialize)]
 pub struct Coordinate {
+    /// Longitude
     #[serde(rename = "lng")]
     pub longitude: f64,
+    /// Latitude
     #[serde(rename = "lat")]
     pub latitude: f64,
+    /// Radius
     pub radius: i32,
 }
 
@@ -356,8 +373,10 @@ impl<'de> Deserialize<'de> for Data<SignRes> {
 /// Sign result
 #[derive(Debug, Deserialize)]
 pub struct SignRes {
+    /// Check in info
     #[serde(rename = "signIn")]
     pub checkin: SignInfo,
+    /// Check out info
     #[serde(rename = "signOut")]
     pub checkout: SignInfo,
 }
@@ -365,12 +384,13 @@ pub struct SignRes {
 /// Sign in/out info
 #[derive(Debug, Deserialize)]
 pub struct SignInfo {
-    /// longitude
+    /// Longitude
     #[serde(rename = "lng")]
     pub lon: f64,
-    /// latitude
+    /// Latitude
     #[serde(rename = "lat")]
     pub lat: f64,
+    /// Whether the sign in/out is successful
     #[serde(rename = "inSignArea")]
     pub is_ok: bool,
 }

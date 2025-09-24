@@ -1,3 +1,5 @@
+//! BUAA API
+
 pub mod aas;
 pub mod boya;
 pub mod class;
@@ -34,17 +36,28 @@ pub struct User;
 pub struct Wifi;
 
 // 这必须和 Marker 一一对应, 因为 Token trait 使用宏进行转化
+/// Api location marker
 #[derive(Debug, Eq, PartialEq)]
 pub enum Location {
+    /// BUAA Academic Affairs System API
     Aas,
+    /// BUAA Boya Course API
     Boya,
+    /// BUAA Smart Classroom API
     Class,
+    /// BUAA Cloud Disk API
     Cloud,
+    /// BUAA Spoc Platform API
     Spoc,
+    /// BUAA Undergraduate & Graduate Student Course Registration System API
     Srs,
+    /// BUAA SSO API
     Sso,
+    /// BUAA Teacher Evaluation System API
     Tes,
+    /// BUAA User Center API
     User,
+    /// BUAA WiFi API
     Wifi,
 }
 

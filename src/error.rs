@@ -1,9 +1,13 @@
+//! Error handling for `buaa-api`
+
 use std::borrow::Cow;
 
 use crate::api::Location;
 
+/// `Result` type for `buaa-api`
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Error type for `buaa-api`
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Auth error.
@@ -36,13 +40,17 @@ impl Error {
     }
 }
 
+/// Auth error
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
+    /// No Username
     #[error("No Username")]
     NoUsername,
+    /// No Password
     #[error("No Password")]
     NoPassword,
     // 在自动刷新机制的帮助下, 这通常不会发生
+    /// No Token
     #[error("No Token: {0}")]
     NoToken(Location),
 }

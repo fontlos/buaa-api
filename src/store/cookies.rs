@@ -1,3 +1,5 @@
+//! Cookies manager
+
 use cookie_store::{Cookie, CookieStore, RawCookie, RawCookieParseError};
 use reqwest::header::HeaderValue;
 
@@ -7,6 +9,7 @@ use std::path::Path;
 
 use crate::cell::AtomicCell;
 
+/// Cookie store
 pub struct AtomicCookieStore(AtomicCell<CookieStore>);
 
 impl Default for AtomicCookieStore {
@@ -16,14 +19,17 @@ impl Default for AtomicCookieStore {
 }
 
 impl AtomicCookieStore {
+    /// Create a new atomic cookie store
     pub fn new(cookie_store: CookieStore) -> AtomicCookieStore {
         AtomicCookieStore(AtomicCell::new(cookie_store))
     }
 
+    /// Load the cookie store
     pub fn load(&self) -> &CookieStore {
         self.0.load()
     }
 
+    /// Update the cookie store
     pub fn update<F>(&self, f: F)
     where
         F: FnOnce(&mut CookieStore),
@@ -31,10 +37,12 @@ impl AtomicCookieStore {
         self.0.update(f);
     }
 
+    /// Store a new cookie store
     pub fn store(&self, cookie_store: CookieStore) {
         self.0.store(cookie_store);
     }
 
+    /// Load cookie store from file, if file not exist or invalid, return default store
     pub fn from_file<P: AsRef<Path>>(path: P) -> CookieStore {
         match File::open(&path) {
             Ok(f) => {
@@ -45,6 +53,7 @@ impl AtomicCookieStore {
         }
     }
 
+    /// Save cookie store to file
     pub fn to_file<P: AsRef<Path>>(&self, path: P) {
         let mut file = match OpenOptions::new()
             .write(true)

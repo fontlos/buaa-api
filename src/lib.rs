@@ -1,4 +1,5 @@
 #![doc = include_str!("../Readme.md")]
+#![warn(missing_docs)]
 
 //! # For more information, check:
 //!
@@ -18,7 +19,7 @@ mod cell;
 mod context;
 mod crypto;
 pub mod error;
-pub mod request;
+mod request;
 pub mod store;
 pub mod utils;
 

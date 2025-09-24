@@ -36,34 +36,44 @@ impl Root {
 /// Root directory info
 #[derive(Debug, Deserialize)]
 pub struct RootDir {
+    /// Root directory ID
     pub id: String,
+    /// Root directory name
     pub name: String,
 }
 
 /// Directory info
 #[derive(Debug, Deserialize)]
 pub struct Dir {
+    /// Subdirectories
     pub dirs: Vec<Item>,
+    /// Files
     pub files: Vec<Item>,
 }
 
 /// File or Directory info
 #[derive(Debug, Deserialize)]
 pub struct Item {
+    /// Creation time (timestamp)
     #[serde(rename = "create_time")]
     pub create: u64,
+    /// Modification time (timestamp)
     #[serde(rename = "modified")]
     pub modify: u64,
+    /// Item ID
     #[serde(rename = "docid")]
     pub id: String,
+    /// Item name
     pub name: String,
+    /// Item hash
     #[serde(rename = "rev")]
     pub hash: String,
-    // 文件夹大小为 -1
+    /// Item size (in bytes, -1 for directories)
     pub size: i64,
 }
 
 impl Item {
+    /// Check if the item is a directory
     pub fn is_dir(&self) -> bool {
         self.size == -1
     }

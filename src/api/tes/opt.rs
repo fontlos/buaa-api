@@ -57,6 +57,7 @@ impl super::TesApi {
         Ok(list)
     }
 
+    /// Get the evaluation form for a specific course and teacher
     pub async fn get_evaluation_form(
         &self,
         item: &EvaluationListItem,
@@ -87,6 +88,7 @@ impl super::TesApi {
         Ok(res.result)
     }
 
+    /// Submit the completed evaluation form
     pub async fn submit_evaluation(
         &self,
         complete: EvaluationCompleted<'_>,

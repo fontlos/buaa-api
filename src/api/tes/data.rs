@@ -21,12 +21,13 @@ pub(super) struct _EvaluationList {
     pub(super) list: Vec<EvaluationListItem>,
 }
 
+/// Evaluation list item
 #[derive(Debug, Deserialize)]
 pub struct EvaluationListItem {
     // 两个看不懂的 ID
     pub(super) rwid: String,
     pub(super) wjid: String,
-    // 是否已评教, 1 为是, 0 为否
+    /// Whether this evaluation is completed
     #[serde(deserialize_with = "deserialize_evaluation_state")]
     #[serde(rename = "ypjcs")]
     pub state: bool,
@@ -39,11 +40,13 @@ pub struct EvaluationListItem {
     // 被评人代码
     pub(super) bpdm: String,
     // 被评人名称
+    /// Teacher
     #[serde(rename = "bpmc")]
     pub teacher: String,
     // 课程代码
     pub(super) kcdm: String,
     // 课程名称
+    /// Course name
     #[serde(rename = "kcmc")]
     pub course: String,
     // 任务号???
@@ -79,11 +82,13 @@ where
         .ok_or_else(|| serde::de::Error::custom("Expected at least one EvaluationForm"))
 }
 
+/// Evaluation form
 #[derive(Debug, Deserialize)]
 pub struct EvaluationForm {
     #[serde(deserialize_with = "deserialize_evaluation_info")]
     #[serde(rename = "pjxtPjjgPjjgckb")]
     pub(super) info: EvaluationInfo,
+    /// List of questions
     #[serde(deserialize_with = "deserialize_evaluation_question")]
     #[serde(rename = "pjxtWjWjbReturnEntity")]
     pub questions: Vec<EvaluationQuestion>,
@@ -168,6 +173,7 @@ struct EvaluationMap {
     pj2: String,
 }
 
+/// Evaluation question
 #[derive(Debug, Deserialize)]
 pub struct EvaluationQuestion {
     /// 题目 id
@@ -193,12 +199,13 @@ where
     Ok(matches!(value, "1"))
 }
 
+/// Evaluation option
 #[derive(Debug, Deserialize)]
 pub struct EvaluationOption {
-    // 选项 id
+    /// Option ID
     #[serde(rename = "tmxxid")]
     pub id: String,
-    // 折算分数
+    /// Score of this option
     #[serde(rename = "xxfz")]
     pub score: f32,
 }
@@ -207,12 +214,16 @@ pub struct EvaluationOption {
 // 用于构造请求 Json
 // ====================
 
+/// Answer to a question in the evaluation form
 pub enum EvaluationAnswer {
+    /// Choice answer
     Choice(usize),
+    /// Completion answer
     Completion(String),
 }
 
 impl EvaluationForm {
+    /// Fill the evaluation form with default answers
     pub fn fill_default<'a>(&'a self) -> EvaluationCompleted<'a> {
         // 首先, 我们获取题目数量
         let len = self.questions.len();
@@ -256,6 +267,7 @@ impl EvaluationForm {
         EvaluationCompleted::new(score, &self.map, &self.info, completed)
     }
 
+    /// Fill the evaluation form with given answers
     pub fn fill<'a>(&'a self, ans: Vec<EvaluationAnswer>) -> EvaluationCompleted<'a> {
         let question_len = self.questions.len();
         let ans_len = ans.len();
@@ -303,6 +315,7 @@ impl EvaluationForm {
     }
 }
 
+/// The completed evaluation to be sent
 #[derive(Debug, Serialize)]
 pub struct EvaluationCompleted<'a> {
     pjidlist: Vec<()>,
@@ -362,6 +375,7 @@ impl<'a> EvaluationCompleted<'a> {
     pub(super) fn wjid(&self) -> &str {
         self.content[0].wjid
     }
+    /// Get the score of this evaluation
     pub fn score(&self) -> f32 {
         self.content[0].score
     }

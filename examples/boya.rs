@@ -90,7 +90,7 @@ mod tests {
         let rule = boya.query_sign_rule(id).await.unwrap().unwrap();
         println!("{:?}", rule);
 
-        let time = utils::get_datatime();
+        let time = utils::get_datetime();
         if rule.checkin_start < time && time < rule.checkin_end {
             let res = boya.checkin_course(id, &rule.coordinate).await.unwrap();
             println!("Checkin: {:?}", res);

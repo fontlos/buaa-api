@@ -9,9 +9,11 @@ use time::{PrimitiveDateTime, Weekday, format_description};
 /// For `get_week_schedule`, you can get it through `get_week`, and manual builds are generally not recommended
 #[derive(Debug, Deserialize)]
 pub struct Week {
+    /// Week date range
     #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "pjmrrq")]
     pub date: (String, String),
+    /// Term ID
     #[serde(rename = "mrxq")]
     pub term: String,
 }
@@ -31,22 +33,28 @@ where
 // ====================
 
 // Res<Vec<Schedule>>
+/// Weekly Schedule item
 #[derive(Debug, Deserialize)]
 pub struct Schedule {
+    /// Course weekday
     #[serde(deserialize_with = "deserialize_weekday")]
     pub weekday: Weekday,
     // 极少数课程可能为空. 那我问你, 提供个空字符串保证结构会死吗
+    /// Classroom
     #[serde(default)]
     #[serde(rename = "skdd")]
     pub position: String,
+    /// Teacher
     #[serde(rename = "jsxm")]
     pub teacher: String,
     /// Help ClassApi to filter today's classes
     #[serde(deserialize_with = "deserialize_class_id")]
     #[serde(rename = "bjmc")]
     pub class_id: String,
+    /// Course name
     #[serde(rename = "kcmc")]
     pub name: String,
+    /// Course time range
     #[serde(deserialize_with = "deserialize_time_range")]
     #[serde(rename = "kcsj")]
     pub time: TimeRange,
@@ -82,9 +90,12 @@ where
     }
 }
 
+/// Course time range
 #[derive(Debug)]
 pub struct TimeRange {
+    /// Course start time
     pub start: PrimitiveDateTime,
+    /// Course end time
     pub end: PrimitiveDateTime,
 }
 

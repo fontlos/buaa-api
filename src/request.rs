@@ -1,10 +1,11 @@
-pub(crate) use reqwest::Client;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
 use std::sync::Arc;
 
+pub use reqwest::Client;
+
 #[inline]
-pub(crate) fn client<C: reqwest::cookie::CookieStore + 'static>(cookies: Arc<C>) -> Client {
+pub fn client<C: reqwest::cookie::CookieStore + 'static>(cookies: Arc<C>) -> Client {
     const UA: &[u8] = b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0";
     let mut header = HeaderMap::new();
     header.insert(

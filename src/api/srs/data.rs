@@ -163,7 +163,7 @@ pub enum CourseScope {
 }
 
 impl CourseScope {
-    pub fn as_str(&self) -> &'static str {
+    pub(crate) fn as_str(&self) -> &'static str {
         match self {
             CourseScope::Suggest => "TJKC",
             CourseScope::WithinPlan => "FANKC",
@@ -309,44 +309,55 @@ where
 // ====================
 
 // Res<Courses>
+/// Course list
 #[derive(Debug, Deserialize)]
 pub struct Courses {
+    /// Total number of courses
     #[serde(rename = "total")]
     pub count: u16,
+    /// List of courses
     #[serde(rename = "rows")]
     pub data: Vec<Course>,
 }
 
+/// Course info
 #[derive(Debug, Deserialize)]
 pub struct Course {
     // 教学班 ID
     #[serde(rename = "JXBID")]
     pub(super) id: String,
-    // 校区
+    /// Campus
     #[serde(rename = "XQ")]
     pub campus: String,
     // 课程代码
+    /// Course code
     #[serde(rename = "KCH")]
     pub course_code: String,
     // 课程序号
+    /// Course index
     #[serde(rename = "KXH")]
     pub course_index: String,
+    /// Course name
     #[serde(rename = "KCM")]
     pub name: String,
     // 上课时间表
+    /// Course schedule
     #[serde(rename = "SKSJ")]
     pub schedule: Option<Vec<Schedule>>,
     // 开课单位
+    /// Offering department
     #[serde(rename = "KKDW")]
     pub department: String,
-    // 是否已选, 0 否
+    /// Whether the course is selected
     #[serde(rename = "SFYX")]
     #[serde(deserialize_with = "deserialize_bool")]
     pub is_select: bool,
     // 学时
+    /// Class hours
     #[serde(rename = "XS")]
     pub class_hours: String,
     // 学分
+    /// Credit
     #[serde(rename = "XF")]
     pub credit: String,
     // 因为学校服务器逆天设计导致 JSON 不合法, 含有重复键
@@ -358,41 +369,54 @@ pub struct Course {
     // #[serde(rename = "KCLB")]
     // pub category: String,
     // 教师
+    /// Teacher
     #[serde(rename = "SKJSZC")]
     pub teacher: String,
     // 校验和
     #[serde(rename = "secretVal")]
     pub(super) sum: String,
     // 授课语言
+    /// Teaching language
     #[serde(rename = "teachingLanguageName")]
     pub lang: String,
     // 课程容量
+    /// Course internal capacity
     #[serde(rename = "internalCapacity")]
     pub internal_cap: u16,
+    /// Course internal selected number
     #[serde(rename = "internalSelectedNum")]
     pub internal_sel: u16,
+    /// Course external capacity
     #[serde(rename = "externalCapacity")]
     pub external_cap: u16,
+    /// Course external selected number
     #[serde(rename = "externalSelectedNum")]
     pub external_sel: u16,
 }
 
+/// Course schedule item
 #[derive(Debug, Deserialize)]
 pub struct Schedule {
+    /// Week number
     #[serde(rename = "SKZCMC")]
     pub week: String,
+    /// Weekday
     #[serde(rename = "SKXQ")]
     pub weekday: String,
+    /// Start lesson
     #[serde(rename = "KSJC")]
     pub start_lesson: String,
+    /// End lesson
     #[serde(rename = "JSJC")]
     pub end_lesson: String,
+    /// Classroom
     #[serde(rename = "YPSJDD")]
-    pub place: String,
+    pub location: String,
 }
 
 impl Course {
     // **的为什么不给 Course 一个 Scope, 还得从 Filter 里借一个
+    /// Convert Course to Opt for select or drop course
     pub fn as_opt<'a>(&'a self, filter: &'a Filter) -> Opt<'a> {
         Opt {
             scope: filter.scope.as_str(),
@@ -420,39 +444,52 @@ pub(super) struct _PreSelecteds {
 // ====================
 
 // Res<Vec<Selected>>
+/// Selected course item
 #[derive(Debug, Deserialize)]
 pub struct Selected {
     #[serde(rename = "JXBID")]
     pub(super) id: String,
+    /// Course scope
     #[serde(rename = "teachingClassType")]
     pub scope: Option<String>,
     // 课程类型
+    /// Course category
     #[serde(rename = "KCLB")]
     pub category: String,
     // 课程性质, 必修限修等
+    /// Course requirement, compulsory, elective, etc.
     #[serde(rename = "KCXZ")]
     pub requirement: String,
+    /// Campus
     #[serde(rename = "XQ")]
     pub campus: String,
+    /// Course ID
     #[serde(rename = "KCH")]
     pub course_id: String,
+    /// Course index
     #[serde(rename = "KXH")]
     pub course_index: String,
+    /// Course name
     #[serde(rename = "KCM")]
     pub name: String,
+    /// Teacher
     #[serde(rename = "SKJS")]
     pub teacher: String,
+    /// Offering department
     #[serde(rename = "KKDW")]
     pub department: String,
+    /// Class hours
     #[serde(rename = "XS")]
     pub class_hours: String,
+    /// Credit
     #[serde(rename = "XF")]
     pub credit: String,
+    /// Whether the course can be dropped
     #[serde(rename = "SFKT")]
     #[serde(deserialize_with = "deserialize_bool")]
     pub can_drop: bool,
     #[serde(rename = "secretVal")]
-    pub sum: String,
+    pub(crate) sum: String,
 }
 
 impl Selected {
