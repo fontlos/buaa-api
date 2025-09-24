@@ -4,7 +4,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_wifi_login() {
+    async fn test_login() {
         let context = Context::with_auth("./data");
 
         let wifi = context.wifi();
@@ -13,7 +13,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_wifi_logout() {
+    async fn test_logout() {
         let context = Context::with_auth("./data");
 
         let wifi = context.wifi();

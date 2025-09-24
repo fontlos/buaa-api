@@ -4,9 +4,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_submit_evaluation() {
-        use crate::api::tes::data::EvaluationAnswer;
-
+    async fn test_tes() {
         let context = Context::with_auth("./data");
 
         let tes = context.tes();
@@ -20,18 +18,7 @@ mod tests {
 
             let form = tes.get_evaluation_form(&i).await.unwrap();
 
-            let ans = vec![
-                EvaluationAnswer::Choice(1),
-                EvaluationAnswer::Choice(0),
-                EvaluationAnswer::Choice(0),
-                EvaluationAnswer::Choice(0),
-                EvaluationAnswer::Choice(0),
-                EvaluationAnswer::Choice(0),
-                EvaluationAnswer::Completion(""),
-                EvaluationAnswer::Completion(""),
-            ];
-
-            let complete = form.fill(ans);
+            let complete = form.fill_default();
 
             let res = tes.submit_evaluation(complete).await.unwrap();
 

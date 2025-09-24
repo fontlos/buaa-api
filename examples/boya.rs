@@ -15,9 +15,6 @@ mod tests {
         // 2025.5.17 14:00 现在至少 Boya 的 API 是支持自动刷新的
         // boya.login().await.unwrap();
 
-        let res = boya.query_statistic().await.unwrap();
-        println!("{:?}", res);
-
         let res = boya.query_course().await.unwrap();
         println!("{:?}", res);
 
@@ -26,7 +23,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_boya_query_detail() {
+    async fn test_sign_rule() {
         let context = Context::with_auth("./data");
 
         let boya = context.boya();
@@ -37,7 +34,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_boya_query_selected() {
+    async fn test_selected() {
         let context = Context::with_auth("./data");
 
         let boya = context.boya();
@@ -51,7 +48,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_boya_select() {
+    async fn test_select() {
         let context = Context::with_auth("./data");
 
         let boya = context.boya();
@@ -62,7 +59,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_boya_drop() {
+    async fn test_drop() {
         let context = Context::with_auth("./data");
 
         let boya = context.boya();
@@ -73,7 +70,18 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_boya_checkin_checkout() {
+    async fn test_statistic() {
+        let context = Context::with_auth("./data");
+
+        let boya = context.boya();
+
+        let res = boya.query_statistic().await.unwrap();
+        println!("{}", res);
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_checkin_checkout() {
         let context = Context::with_auth("./data");
 
         let boya = context.boya();

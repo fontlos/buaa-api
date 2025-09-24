@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::Context;
+    use buaa_api::Context;
 
     #[ignore]
     #[tokio::test]
@@ -13,8 +13,6 @@ mod tests {
         println!("{:?}", res);
         let res = spoc.get_week_schedule(&res).await.unwrap();
         println!("{:?}", res);
-        // let res = spoc.get_day_schedule("2025-9-17").await.unwrap();
-        // println!("{:?}", res);
         context.save_auth("./data");
     }
 }

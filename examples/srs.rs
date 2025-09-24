@@ -23,7 +23,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_srs_selected() {
+    async fn test_selected() {
         let context = Context::with_auth("./data");
 
         let srs = context.srs();
