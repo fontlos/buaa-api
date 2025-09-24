@@ -1,4 +1,15 @@
+// 多亏了**学校神乎其神的后端, 这坨石山我是一点也不敢重构啊
+
 use serde::{Deserialize, Deserializer, Serialize};
+
+use std::borrow::Cow;
+
+// #[derive(Deserialize)]
+// pub(super) struct Res<T> {
+//     pub code: String,
+//     pub msg: String,
+//     pub result: T,
+// }
 
 // ====================
 // 用于解析需要评教的列表 Json
@@ -196,13 +207,13 @@ pub struct EvaluationOption {
 // 用于构造请求 Json
 // ====================
 
-pub enum EvaluationAnswer<'a> {
+pub enum EvaluationAnswer {
     Choice(usize),
-    Completion(&'a str),
+    Completion(String),
 }
 
 impl EvaluationForm {
-    pub fn default<'a>(&'a self) -> EvaluationCompleted<'a> {
+    pub fn fill_default<'a>(&'a self) -> EvaluationCompleted<'a> {
         // 首先, 我们获取题目数量
         let len = self.questions.len();
         // 用于计算总分
@@ -216,7 +227,7 @@ impl EvaluationForm {
             if q.is_choice {
                 let option = q.options.get(choice).unwrap();
                 score += option.score;
-                let ans = vec![option.id.as_str()];
+                let ans: Vec<Cow<'a, str>> = vec![Cow::Borrowed(option.id.as_str())];
                 completed.push(EvaluationCompletedQuestion {
                     sjly: "1",
                     stlx: "1",
@@ -245,7 +256,7 @@ impl EvaluationForm {
         EvaluationCompleted::new(score, &self.map, &self.info, completed)
     }
 
-    pub fn fill<'a>(&'a self, ans: Vec<EvaluationAnswer<'a>>) -> EvaluationCompleted<'a> {
+    pub fn fill<'a>(&'a self, ans: Vec<EvaluationAnswer>) -> EvaluationCompleted<'a> {
         let question_len = self.questions.len();
         let ans_len = ans.len();
         if question_len != ans_len {
@@ -258,7 +269,7 @@ impl EvaluationForm {
                 EvaluationAnswer::Choice(index) => {
                     let option = question.options.get(index).unwrap();
                     score += option.score;
-                    let ans: Vec<&'a str> = vec![option.id.as_str()];
+                    let ans: Vec<Cow<'a, str>> = vec![Cow::Borrowed(option.id.as_str())];
                     completed.push(EvaluationCompletedQuestion {
                         sjly: "1",
                         stlx: "1",
@@ -271,9 +282,9 @@ impl EvaluationForm {
                 }
                 EvaluationAnswer::Completion(answer) => {
                     let option = question.options.first().unwrap();
-                    let mut ans: Vec<&'a str> = Vec::with_capacity(1);
+                    let mut ans: Vec<Cow<'a, str>> = Vec::with_capacity(1);
                     if !answer.is_empty() {
-                        ans.push(answer);
+                        ans.push(Cow::Owned(answer));
                     }
                     completed.push(EvaluationCompletedQuestion {
                         sjly: "1",
@@ -413,5 +424,5 @@ struct EvaluationCompletedQuestion<'a> {
     question_id: &'a str,
     // 单选题为选项 ID, 简答题为 p 标签包裹的字符串, 但懒得包了
     #[serde(rename = "xxdalist")]
-    answer: Vec<&'a str>,
+    answer: Vec<Cow<'a, str>>,
 }
