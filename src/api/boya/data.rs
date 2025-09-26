@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::PrimitiveDateTime;
 
-use crate::utils::deserialize_datatime;
+use crate::utils::deserialize_datetime;
 
 // 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
 #[derive(Debug)]
@@ -60,23 +60,23 @@ pub struct Course {
 #[derive(Debug, Deserialize)]
 pub struct Schedule {
     /// Course start time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseStartDate")]
     pub course_start: PrimitiveDateTime,
     /// Course end time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseEndDate")]
     pub course_end: PrimitiveDateTime,
     /// Course pre-selection start time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseSelectStartDate")]
     pub select_start: PrimitiveDateTime,
     /// Course pre-selection end time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseSelectEndDate")]
     pub select_end: PrimitiveDateTime,
     /// Course cancellation end time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseCancelEndDate")]
     pub cancel_end: PrimitiveDateTime,
 }
@@ -300,19 +300,19 @@ impl<'de> Deserialize<'de> for Data<Option<SignRule>> {
 #[derive(Debug, Deserialize)]
 pub struct SignRule {
     /// Check in start time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signStartDate")]
     pub checkin_start: PrimitiveDateTime,
     /// Check in end time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signEndDate")]
     pub checkin_end: PrimitiveDateTime,
     /// Check out start time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signOutStartDate")]
     pub checkout_start: PrimitiveDateTime,
     /// Check out end time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signOutEndDate")]
     pub checkout_end: PrimitiveDateTime,
     /// Coordinate for check in/out

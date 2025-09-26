@@ -35,12 +35,17 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_selected() {
+        use time::Date;
+        use time::format_description::parse;
+
         let context = Context::with_auth("./data");
 
         let boya = context.boya();
 
-        let start = utils::parse_date("2024-08-26");
-        let end = utils::parse_date("2024-12-29");
+        let format_string = parse("[year]-[month]-[day]").unwrap();
+
+        let start = Date::parse("2024-08-26", &format_string).unwrap();
+        let end = Date::parse("2024-12-29", &format_string).unwrap();
 
         let res = boya.query_selected(start, end).await.unwrap();
         println!("{:?}", res);
@@ -53,8 +58,7 @@ mod tests {
 
         let boya = context.boya();
 
-        let res = boya.select_course(6637).await.unwrap();
-        println!("{}", res);
+        boya.select_course(6637).await.unwrap();
     }
 
     #[ignore]
@@ -64,8 +68,7 @@ mod tests {
 
         let boya = context.boya();
 
-        let res = boya.drop_course(6637).await.unwrap();
-        println!("{}", res);
+        boya.drop_course(6637).await.unwrap();
     }
 
     #[ignore]
@@ -76,7 +79,7 @@ mod tests {
         let boya = context.boya();
 
         let res = boya.query_statistic().await.unwrap();
-        println!("{}", res);
+        println!("{:?}", res);
     }
 
     #[ignore]
