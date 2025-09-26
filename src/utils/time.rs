@@ -1,45 +1,36 @@
 use serde::{Deserialize, Deserializer};
-use time::{Date, OffsetDateTime, PrimitiveDateTime, UtcOffset, format_description};
+use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset, format_description};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-/// Get current timestamp
 #[inline]
 pub fn get_timestamp() -> Duration {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap()
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Failed to get timestamp")
 }
 
-/// Get current time in seconds
 pub fn get_time_secs() -> u64 {
     get_timestamp().as_secs()
 }
 
-
-/// Get current time in milliseconds
 pub fn get_time_millis() -> u128 {
     get_timestamp().as_millis()
 }
 
-/// Get current local datetime
 pub fn get_datetime() -> PrimitiveDateTime {
     let now_utc = OffsetDateTime::now_utc();
-    let local_offset = UtcOffset::from_hms(8, 0, 0).unwrap();
+    let local_offset = UtcOffset::from_hms(8, 0, 0).expect("Failed to create local offset");
     let now_local = now_utc.to_offset(local_offset);
     PrimitiveDateTime::new(now_local.date(), now_local.time())
 }
 
-/// Parse a date string in "YYYY-MM-DD" format to a `Date` object
-pub fn parse_date(data: &str) -> Date {
-    let format_string = time::format_description::parse("[year]-[month]-[day]").unwrap();
-    Date::parse(data, &format_string).unwrap()
-}
-
-pub(crate) fn deserialize_datatime<'de, D>(deserializer: D) -> Result<PrimitiveDateTime, D::Error>
+pub fn deserialize_datetime<'de, D>(deserializer: D) -> Result<PrimitiveDateTime, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let format_string =
-        format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
+    let format_string = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")
+        .expect("Failed to parse datetime format");
 
     let s: String = Deserialize::deserialize(deserializer)?;
 

@@ -21,7 +21,7 @@ mod crypto;
 pub mod error;
 mod request;
 pub mod store;
-pub mod utils;
+mod utils;
 
 pub use context::Context;
 pub use error::{Error, Result};

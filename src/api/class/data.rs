@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::utils::deserialize_datatime;
+use crate::utils::deserialize_datetime;
 
 /// Course info
 #[derive(Debug, Deserialize, Serialize)]
@@ -28,7 +28,7 @@ pub struct Schedule {
     #[serde(rename = "courseSchedId")]
     pub id: String,
     /// Checkin time
-    #[serde(deserialize_with = "deserialize_datatime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "classBeginTime")]
     pub time: time::PrimitiveDateTime,
     /// Checkin status
