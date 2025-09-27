@@ -47,7 +47,7 @@ mod tests {
         let start = Date::parse("2024-08-26", &format_string).unwrap();
         let end = Date::parse("2024-12-29", &format_string).unwrap();
 
-        let res = boya.query_selected(start, end).await.unwrap();
+        let res = boya.query_selected(Some((start, end))).await.unwrap();
         println!("{:?}", res);
     }
 
