@@ -34,8 +34,11 @@
   - [x] Get all root dir
   - [x] Get user root dir
   - [x] List dir
-  - [x] Get single file download URL
-  - [x] Get a zip of multiple files download URL
+  - [x] Get single item download URL
+  - [x] Get a zip of multiple items download URL
+  - [ ] Move item
+  - [ ] Rename item
+  - [ ] Upload item
 - [ ] Spoc Platform: `spoc`
   - [x] Login
   - [x] Query teaching week
