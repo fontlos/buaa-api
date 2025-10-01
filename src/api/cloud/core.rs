@@ -97,9 +97,7 @@ impl super::CloudApi {
                     });
                     Ok(())
                 }
-                None => {
-                    Err(Error::server("[Cloud] Login failed. No token"))
-                }
+                None => Err(Error::server("[Cloud] Login failed. No token")),
             }
         } else {
             Err(Error::server("[Cloud] Login failed. Unknown error"))

@@ -12,17 +12,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     /// Auth error.
     #[error("Auth Error: {0}")]
-    Auth(AuthError),
+    Auth(#[from] AuthError),
     /// Network error
     #[error("Network Error: {0}")]
-    Network(String),
-
-    /// Crash in Serde
-    #[error("Deserialize Error: {0}")]
-    Deserialize(#[from] serde_json::Error),
-    /// Crash in Reqwest
-    #[error("Request Error")]
-    Request(#[from] reqwest::Error),
+    Network(#[from] NetworkError),
+    /// Parse error. Usually you cannot handle such errors, just for logging
+    #[error("Parse Error: {0}")]
+    Parse(#[from] ParseError),
 
     /// Server internal error. So you can't handle such errors, just for logging
     #[error("Server Error: {0}")]
@@ -53,4 +49,38 @@ pub enum AuthError {
     /// No Token
     #[error("No Token: {0}")]
     NoToken(Location),
+}
+
+/// Network error
+#[derive(Debug, thiserror::Error)]
+pub enum NetworkError {
+    /// Reqwest error
+    #[error("Reqwest Error: {0}")]
+    Reqwest(reqwest::Error),
+    /// Cannot get local IP address
+    #[error("Cannot get local IP address")]
+    NoIp,
+    /// Not connect to BUAA-WiFi
+    #[error("Not connect to BUAA-WiFi")]
+    NoBuaaWifi,
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(value: reqwest::Error) -> Self {
+        Error::Network(NetworkError::Reqwest(value))
+    }
+}
+
+/// Parse error
+#[derive(Debug, thiserror::Error)]
+pub enum ParseError {
+    /// Serde error. This usually caused by server.
+    #[error("Serde Error: {0}")]
+    Serde(serde_json::Error),
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(value: serde_json::Error) -> Self {
+        Error::Parse(ParseError::Serde(value))
+    }
 }

@@ -1,7 +1,7 @@
 use std::error::Error as StdError;
 
 use crate::crypto;
-use crate::error::Error;
+use crate::error::{Error, NetworkError};
 use crate::utils;
 
 use super::info;
@@ -40,30 +40,23 @@ impl super::WifiApi {
         }
 
         // 获取本机 IP
-        let ip = match info::ip() {
-            Some(s) => s,
-            None => return Err(Error::Network(String::from("Cannot get IP address"))),
-        };
+        let ip = info::ip().ok_or(NetworkError::NoIp)?;
 
         // 从重定向 URL 中获取 ACID 接入点
         // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = match self.client.get("http://gw.buaa.edu.cn").send().await {
-            Ok(res) => res,
-            Err(e) => {
-                let err = e
-                    .source()
-                    .and_then(|e1| e1.source())
-                    .map(|e2| e2.to_string())
-                    .unwrap_or_else(|| e.to_string());
-
-                if err == "dns error" {
-                    return Err(Error::Network("Not connect to BUAA-WiFi".to_string()));
-                } else {
-                    return Err(Error::Network(err));
-                }
+        let res = self.client.get("http://gw.buaa.edu.cn").send().await.map_err(|e| {
+            let err = e
+                .source()
+                .and_then(|e1| e1.source())
+                .map(|e2| e2.to_string())
+                .unwrap_or_else(|| e.to_string());
+            if err == "dns error" {
+                NetworkError::NoBuaaWifi
+            } else {
+                NetworkError::Reqwest(e)
             }
-        };
+        })?;
 
         let url = res.url().as_str().as_bytes();
         let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
@@ -187,30 +180,23 @@ impl super::WifiApi {
         }
 
         // 获取本机 IP
-        let ip = match info::ip() {
-            Some(s) => s,
-            None => return Err(Error::Network(String::from("Cannot get IP address"))),
-        };
+        let ip = info::ip().ok_or(NetworkError::NoIp)?;
 
         // 从重定向 URL 中获取 ACID 接入点
         // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = match self.client.get("http://gw.buaa.edu.cn").send().await {
-            Ok(res) => res,
-            Err(e) => {
-                let err = e
-                    .source()
-                    .and_then(|e1| e1.source())
-                    .map(|e2| e2.to_string())
-                    .unwrap_or_else(|| e.to_string());
-
-                if err == "dns error" {
-                    return Err(Error::Network("Not connect to BUAA-WiFi".to_string()));
-                } else {
-                    return Err(Error::Network(err));
-                }
+        let res = self.client.get("http://gw.buaa.edu.cn").send().await.map_err(|e| {
+            let err = e
+                .source()
+                .and_then(|e1| e1.source())
+                .map(|e2| e2.to_string())
+                .unwrap_or_else(|| e.to_string());
+            if err == "dns error" {
+                NetworkError::NoBuaaWifi
+            } else {
+                NetworkError::Reqwest(e)
             }
-        };
+        })?;
 
         let url = res.url().as_str().as_bytes();
         let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
