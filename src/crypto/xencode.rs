@@ -85,7 +85,7 @@ pub fn x_encode(str: &[u8], key: &[u8]) -> String {
         bytes.push((i >> 16 & 0xff) as u8);
         bytes.push((i >> 24 & 0xff) as u8);
     }
-    let alphabet = Alphabet::new(BASE64_ALPHABET).unwrap();
+    let alphabet = Alphabet::new(BASE64_ALPHABET).expect("Base64 alphabet should always be valid");
     let engine = GeneralPurpose::new(&alphabet, GeneralPurposeConfig::new());
     format!("{{SRBX1}}{}", engine.encode(bytes))
 }

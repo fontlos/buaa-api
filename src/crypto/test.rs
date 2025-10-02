@@ -4,7 +4,7 @@ mod tests {
 
     #[test]
     fn test_aes_ecb() {
-        let cipher = aes::Aes128::new(b"SenQBA8xn6CQGNJs").unwrap();
+        let cipher = aes::Aes128::new(b"SenQBA8xn6CQGNJs");
         let encrypted = cipher.encrypt_ecb(b"HelloWorld");
         let base64 = encode_base64(&encrypted);
         assert_eq!("Kn2AACfzhA8YPsPPH3SgdA==", base64);
@@ -16,7 +16,7 @@ mod tests {
 
     #[test]
     fn test_aes_encrypt_cbc() {
-        let cipher = aes::Aes128::new(b"inco12345678ocni").unwrap();
+        let cipher = aes::Aes128::new(b"inco12345678ocni");
         let encrypted = cipher.encrypt_cbc(b"HelloWorld", b"ocni12345678inco");
         let base64 = encode_base64(&encrypted);
         assert_eq!("Qb5wy8PdDSUs6EgTzMX6Gw==", base64);
@@ -24,7 +24,7 @@ mod tests {
 
     #[test]
     fn test_des() {
-        let cipher = des::Des::new(b"Jyd#351*").unwrap();
+        let cipher = des::Des::new(b"Jyd#351*");
         let encrypted = cipher.encrypt_ecb(b"HelloWorld");
         let hex = bytes2hex(&encrypted);
         assert_eq!(&hex, "e8c2f09cbf46cb0a70f11196330b1657");
@@ -32,7 +32,7 @@ mod tests {
 
     #[test]
     fn test_md5() {
-        let data = std::fs::read("License").unwrap();
+        let data = std::fs::read("License").expect("Read License");
         let md5 = md5::Md5::digest(&data);
         let hex = bytes2hex(&md5);
         assert_eq!(&hex, "2817feea7bcabab5909f75866950e0d3");

@@ -105,7 +105,7 @@ impl super::BoyaApi {
         // 初始化 AES, 使用十六位随机密钥
         let aes_key = utils::gen_rand_str(16);
         let aes_key = aes_key.as_bytes();
-        let aes_cipher = crypto::aes::Aes128::new(aes_key).unwrap();
+        let aes_cipher = crypto::aes::Aes128::new(aes_key);
 
         // 请求头 Ak 参数, 由 AES Key 生成
         let ak = rsa_cipher.encrypt(aes_key);

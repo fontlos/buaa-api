@@ -25,7 +25,7 @@ impl super::ClassApi {
         let session = utils::parse_by_tag(url, "loginName=", "")
             .ok_or_else(|| Error::server("[Class] No loginName found"))?;
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
-        let cipher = crypto::des::Des::new(CLASS_DES_KEY).unwrap();
+        let cipher = crypto::des::Des::new(CLASS_DES_KEY);
         let url = cipher.encrypt_ecb(url);
         let url = crypto::bytes2hex(&url);
         let params = [("method", "html5GetPrivateUserInfo"), ("url", &url)];
