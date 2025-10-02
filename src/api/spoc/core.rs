@@ -60,7 +60,7 @@ impl super::SpocApi {
         let token = cred.value::<Spoc>()?;
 
         // 初始化 AES
-        let aes = crypto::aes::Aes128::new(SPOC_AES_KEY).unwrap();
+        let aes = crypto::aes::Aes128::new(SPOC_AES_KEY);
 
         // 构造请求体, 使用 AES 加密请求参数, Base64 编码
         let body = serde_json::to_vec(query)?;

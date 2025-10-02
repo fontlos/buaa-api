@@ -7,7 +7,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 pub fn get_timestamp() -> Duration {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("Failed to get timestamp")
+        .expect("Timestamp should always get successfully")
 }
 
 pub fn get_time_secs() -> u64 {
@@ -20,7 +20,7 @@ pub fn get_time_millis() -> u128 {
 
 pub fn get_datetime() -> PrimitiveDateTime {
     let now_utc = OffsetDateTime::now_utc();
-    let local_offset = UtcOffset::from_hms(8, 0, 0).expect("Failed to create local offset");
+    let local_offset = UtcOffset::from_hms(8, 0, 0).expect("Offset should always be valid");
     let now_local = now_utc.to_offset(local_offset);
     PrimitiveDateTime::new(now_local.date(), now_local.time())
 }
@@ -30,7 +30,7 @@ where
     D: Deserializer<'de>,
 {
     let format_string = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")
-        .expect("Failed to parse datetime format");
+        .expect("Datetime format should always be valid");
 
     let s: String = Deserialize::deserialize(deserializer)?;
 

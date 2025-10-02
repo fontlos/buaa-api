@@ -8,15 +8,15 @@ pub struct Aes128 {
 
 impl Aes128 {
     /// Create an AES-128 instance with the given key
-    pub fn new(key: &[u8]) -> Result<Self, &'static str> {
-        if key.len() != 16 {
-            return Err("AES-128 key must be 16 bytes");
-        }
+    pub fn new(key: &[u8]) -> Self {
+        // Key 必须是 16 字节, 考虑到作为内部库不可能出错, 这里不做判定
+        #[cfg(debug_assertions)]
+        assert_eq!(key.len(), 16, "AES-128 key must be 16 bytes");
         let mut aes = Aes128 {
             round_keys: [[0; 16]; 11],
         };
         aes.key_expansion(key);
-        Ok(aes)
+        aes
     }
 
     /// 密钥扩展
@@ -317,7 +317,7 @@ impl Aes128 {
         }
 
         // 移除 PKCS7 填充
-        let padding_len = *output.last().unwrap() as usize;
+        let padding_len = *output.last().expect("PKCS7 padding should not panic") as usize;
         if padding_len <= 16 {
             output.truncate(output.len() - padding_len);
         }

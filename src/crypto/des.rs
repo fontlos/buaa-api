@@ -8,14 +8,13 @@ pub struct Des {
 
 impl Des {
     /// Create a DES instance with the given key
-    pub fn new(key: &[u8]) -> Result<Self, &'static str> {
-        if key.len() != 8 {
-            return Err("DES key must be 8 bytes");
-        }
-
+    pub fn new(key: &[u8]) -> Self {
+        // Key 必须是 8 字节, 考虑到作为内部库不可能出错, 这里不做判定
+        #[cfg(debug_assertions)]
+        assert_eq!(key.len(), 8, "DES key must be 8 bytes");
         let mut des = Des { subkeys: [0; 16] };
         des.generate_subkeys(key);
-        Ok(des)
+        des
     }
 
     /// Generate a 16-wheel subkey
