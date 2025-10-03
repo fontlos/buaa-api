@@ -24,7 +24,7 @@ impl super::CloudApi {
             .into_iter()
             .next()
             .map(|item| item.id)
-            .ok_or_else(|| crate::Error::server("[Cloud] No user dir found"))?;
+            .ok_or_else(|| crate::Error::server("No user dir found").with_label("Cloud"))?;
         Ok(id)
     }
 
@@ -55,7 +55,7 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
         let res = utils::parse_by_tag(&bytes, ",\"", "\"")
-            .ok_or_else(|| Error::server("[Cloud] Can not get download url"))?;
+            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
         Ok(res.to_string())
     }
 
@@ -84,7 +84,7 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
         let raw_url = utils::parse_by_tag(&bytes, "package_address\":\"", "\"")
-            .ok_or_else(|| Error::server("[Cloud] Can not get download url"))?;
+            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
 
         // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
         let token = self.cred.load().value::<crate::api::Cloud>()?;
@@ -110,7 +110,7 @@ impl super::CloudApi {
         };
 
         if items.is_empty() {
-            return Err(Error::Other("No valid file selected".into()));
+            return Err(Error::parameter("No valid file selected").with_label("Cloud"));
         }
 
         // 下载单个文件只能用这个, 不然得到的链接无法使用

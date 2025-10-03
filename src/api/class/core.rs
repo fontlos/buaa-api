@@ -23,7 +23,7 @@ impl super::ClassApi {
         // 整个这一次请求的意义存疑, 但也许是为了验证 loginName 是否有效
         let url = res.url().as_str().as_bytes();
         let session = utils::parse_by_tag(url, "loginName=", "")
-            .ok_or_else(|| Error::server("[Class] No loginName found"))?;
+            .ok_or_else(|| Error::server("No loginName found").with_label("Class"))?;
         // 使用 DES 加密 URL, 这是下一步请求的参数之一
         let cipher = crypto::des::Des::new(CLASS_DES_KEY);
         let url = cipher.encrypt_ecb(url);
@@ -63,7 +63,7 @@ impl super::ClassApi {
                 });
                 Ok(())
             }
-            None => Err(Error::server("[Class] Login failed. No token")),
+            None => Err(Error::server("Login failed. No token").with_label("Class")),
         }
     }
 
@@ -98,14 +98,15 @@ impl super::ClassApi {
 
         if res.status != "0" {
             return Err(Error::server(format!(
-                "[Class] Response: {}",
+                "Response: {}",
                 res.msg.as_deref().unwrap_or("Unknown error")
-            )));
+            ))
+            .with_label("Class"));
         }
 
         match res.result {
             Some(r) => Ok(r),
-            None => Err(Error::server("[Class] No result")),
+            None => Err(Error::server("No result").with_label("Class")),
         }
     }
 }

@@ -13,7 +13,7 @@ impl super::TesApi {
             "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fspoc.buaa.edu.cn%2Fpjxt%2Fcas";
         let res = self.client.get(url).send().await?;
         if res.url().as_str() == url {
-            return Err(Error::server("[Tes] Redirect failed"));
+            return Err(Error::server("Redirect failed").with_label("Tes"));
         }
         cred.refresh::<Sso>();
         Ok(())

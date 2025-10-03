@@ -1,7 +1,7 @@
 use std::error::Error as StdError;
 
 use crate::crypto;
-use crate::error::{Error, NetworkError};
+use crate::error::{Code, Error};
 use crate::utils;
 
 use super::info;
@@ -40,28 +40,34 @@ impl super::WifiApi {
         }
 
         // 获取本机 IP
-        let ip = info::ip().ok_or(NetworkError::NoIp)?;
+        let ip =
+            info::ip().ok_or(Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
 
         // 从重定向 URL 中获取 ACID 接入点
         // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = self.client.get("http://gw.buaa.edu.cn").send().await.map_err(|e| {
-            let err = e
-                .source()
-                .and_then(|e1| e1.source())
-                .map(|e2| e2.to_string())
-                .unwrap_or_else(|| e.to_string());
-            if err == "dns error" {
-                NetworkError::NoBuaaWifi
-            } else {
-                NetworkError::Reqwest(e)
-            }
-        })?;
+        let res = self
+            .client
+            .get("http://gw.buaa.edu.cn")
+            .send()
+            .await
+            .map_err(|e| {
+                let err = e
+                    .source()
+                    .and_then(|e1| e1.source())
+                    .map(|e2| e2)
+                    .unwrap_or_else(|| &e);
+                if err.to_string() == "dns error" {
+                    Error::network("DNS resolution failure").with_code(Code::NetworkDnsFailure)
+                } else {
+                    Error::network("From reqwest crate").with_source(e)
+                }
+            })?;
 
         let url = res.url().as_str().as_bytes();
         let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(Error::server("[Wifi] No AC ID")),
+            None => return Err(Error::server("No AC ID").with_label("Wifi")),
         };
 
         // 获取 Challenge Token
@@ -80,12 +86,12 @@ impl super::WifiApi {
             .send()
             .await?;
         if !res.status().is_success() {
-            return Err(Error::server("[Wifi] Request for challenge value failed"));
+            return Err(Error::server("Request for challenge value failed").with_label("Wifi"));
         };
-        let bytes = res.bytes().await.unwrap();
+        let bytes = res.bytes().await?;
         let token = match utils::parse_by_tag(&bytes, "\"challenge\":\"", "\"") {
             Some(s) => s,
-            None => return Err(Error::server("[Wifi] No challenge value")),
+            None => return Err(Error::server("No challenge value").with_label("Wifi")),
         };
         let token_bytes = token.as_bytes();
 
@@ -144,9 +150,10 @@ impl super::WifiApi {
             Ok(())
         } else {
             Err(Error::server(format!(
-                "[Wifi] Login failed. Response: {}",
+                "Login failed. Response: {}",
                 String::from_utf8_lossy(&res)
-            )))
+            ))
+            .with_label("Wifi"))
         }
     }
 
@@ -180,28 +187,34 @@ impl super::WifiApi {
         }
 
         // 获取本机 IP
-        let ip = info::ip().ok_or(NetworkError::NoIp)?;
+        let ip =
+            info::ip().ok_or(Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
 
         // 从重定向 URL 中获取 ACID 接入点
         // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = self.client.get("http://gw.buaa.edu.cn").send().await.map_err(|e| {
-            let err = e
-                .source()
-                .and_then(|e1| e1.source())
-                .map(|e2| e2.to_string())
-                .unwrap_or_else(|| e.to_string());
-            if err == "dns error" {
-                NetworkError::NoBuaaWifi
-            } else {
-                NetworkError::Reqwest(e)
-            }
-        })?;
+        let res = self
+            .client
+            .get("http://gw.buaa.edu.cn")
+            .send()
+            .await
+            .map_err(|e| {
+                let err = e
+                    .source()
+                    .and_then(|e1| e1.source())
+                    .map(|e2| e2)
+                    .unwrap_or_else(|| &e);
+                if err.to_string() == "dns error" {
+                    Error::network("DNS resolution failure").with_code(Code::NetworkDnsFailure)
+                } else {
+                    Error::network("From reqwest crate").with_source(e)
+                }
+            })?;
 
         let url = res.url().as_str().as_bytes();
         let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
             Some(s) => s,
-            None => return Err(Error::server("[Wifi] No AC ID")),
+            None => return Err(Error::server("No AC ID").with_label("Wifi")),
         };
 
         let time = utils::get_time_millis().to_string();
@@ -229,9 +242,10 @@ impl super::WifiApi {
             Ok(())
         } else {
             Err(Error::server(format!(
-                "[WiFi] Logout failed. Response: {}",
+                "Logout failed. Response: {}",
                 String::from_utf8_lossy(&res)
-            )))
+            ))
+            .with_label("Wifi"))
         }
     }
 }

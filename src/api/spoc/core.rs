@@ -25,13 +25,13 @@ impl super::SpocApi {
             .send()
             .await?;
         if res.url().as_str().contains("https://sso.buaa.edu.cn/login") {
-            return Err(Error::server("[Spoc] Redirect failed"));
+            return Err(Error::server("Redirect failed").with_label("Spoc"));
         }
         let mut query = res.url().query_pairs();
         let token = query
             .next()
             .and_then(|t| if t.0 == "token" { Some(t.1) } else { None })
-            .ok_or_else(|| Error::server("[Spoc] Login failed. No token"))?;
+            .ok_or_else(|| Error::server("Login failed. No token").with_label("Spoc"))?;
         // 再次调用 next 获取 refreshToken, 但我们用不着, 使用我们自己的机制刷新登陆状态
 
         // 提前加上前缀
@@ -85,9 +85,10 @@ impl super::SpocApi {
         // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if res.code != 200 {
             return Err(Error::server(format!(
-                "[Spoc] Response: {}",
+                "Response: {}",
                 res.msg.unwrap_or("Unknown Error".into())
-            )));
+            ))
+            .with_label("Spoc"));
         }
 
         Ok(res.content)

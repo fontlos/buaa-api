@@ -20,7 +20,7 @@ impl super::TesApi {
         let res = self.client.get(url).send().await?.bytes().await?;
         let rwid = match utils::parse_by_tag(&res, "\"rwid\":\"", "\"") {
             Some(rwid) => rwid,
-            None => return Err(Error::server("[Tes] Get list failed. No rwid")),
+            None => return Err(Error::server("Get list failed. No rwid").with_label("Tes")),
         };
 
         // 看不懂, 但需要获取一些称为 wjid 的东西, 对应于理论课, 实践课, 英语课, 体育课, 科研课堂, 这是已知的五个类型

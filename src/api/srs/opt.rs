@@ -13,9 +13,9 @@ impl super::SrsApi {
         let campus = res
             .pointer("/student/campus")
             .and_then(|v| v.as_str())
-            .ok_or_else(|| Error::server("Missing campus field"))?
+            .ok_or_else(|| Error::server("Missing campus field").with_label("Srs"))?
             .parse::<u8>()
-            .map_err(|_| Error::Other("Failed to parse campus".into()))?;
+            .map_err(|_| Error::parse("Failed to parse campus"))?;
         Ok(Filter::new(campus))
     }
 
@@ -29,7 +29,7 @@ impl super::SrsApi {
         let id = utils::parse_by_tag(&res, "\"code\":\"", "\"");
         match id {
             Some(i) => Ok(i.to_string()),
-            None => Err(Error::server("Cannot find batch id")),
+            None => Err(Error::server("Cannot find batch id").with_label("Srs")),
         }
     }
 
