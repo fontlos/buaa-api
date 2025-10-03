@@ -38,7 +38,10 @@ impl BoyaApi {
     /// # Query Selected Courses
     ///
     /// - Input: Start and end date. If `None`, query current term.
-    pub async fn query_selected(&self, range: Option<(Date, Date)>) -> crate::Result<Vec<Selected>> {
+    pub async fn query_selected(
+        &self,
+        range: Option<(Date, Date)>,
+    ) -> crate::Result<Vec<Selected>> {
         // 考虑到多数情况下只需要查询本学期即可
         let range = range.unwrap_or_else(|| {
             // 8 月为分界线

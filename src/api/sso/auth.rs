@@ -23,7 +23,7 @@ impl super::SsoApi {
         let execution = match utils::parse_by_tag(&bytes, "\"execution\" value=\"", "\"") {
             Some(s) => s,
             None => {
-                return Err(Error::server("[Sso] Login failed. No Execution Value"));
+                return Err(Error::server("Login failed. No Execution Value").with_label("Sso"));
             }
         };
         let form = [
@@ -39,9 +39,7 @@ impl super::SsoApi {
             cred.refresh::<Sso>();
             Ok(())
         } else {
-            Err(Error::server(
-                "[Sso] Login failed. Maybe wrong username or password",
-            ))
+            Err(Error::server("Login failed. Maybe wrong username or password").with_label("Sso"))
         }
     }
 }

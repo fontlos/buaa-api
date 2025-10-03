@@ -61,9 +61,21 @@ pub enum Location {
     Wifi,
 }
 
-impl std::fmt::Display for Location {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{self:?}")
+impl Location {
+    /// Get the string representation of the location
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Location::Aas => "Aas",
+            Location::Boya => "Boya",
+            Location::Class => "Class",
+            Location::Cloud => "Cloud",
+            Location::Spoc => "Spoc",
+            Location::Srs => "Srs",
+            Location::Sso => "Sso",
+            Location::Tes => "Tes",
+            Location::User => "User",
+            Location::Wifi => "Wifi",
+        }
     }
 }
 

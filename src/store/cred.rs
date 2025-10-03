@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
 use crate::api::{Boya, Class, Cloud, Spoc, Srs, Sso};
-use crate::error::{AuthError, Error, Result};
+use crate::error::{Code, Error, Result};
 use crate::utils;
 
 /// Store for credentials
@@ -96,20 +96,22 @@ impl CredentialStore {
     pub(crate) fn username(&self) -> Result<&str> {
         self.username
             .as_deref()
-            .ok_or(Error::Auth(AuthError::NoUsername))
+            .ok_or(Error::auth("No username").with_code(Code::AuthNoUsername))
     }
 
     pub(crate) fn password(&self) -> Result<&str> {
         self.password
             .as_deref()
-            .ok_or(Error::Auth(AuthError::NoPassword))
+            .ok_or(Error::auth("No password").with_code(Code::AuthNoPassword))
     }
 
+    // 自动刷新机制下这几乎不可能出错
     pub(crate) fn value<T: Token>(&self) -> Result<&str> {
-        T::field(self)
-            .value
-            .as_deref()
-            .ok_or(Error::Auth(AuthError::NoToken(T::as_location())))
+        T::field(self).value.as_deref().ok_or(
+            Error::auth("No token")
+                .with_label(T::as_location().as_str())
+                .with_code(Code::AuthNoToken),
+        )
     }
 
     pub(crate) fn is_expired<T: Token>(&self) -> bool {

@@ -33,10 +33,10 @@ impl super::BoyaApi {
         let url = res.url().as_str();
         // 自动刷新机制保证了正常情况下不会发生这种情况
         if url == login_url {
-            Err(Error::server("[Boya] Redirect failed"))
+            Err(Error::server("Redirect failed").with_label("Boya"))
         } else {
             let token = utils::parse_by_tag(url.as_bytes(), "token=", "")
-                .ok_or_else(|| Error::server("[Boya] Login failed. No token"))?;
+                .ok_or_else(|| Error::server("Login failed. No token").with_label("Boya"))?;
             self.cred.update(|s| {
                 s.update::<Boya>(token.to_string());
             });
@@ -147,10 +147,10 @@ impl super::BoyaApi {
 
         // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
         if res.status != "0" {
-            return Err(Error::server(format!(
-                "[Boya] Status: {}. Response: {}",
-                res.status, res.errmsg
-            )));
+            return Err(
+                Error::server(format!("Status: {}. Response: {}", res.status, res.errmsg))
+                    .with_label("Boya"),
+            );
         }
 
         // 刷新 Token 时效

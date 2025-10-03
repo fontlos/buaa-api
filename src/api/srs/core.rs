@@ -18,7 +18,7 @@ impl super::SrsApi {
         let res = self.client.get(url).send().await?;
         // 未转跳就证明登录过期
         if res.url().as_str() == url {
-            return Err(Error::server("[Srs] Redirect failed"));
+            return Err(Error::server("Redirect failed").with_label("Srs"));
         }
         // 储存 token
         let cookie = self.cookies.load();
@@ -29,7 +29,7 @@ impl super::SrsApi {
                 });
                 Ok(())
             }
-            None => Err(Error::server("[Srs] Login failed. No Token")),
+            None => Err(Error::server("Login failed. No Token").with_label("Srs")),
         }
     }
 
@@ -60,7 +60,7 @@ impl super::SrsApi {
         let res = res.send().await?.bytes().await?;
         let res = serde_json::from_slice::<Res<T>>(&res)?;
         if res.code != 200 {
-            return Err(Error::server(format!("[Srs] Response: {}", res.msg)));
+            return Err(Error::server(format!("Response: {}", res.msg)).with_label("Srs"));
         }
         Ok(res.data)
     }
