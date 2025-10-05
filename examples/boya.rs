@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use buaa_api::Context;
-    use buaa_api::utils;
 
     #[ignore]
     #[tokio::test]
@@ -85,6 +84,8 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_checkin_checkout() {
+        use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
+
         let context = Context::with_auth("./data");
 
         let boya = context.boya();
@@ -93,7 +94,11 @@ mod tests {
         let rule = boya.query_sign_rule(id).await.unwrap().unwrap();
         println!("{:?}", rule);
 
-        let time = utils::get_datetime();
+        let now_utc = OffsetDateTime::now_utc();
+        let local_offset = UtcOffset::from_hms(8, 0, 0).expect("Offset should always be valid");
+        let now_local = now_utc.to_offset(local_offset);
+        let time = PrimitiveDateTime::new(now_local.date(), now_local.time());
+
         if rule.checkin_start < time && time < rule.checkin_end {
             let res = boya.checkin_course(id, &rule.coordinate).await.unwrap();
             println!("Checkin: {:?}", res);
