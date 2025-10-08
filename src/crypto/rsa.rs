@@ -1,7 +1,6 @@
 //! Separate implementation of Pkcs1v15Encrypt RSA encryption only to omit dependencies on external RSA Crates
 //! Since the vanilla RSA relies on rand 0.6, this is implemented in order to upgrade the rand
 
-// use num_bigint::BigUint;
 use rand::Rng;
 
 use super::biguint::BigUint;

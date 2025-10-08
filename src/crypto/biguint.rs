@@ -1,5 +1,40 @@
 //! Self-implemented BigUint for RSA should not be used anywhere else.
 
+// num_bigint::BigUint 与我的 BigUint 性能对比
+// 小型数据我的占优, 中大型数据基本持平
+
+// rsa_encrypt_16bytes/encrypt
+//                         time:   [46.569 µs 46.975 µs 47.443 µs]
+//                         thrpt:  [329.34 KiB/s 332.62 KiB/s 335.53 KiB/s]
+//                  change:
+//                         time:   [+16.952% +18.188% +19.482%] (p = 0.00 < 0.05)
+//                         thrpt:  [−16.305% −15.389% −14.495%]
+//                         Performance has regressed.
+// Found 11 outliers among 100 measurements (11.00%)
+//   2 (2.00%) high mild
+//   9 (9.00%) high severe
+
+// rsa_encrypt_32bytes/encrypt
+//                         time:   [38.876 µs 39.109 µs 39.378 µs]
+//                         thrpt:  [793.58 KiB/s 799.06 KiB/s 803.84 KiB/s]
+//                  change:
+//                         time:   [−4.4245% −3.5393% −2.6351%] (p = 0.00 < 0.05)
+//                         thrpt:  [+2.7064% +3.6692% +4.6293%]
+//                         Performance has improved.
+// Found 6 outliers among 100 measurements (6.00%)
+//   3 (3.00%) high mild
+//   3 (3.00%) high severe
+
+// rsa_encrypt_64bytes/encrypt
+//                         time:   [38.866 µs 39.135 µs 39.462 µs]
+//                         thrpt:  [1.5467 MiB/s 1.5596 MiB/s 1.5704 MiB/s]
+//                  change:
+//                         time:   [+0.5766% +1.5085% +2.5610%] (p = 0.00 < 0.05)
+//                         thrpt:  [−2.4970% −1.4861% −0.5733%]
+//                         Change within noise threshold.
+// Found 3 outliers among 100 measurements (3.00%)
+//   3 (3.00%) high mild
+
 type BigDigit = u64;
 type DoubleBigDigit = u128;
 const BITS: u8 = 64;
