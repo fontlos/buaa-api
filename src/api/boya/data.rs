@@ -133,8 +133,6 @@ pub enum Campus {
     ShaHe,
     /// `全部校区`
     All,
-    /// `错误`
-    Other,
 }
 
 fn deserialize_campus<'de, D>(deserializer: D) -> Result<Campus, D::Error>
@@ -147,7 +145,7 @@ where
         "[2]" => Ok(Campus::ShaHe),
         // 那我问你, 你一共就俩校区, 你这 ALL 和 [1]|[2] 有**区别啊
         "ALL" | "[1]|[2]" => Ok(Campus::All),
-        _ => Ok(Campus::Other),
+        _ => Err(serde::de::Error::custom("Bad `courseCampus` value")),
     }
 }
 
