@@ -1,9 +1,14 @@
 #[tokio::test]
 async fn test_sso_login() {
     use buaa_api::Context;
+    use logforth::append;
+    use logforth::record::LevelFilter;
 
-    logforth::builder()
-        .dispatch(|d| d.append(logforth::append::Stderr::default()))
+    logforth::starter_log::builder()
+        .dispatch(|d| {
+            d.filter(LevelFilter::Info)
+                .append(append::Stdout::default())
+        })
         .apply();
 
     let context = Context::with_auth("./data");

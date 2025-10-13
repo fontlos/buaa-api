@@ -1,3 +1,5 @@
+use log::{error, trace};
+
 use crate::api::Sso;
 use crate::error::Error;
 use crate::utils;
@@ -17,6 +19,7 @@ impl super::SsoApi {
         let res = self.client.get(login_url).send().await?;
         // 重定向到这里说明 Cookie 有效, 但无法刷新
         if res.url().as_str() == verify_url {
+            trace!("SSO still valid");
             return Ok(());
         }
         let bytes = res.bytes().await?;
@@ -35,10 +38,13 @@ impl super::SsoApi {
             ("_eventId", "submit"),
         ];
         let res = self.client.post(login_url).form(&form).send().await?;
-        if res.status().as_u16() == 200 {
+        // 只有状态码是有效信息
+        let status = res.status().as_u16();
+        if status == 200 {
             cred.refresh::<Sso>();
             Ok(())
         } else {
+            error!("Response Code: {}", status);
             Err(Error::server("Login failed. Maybe wrong username or password").with_label("Sso"))
         }
     }

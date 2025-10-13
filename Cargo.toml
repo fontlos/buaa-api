@@ -17,7 +17,7 @@ serde_json = "1.0.145"
 time = "0.3.44"
 
 [dev-dependencies]
-logforth = "0.28.1"
+logforth = { version = "0.28.1", features = ["starter-log"] }
 tokio = { version = "1.47.1", features = ["macros"] }
 
 [features]
