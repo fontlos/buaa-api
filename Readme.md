@@ -25,8 +25,9 @@
   - [x] A universal request API for extensions
 - [x] BUAA Smart Classroom: `class`
   - [x] Login
-  - [x] Query class
-  - [x] Query class schedule
+  - [x] Query schedule by date
+  - [x] Query course
+  - [x] Query course schedule
   - [x] Checkin class
 - [ ] BUAA Cloud Disk: `cloud`
   - [x] Login
@@ -42,7 +43,7 @@
 - [ ] Spoc Platform: `spoc`
   - [x] Login
   - [x] Query teaching week
-  - [x] Query class schedule
+  - [x] Query weekly schedule
   - [x] A universal request API for extensions
 - [x] BUAA Undergraduate & Graduate Student Course Registration System: `srs`
   - [x] Login
