@@ -2,17 +2,41 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::utils::deserialize_datetime;
 
+/// Schedule of some day
+#[derive(Debug, Deserialize)]
+pub struct Schedule {
+    /// Schedule ID. Use to checkin
+    pub id: String,
+    /// Course ID. Use to query [CourseSchedule]
+    #[serde(rename = "courseId")]
+    pub course_id: String,
+    /// Course name
+    #[serde(rename = "courseName")]
+    pub name: String,
+    /// Teacher name
+    #[serde(rename = "teacherName")]
+    pub teacher: String,
+    /// Checkin time
+    #[serde(deserialize_with = "deserialize_datetime")]
+    #[serde(rename = "classBeginTime")]
+    pub time: time::PrimitiveDateTime,
+    /// Checkin status
+    #[serde(deserialize_with = "deserialize_status")]
+    #[serde(rename = "signStatus")]
+    pub status: u8,
+}
+
 /// Course info
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Course {
-    /// Course id. Only use to query [Schedule]
+    /// Course ID. Use to query [CourseSchedule]
     #[serde(rename = "course_id")]
     pub id: String,
+    // TODO: 应该停止解析这个不稳定 ID, 使用 `query_schedule` 更准确的获取今日课表
     // [学期号][课程代码][课程号]
     /// Unique ID. Use to filter classes
     #[serde(rename = "fz_id")]
     pub class_id: String,
-    // 因为学校 ** 的服务器可能会导致这个课程的所有小班都显示在你的列表上
     /// Course name. There may be courses with the same name.
     #[serde(rename = "course_name")]
     pub name: String,
@@ -23,7 +47,7 @@ pub struct Course {
 
 /// Course Schedule
 #[derive(Debug, Deserialize)]
-pub struct Schedule {
+pub struct CourseSchedule {
     /// Schedule ID, only use to checkin
     #[serde(rename = "courseSchedId")]
     pub id: String,

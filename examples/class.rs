@@ -4,7 +4,22 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_class() {
+    async fn test_class_checkin() {
+        let context = Context::with_auth("./data");
+
+        let class = context.class();
+
+        let res = class.query_schedule("20251014").await.unwrap();
+        println!("{:#?}", res);
+        let res = class.checkin(res[0].id).await.unwrap();
+        println!("{}", res);
+
+        context.save_auth("./data");
+    }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_class_course() {
         let context = Context::with_auth("./data");
 
         let class = context.class();
