@@ -49,9 +49,9 @@ pub struct Course {
     #[serde(flatten)]
     pub capacity: Capacity,
     /// Course campus
-    #[serde(deserialize_with = "deserialize_campus")]
-    #[serde(rename = "courseCampus")]
-    pub campus: Campus,
+    #[serde(deserialize_with = "deserialize_campuses")]
+    #[serde(rename = "courseCampusList")]
+    pub campuses: Vec<Campus>,
     /// Whether the course is selected
     pub selected: bool,
 }
@@ -131,22 +131,31 @@ pub enum Campus {
     XueYuanLu,
     /// `沙河`
     ShaHe,
+    /// 杭州校区
+    HangZhou,
+    /// `未知校区`
+    Unknown,
     /// `全部校区`
     All,
 }
 
-fn deserialize_campus<'de, D>(deserializer: D) -> Result<Campus, D::Error>
+fn deserialize_campuses<'de, D>(deserializer: D) -> Result<Vec<Campus>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value: &str = Deserialize::deserialize(deserializer)?;
-    match value {
-        "[1]" => Ok(Campus::XueYuanLu),
-        "[2]" => Ok(Campus::ShaHe),
-        // 那我问你, 你一共就俩校区, 你这 ALL 和 [1]|[2] 有**区别啊
-        "ALL" | "[1]|[2]" => Ok(Campus::All),
-        _ => Err(serde::de::Error::custom("Bad `courseCampus` value")),
+    let value: Vec<&str> = Deserialize::deserialize(deserializer)?;
+    let mut campuses = Vec::with_capacity(value.len());
+    // 最 ** 的设计, 你一共几个校区啊, 就非要三个都显示或只显示一个全部校区并存呗
+    for c in value {
+        match c {
+            "全部校区" => campuses.push(Campus::All),
+            "学院路校区" => campuses.push(Campus::XueYuanLu),
+            "沙河校区" => campuses.push(Campus::ShaHe),
+            "杭州校区" => campuses.push(Campus::HangZhou),
+            _ => campuses.push(Campus::Unknown),
+        }
     }
+    Ok(campuses)
 }
 
 // ====================
