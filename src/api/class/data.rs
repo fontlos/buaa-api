@@ -32,11 +32,6 @@ pub struct Course {
     /// Course ID. Use to query [CourseSchedule]
     #[serde(rename = "course_id")]
     pub id: String,
-    // TODO: 应该停止解析这个不稳定 ID, 使用 `query_schedule` 更准确的获取今日课表
-    // [学期号][课程代码][课程号]
-    /// Unique ID. Use to filter classes
-    #[serde(rename = "fz_id")]
-    pub class_id: String,
     /// Course name. There may be courses with the same name.
     #[serde(rename = "course_name")]
     pub name: String,
