@@ -47,10 +47,6 @@ pub struct Schedule {
     /// Teacher
     #[serde(rename = "jsxm")]
     pub teacher: String,
-    /// Help ClassApi to filter today's classes
-    #[serde(deserialize_with = "deserialize_class_id")]
-    #[serde(rename = "bjmc")]
-    pub class_id: String,
     /// Course name
     #[serde(rename = "kcmc")]
     pub name: String,
@@ -58,17 +54,6 @@ pub struct Schedule {
     #[serde(deserialize_with = "deserialize_time_range")]
     #[serde(rename = "kcsj")]
     pub time: TimeRange,
-}
-
-fn deserialize_class_id<'de, D>(deserializer: D) -> Result<String, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s: String = Deserialize::deserialize(deserializer)?;
-    let class_id = s.strip_prefix("教学班:").ok_or(serde::de::Error::custom(
-        "Unexpected value in SpocSchedule class_id",
-    ))?;
-    Ok(class_id.to_string())
 }
 
 fn deserialize_weekday<'de, D>(deserializer: D) -> Result<Weekday, D::Error>
