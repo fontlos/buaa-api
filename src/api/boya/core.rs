@@ -1,3 +1,4 @@
+use log::{error, trace};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
@@ -33,16 +34,15 @@ impl super::BoyaApi {
         let url = res.url().as_str();
         // 自动刷新机制保证了正常情况下不会发生这种情况
         if url == login_url {
-            Err(Error::server("Redirect failed").with_label("Boya"))
-        } else {
-            let token = utils::parse_by_tag(url.as_bytes(), "token=", "")
-                .ok_or_else(|| Error::server("Login failed. No token").with_label("Boya"))?;
-            self.cred.update(|s| {
-                s.update::<Boya>(token.to_string());
-            });
-
-            Ok(())
+            return Err(Error::server("Redirect failed").with_label("Boya"));
         }
+        let token = utils::parse_by_tag(url.as_bytes(), "token=", "")
+            .ok_or_else(|| Error::server("Login failed. No token").with_label("Boya"))?;
+        self.cred.update(|s| {
+            s.update::<Boya>(token.to_string());
+        });
+
+        Ok(())
     }
 
     /// # Universal Request for BoyaApi
@@ -112,24 +112,25 @@ impl super::BoyaApi {
         let ak = crypto::encode_base64(ak);
 
         // 查询参数序列化到字节数组
-        let query = serde_json::to_vec(query)?;
+        let date = serde_json::to_vec(query)?;
 
         // 请求头 Sk 参数, 由查询参数生成
-        let sk = crypto::sha1::Sha1::digest(&query);
+        let sk = crypto::sha1::Sha1::digest(&date);
         let sk = crypto::bytes2hex(&sk);
         let sk = rsa_cipher.encrypt(sk.as_bytes());
         let sk = crypto::encode_base64(sk);
 
         // 请求体负载, 由查询参数生成, 使用 AES 加密, Base64 编码
-        let body = aes_cipher.encrypt_ecb(&query);
+        let body = aes_cipher.encrypt_ecb(&date);
         let body = crypto::encode_base64(body);
 
         let time = utils::get_time_millis();
 
+        // 现在似乎传一遍 token 就可以了, 留哪个都行
         let res = self
             .client
             .post(url)
-            .header("Auth_token", token)
+            // .header("Auth_token", token)
             .header("Authtoken", token)
             .header("Ak", &ak)
             .header("Sk", &sk)
@@ -142,15 +143,14 @@ impl super::BoyaApi {
         let res = res.bytes().await?;
         let res = &res[1..res.len() - 1];
         let res = crypto::decode_base64(res);
-        let res = aes_cipher.decrypt_ecb(&res);
-        let res = serde_json::from_slice::<Res<T>>(&res)?;
+        let raw_res = aes_cipher.decrypt_ecb(&res);
+        let res = serde_json::from_slice::<Res<T>>(&raw_res)?;
 
         // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
         if res.status != "0" {
-            return Err(
-                Error::server(format!("Status: {}. Response: {}", res.status, res.errmsg))
-                    .with_label("Boya"),
-            );
+            error!("Status Code: {}. Error Message: {}", res.status, res.errmsg);
+            trace!("URL: {}, Query: {}", url, serde_json::to_string(&query)?);
+            return Err(Error::server("Operation failed").with_label("Boya"));
         }
 
         // 刷新 Token 时效
