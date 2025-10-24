@@ -1,3 +1,4 @@
+use log::{error, trace};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
@@ -84,11 +85,9 @@ impl super::SpocApi {
 
         // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if res.code != 200 {
-            return Err(Error::server(format!(
-                "Response: {}",
-                res.msg.unwrap_or("Unknown Error".into())
-            ))
-            .with_label("Spoc"));
+            error!("Status Code: {}. Error Message: {:?}", res.code, res.msg);
+            trace!("URL: {}, Query: {}", url, serde_json::to_string(&query)?);
+            return Err(Error::server("Operation failed").with_label("Spoc"));
         }
 
         Ok(res.content)
