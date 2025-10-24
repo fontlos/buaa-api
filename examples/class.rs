@@ -26,9 +26,9 @@ mod tests {
 
         let res = class.query_course("202520261").await.unwrap();
         println!("{:#?}", res);
-        let res = class.query_schedule(res[0].id).await.unwrap();
+        let res = class.query_course_schedule(&res[0].id).await.unwrap();
         println!("{:#?}", res);
-        let res = class.checkin(res.last().unwrap().id).await.unwrap();
+        let res = class.checkin(&res.last().unwrap().id).await.unwrap();
         println!("{}", res);
 
         context.save_auth("./data");
