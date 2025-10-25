@@ -35,8 +35,6 @@ impl super::CloudApi {
             self.api::<Sso>().login().await?;
         }
 
-        let mut is_ok = false;
-
         // TODO: 这有一个可能的 bug
         // 如果 302 到 `signin` 后可解析出登陆参数 login_challenge
         // 如果 302 到 `callback` 可以使用 refresh_token
@@ -70,37 +68,34 @@ impl super::CloudApi {
             let url =
                 "https://sso.buaa.edu.cn/login?service=https://bhpan.buaa.edu.cn/oauth2/signin";
             let res = self.client.get(url).send().await?;
-            // 来到回调地址证明登陆成功
-            if res.url().path() == "/anyshare/oauth2/login/callback" {
-                is_ok = true;
-            }
             // 移除临时 Cookie
             self.cookies.update(|store| {
                 store.remove("bhpan.buaa.edu.cn", "/", "login_challenge");
-            })
+            });
+            // 来到回调地址证明登陆成功
+            if res.url().path() != "/anyshare/oauth2/login/callback" {
+                return Err(Error::server("Login failed. Redirect failed").with_label("Cloud"));
+            }
         } else if path == "/anyshare/oauth2/login/callback" {
             let url = "https://bhpan.buaa.edu.cn/anyshare/oauth2/login/refreshToken";
             self.client.get(url).send().await?;
-            is_ok = true;
+        } else {
+            return Err(Error::server("Login failed. Unknown error").with_label("Cloud"));
         }
 
-        if is_ok {
-            // is_previous_login_3rd_party=true 和 oauth2.isSkip=true 两个 cookie 似乎没有用, 这里就不添加了
-            match self
-                .cookies
-                .load()
-                .get("bhpan.buaa.edu.cn", "/", "client.oauth2_token")
-            {
-                Some(t) => {
-                    self.cred.update(|s| {
-                        s.update::<Cloud>(t.value().to_string());
-                    });
-                    Ok(())
-                }
-                None => Err(Error::server("Login failed. No token").with_label("Cloud")),
+        // is_previous_login_3rd_party=true 和 oauth2.isSkip=true 两个 cookie 似乎没有用, 这里就不添加了
+        match self
+            .cookies
+            .load()
+            .get("bhpan.buaa.edu.cn", "/", "client.oauth2_token")
+        {
+            Some(t) => {
+                self.cred.update(|s| {
+                    s.update::<Cloud>(t.value().to_string());
+                });
+                Ok(())
             }
-        } else {
-            Err(Error::server("Login failed. Unknown error").with_label("Cloud"))
+            None => Err(Error::server("Login failed. No token").with_label("Cloud")),
         }
     }
 
