@@ -7,7 +7,7 @@ use crate::utils;
 use super::data::{Body, Dir, Item, Root, RootDir};
 
 impl super::CloudApi {
-    /// Get root directory by [CloudRoot]
+    /// Get root directory by [Root]
     pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
@@ -28,7 +28,7 @@ impl super::CloudApi {
         Ok(id)
     }
 
-    /// List the contents of a directory by its ID. Contain [CloudItem::id] and [CloudRootDir::id].
+    /// List the contents of a directory by its ID. Contain [Item::id] and [RootDir::id].
     pub async fn list_dir(&self, id: &str) -> crate::Result<Dir> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/list";
         let data = serde_json::json!({
@@ -123,11 +123,24 @@ impl super::CloudApi {
     }
 
     // 重复删掉文件也不会报错
-    /// Delete a file or directory by its ID. [CloudItem::id]
+    /// Delete a file or directory by its ID. [Item::id]
     pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
         let data = serde_json::json!({
             "docid": id,
+        });
+        let body = Body::Json(&data);
+        self.universal_request(Method::POST, url, &body).await?;
+        Ok(())
+    }
+
+    /// Rename a file or directory by its ID. [Item::id]
+    pub async fn rename_item(&self, id: &str, new: &str) -> crate::Result<()> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/rename";
+        let data = serde_json::json!({
+            "docid": id,
+            "name": new,
+            "ondup": 1
         });
         let body = Body::Json(&data);
         self.universal_request(Method::POST, url, &body).await?;
