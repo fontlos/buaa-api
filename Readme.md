@@ -37,8 +37,8 @@
   - [x] List dir
   - [x] Get single item download URL
   - [x] Get a zip of multiple items download URL
-  - [ ] Move item
-  - [ ] Rename item
+  - [x] Move item
+  - [x] Rename item
   - [ ] Upload item
 - [ ] Spoc Platform: `spoc`
   - [x] Login
