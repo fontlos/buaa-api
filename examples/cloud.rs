@@ -55,6 +55,21 @@ mod tests {
 
         context.save_auth("./data");
     }
+
+    #[tokio::test]
+    async fn test_move() {
+        let context = Context::with_auth("./data");
+
+        let cloud = context.cloud();
+        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let list = cloud.list_dir(&user_dir).await.unwrap();
+
+        let id = cloud.move_item(&list.dirs[0].id, &list.files[0].id).await.unwrap();
+
+        println!("Moved item id: {id}");
+
+        context.save_auth("./data");
+    }
 }
 
 fn main() {}

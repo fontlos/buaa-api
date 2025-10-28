@@ -146,4 +146,25 @@ impl super::CloudApi {
         self.universal_request(Method::POST, url, &body).await?;
         Ok(())
     }
+
+    /// Move a file or directory by its ID. [Item::id]
+    pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/move";
+        let data = serde_json::json!({
+            "destparent": dir,
+            "docid": id,
+            "ondup": 1
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        #[derive(serde::Deserialize)]
+        struct ItemID {
+            #[serde(rename = "docid")]
+            pub id: String,
+        }
+
+        let id = serde_json::from_slice::<ItemID>(&bytes)?;
+        Ok(id.id)
+    }
 }
