@@ -91,6 +91,11 @@ impl Display for Error {
         }
         if let Some(source) = &self.source {
             write!(f, "\n    Caused by: {}", source)?;
+            let mut cur = source.source();
+            while let Some(c) = cur {
+                write!(f, "\n        caused by: {}", c)?;
+                cur = c.source();
+            }
         }
         Ok(())
     }
