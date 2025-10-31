@@ -26,22 +26,14 @@ impl Context {
     /// ```rust
     /// use buaa::Context;
     ///
-    /// let mut context = Context::new();
+    /// let context = Context::new();
     /// // Set account
     /// context.set_account("username", "password");
     /// // Login to context
     /// context.login().await?;
     /// ```
     pub fn new() -> Context {
-        let cookies = Arc::new(AtomicCookieStore::default());
-        let client = client(cookies.clone());
-
-        Context {
-            client,
-            cookies,
-            cred: AtomicCell::new(CredentialStore::default()),
-            _marker: PhantomData,
-        }
+        ContextBuilder::new().build()
     }
 
     /// Initialize with authentication data (credentials and cookies) from specified directory.
@@ -60,14 +52,11 @@ impl Context {
         let cred_path = dir.as_ref().join("cred.json");
         let cred = CredentialStore::from_file(cred_path);
 
-        let client = client(cookies.clone());
-
-        Context {
-            client,
-            cookies,
-            cred: AtomicCell::new(cred),
-            _marker: PhantomData,
-        }
+        ContextBuilder::new()
+            .client(client(cookies.clone()))
+            .cookies(cookies)
+            .cred(cred)
+            .build()
     }
 
     /// # Context Login
@@ -217,5 +206,58 @@ impl<G> crate::Context<G> {
     /// You can use this to make custom requests
     pub fn client(&self) -> &Client {
         &self.client
+    }
+}
+
+/// Context builder
+pub struct ContextBuilder<G = Core> {
+    client: Option<Client>,
+    cookies: Option<Arc<AtomicCookieStore>>,
+    cred: Option<CredentialStore>,
+    _marker: PhantomData<G>,
+}
+
+impl ContextBuilder {
+    /// Create a new ContextBuilder
+    pub fn new() -> Self {
+        ContextBuilder {
+            client: None,
+            cookies: None,
+            cred: None,
+            _marker: PhantomData,
+        }
+    }
+    /// Set the HTTP client
+    pub fn client(mut self, client: Client) -> Self {
+        self.client = Some(client);
+        self
+    }
+    /// Set the cookie store
+    pub fn cookies(mut self, cookies: Arc<AtomicCookieStore>) -> Self {
+        self.cookies = Some(cookies);
+        self
+    }
+    /// Set the credential store
+    pub fn cred(mut self, cred: CredentialStore) -> Self {
+        self.cred = Some(cred);
+        self
+    }
+    /// Build the Context
+    pub fn build(self) -> Context {
+        let cookies = self
+            .cookies
+            .unwrap_or_else(|| Arc::new(AtomicCookieStore::default()));
+        let client = self.client.unwrap_or_else(|| client(cookies.clone()));
+        let cred = self
+            .cred
+            .map(AtomicCell::new)
+            .unwrap_or_else(|| AtomicCell::new(CredentialStore::default()));
+
+        Context {
+            client,
+            cookies,
+            cred,
+            _marker: PhantomData,
+        }
     }
 }
