@@ -23,5 +23,5 @@ mod request;
 pub mod store;
 mod utils;
 
-pub use context::Context;
+pub use context::{Context, ContextBuilder};
 pub use error::{Error, Result};
