@@ -4,9 +4,10 @@ use std::sync::Arc;
 
 pub use reqwest::Client;
 
+pub const UA: &[u8] = b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0";
+
 #[inline]
-pub fn client<C: reqwest::cookie::CookieStore + 'static>(cookies: Arc<C>) -> Client {
-    const UA: &[u8] = b"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0";
+pub fn client<C: reqwest::cookie::CookieStore + 'static>(cookies: Arc<C>, tls: bool) -> Client {
     let mut header = HeaderMap::new();
     header.insert(
         USER_AGENT,
@@ -14,6 +15,7 @@ pub fn client<C: reqwest::cookie::CookieStore + 'static>(cookies: Arc<C>) -> Cli
     );
 
     Client::builder()
+        .danger_accept_invalid_certs(tls)
         .default_headers(header)
         .cookie_provider(cookies)
         .build()

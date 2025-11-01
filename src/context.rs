@@ -53,7 +53,6 @@ impl Context {
         let cred = CredentialStore::from_file(cred_path);
 
         ContextBuilder::new()
-            .client(client(cookies.clone()))
             .cookies(cookies)
             .cred(cred)
             .build()
@@ -210,11 +209,11 @@ impl<G> crate::Context<G> {
 }
 
 /// Context builder
-pub struct ContextBuilder<G = Core> {
+pub struct ContextBuilder {
     client: Option<Client>,
+    tls: bool,
     cookies: Option<Arc<AtomicCookieStore>>,
     cred: Option<CredentialStore>,
-    _marker: PhantomData<G>,
 }
 
 impl ContextBuilder {
@@ -222,14 +221,25 @@ impl ContextBuilder {
     pub fn new() -> Self {
         ContextBuilder {
             client: None,
+            tls: true,
             cookies: None,
             cred: None,
-            _marker: PhantomData,
         }
     }
     /// Set the HTTP client
+    ///
+    /// Should enable cookies feature. And with UA below
+    ///
+    /// `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0`
     pub fn client(mut self, client: Client) -> Self {
         self.client = Some(client);
+        self
+    }
+    /// Set the TLS configuration
+    ///
+    /// Sometimes the SSL certificate may be invalid, you can disable the verification
+    pub fn tls(mut self, tls: bool) -> Self {
+        self.tls = tls;
         self
     }
     /// Set the cookie store
@@ -247,7 +257,7 @@ impl ContextBuilder {
         let cookies = self
             .cookies
             .unwrap_or_else(|| Arc::new(AtomicCookieStore::default()));
-        let client = self.client.unwrap_or_else(|| client(cookies.clone()));
+        let client = self.client.unwrap_or_else(|| client(cookies.clone(), self.tls));
         let cred = self
             .cred
             .map(AtomicCell::new)
