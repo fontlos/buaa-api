@@ -78,3 +78,28 @@ impl Item {
         self.size == -1
     }
 }
+
+/// Response for move operation
+#[derive(Debug, Deserialize)]
+pub struct MoveRes {
+    /// Moved item ID
+    #[serde(rename = "docid")]
+    pub id: String,
+}
+
+/// Response for create directory
+#[derive(Debug, Deserialize)]
+pub struct CreateRes {
+    /// Creation time (timestamp)
+    #[serde(rename = "create_time")]
+    pub create: u64,
+    /// Modification time (timestamp)
+    #[serde(rename = "modified")]
+    pub modify: u64,
+    /// Item ID
+    #[serde(rename = "docid")]
+    pub id: String,
+    /// Item hash
+    #[serde(rename = "rev")]
+    pub hash: String,
+}
