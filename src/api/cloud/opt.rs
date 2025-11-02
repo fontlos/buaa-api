@@ -1,10 +1,10 @@
 use reqwest::Method;
 use serde_json::Value;
 
-use crate::error::Error;
+use crate::{api::cloud::CreateRes, error::Error};
 use crate::utils;
 
-use super::data::{Body, Dir, Item, Root, RootDir};
+use super::data::{Body, Dir, Item, Root, RootDir, MoveRes};
 
 impl super::CloudApi {
     /// Get root directory by [Root]
@@ -148,7 +148,7 @@ impl super::CloudApi {
     }
 
     /// Move a file or directory by its ID. [Item::id]
-    pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<String> {
+    pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<MoveRes> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/move";
         let data = serde_json::json!({
             "destparent": dir,
@@ -158,13 +158,22 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
-        #[derive(serde::Deserialize)]
-        struct ItemID {
-            #[serde(rename = "docid")]
-            pub id: String,
-        }
+        let res = serde_json::from_slice::<MoveRes>(&bytes)?;
+        Ok(res)
+    }
 
-        let id = serde_json::from_slice::<ItemID>(&bytes)?;
-        Ok(id.id)
+    /// Create directory in given parent directory with name. [Item::id]
+    pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<CreateRes> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
+        let data = serde_json::json!({
+            "docid": dir,
+            "name": name,
+            "ondup": 1
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        let res = serde_json::from_slice::<CreateRes>(&bytes)?;
+        Ok(res)
     }
 }
