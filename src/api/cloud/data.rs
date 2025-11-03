@@ -81,7 +81,7 @@ impl Item {
 
 /// Response for move operation
 #[derive(Debug, Deserialize)]
-pub struct MoveRes {
+pub(crate) struct MoveRes {
     /// Moved item ID
     #[serde(rename = "docid")]
     pub id: String,

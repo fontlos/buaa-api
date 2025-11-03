@@ -148,7 +148,7 @@ impl super::CloudApi {
     }
 
     /// Move a file or directory by its ID. [Item::id]
-    pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<MoveRes> {
+    pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/move";
         let data = serde_json::json!({
             "destparent": dir,
@@ -159,7 +159,7 @@ impl super::CloudApi {
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
         let res = serde_json::from_slice::<MoveRes>(&bytes)?;
-        Ok(res)
+        Ok(res.id)
     }
 
     /// Create directory in given parent directory with name. [Item::id]
@@ -174,6 +174,24 @@ impl super::CloudApi {
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
         let res = serde_json::from_slice::<CreateRes>(&bytes)?;
+        Ok(res)
+    }
+
+    /// Get a suggested name for a new directory in given parent directory. [Item::id]
+    ///
+    /// Usually for [super::CloudApi::create_dir]
+    pub async fn get_suggest_name(&self, dir: &str) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
+        let data = serde_json::json!({
+            "docid": dir,
+            "name": "新建文件夹",
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        let res = utils::parse_by_tag(&bytes, ":\"", "\"")
+            .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?
+            .to_string();
         Ok(res)
     }
 }
