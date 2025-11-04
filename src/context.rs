@@ -52,10 +52,7 @@ impl Context {
         let cred_path = dir.as_ref().join("cred.json");
         let cred = CredentialStore::from_file(cred_path);
 
-        ContextBuilder::new()
-            .cookies(cookies)
-            .cred(cred)
-            .build()
+        ContextBuilder::new().cookies(cookies).cred(cred).build()
     }
 
     /// # Context Login
@@ -257,7 +254,9 @@ impl ContextBuilder {
         let cookies = self
             .cookies
             .unwrap_or_else(|| Arc::new(AtomicCookieStore::default()));
-        let client = self.client.unwrap_or_else(|| client(cookies.clone(), self.tls));
+        let client = self
+            .client
+            .unwrap_or_else(|| client(cookies.clone(), self.tls));
         let cred = self
             .cred
             .map(AtomicCell::new)

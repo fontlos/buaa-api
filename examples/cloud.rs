@@ -11,6 +11,8 @@ mod tests {
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
         println!("List: {list:#?}");
+        let size = cloud.get_item_size(&user_dir).await.unwrap();
+        println!("Size: {size:#?}");
 
         context.save_auth("./data");
     }
@@ -63,8 +65,10 @@ mod tests {
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
+        let dir = &list.dirs[0];
+        let file = &list.files[0];
 
-        let res = cloud.move_item(&list.dirs[0].id, &list.files[0].id).await.unwrap();
+        let res = cloud.move_item(&dir.id, &file.id).await.unwrap();
 
         println!("Moved item id: {}", res);
 

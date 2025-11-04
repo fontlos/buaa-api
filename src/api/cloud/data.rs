@@ -103,3 +103,17 @@ pub struct CreateRes {
     #[serde(rename = "rev")]
     pub hash: String,
 }
+
+/// Response for item size
+#[derive(Debug, Deserialize)]
+pub struct SizeRes {
+    /// Number of directories
+    #[serde(rename = "dirnum")]
+    pub dir: i64,
+    /// Number of files
+    #[serde(rename = "filenum")]
+    pub file: i64,
+    /// Item size (in bytes)
+    #[serde(rename = "totalsize")]
+    pub size: i64,
+}
