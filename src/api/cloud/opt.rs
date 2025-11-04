@@ -1,10 +1,10 @@
 use reqwest::Method;
 use serde_json::Value;
 
-use crate::{api::cloud::CreateRes, error::Error};
+use crate::error::Error;
 use crate::utils;
 
-use super::data::{Body, Dir, Item, Root, RootDir, MoveRes};
+use super::data::{Body, CreateRes, Dir, Item, MoveRes, Root, RootDir, SizeRes};
 
 impl super::CloudApi {
     /// Get root directory by [Root]
@@ -192,6 +192,20 @@ impl super::CloudApi {
         let res = utils::parse_by_tag(&bytes, ":\"", "\"")
             .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?
             .to_string();
+        Ok(res)
+    }
+
+    /// Get the size of a file or directory by its ID. [Item::id]
+    pub async fn get_item_size(&self, id: &str) -> crate::Result<SizeRes> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/size";
+        let data = serde_json::json!({
+            "docid": id,
+            "onlyrecycle": false
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        let res = serde_json::from_slice::<SizeRes>(&bytes)?;
         Ok(res)
     }
 }
