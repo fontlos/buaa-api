@@ -141,7 +141,7 @@ impl BigUint {
     }
 
     // 左移位运算
-    pub fn shl(&self, bits: u64) -> Self {
+    fn shl(&self, bits: u64) -> Self {
         if self.data.is_empty() {
             return BigUint::ZERO;
         }
@@ -487,7 +487,7 @@ mod rem {
                     break;
                 }
 
-                // 乘法和减法 - 修复溢出问题
+                // 乘法和减法
                 let mut borrow: u64 = 0;
                 for i in 0..n {
                     let product = (q_hat as u128) * (divisor.data[i] as u128);
@@ -513,7 +513,7 @@ mod rem {
                     borrow = if borrow1 { 1 } else { 0 };
                 }
 
-                // 如果减法导致借位，调整商
+                // 如果减法导致借位, 调整商
                 if borrow > 0 {
                     // 加回除数
                     let mut carry: u64 = 0;

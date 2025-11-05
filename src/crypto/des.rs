@@ -2,6 +2,7 @@
 //! and the performance gap is negligible for the small amount of data we pass on
 
 // 唯一的用处就是在 ClassApi 加密一段 URL, 干脆自己实现一个算了
+/// Des instance
 pub struct Des {
     subkeys: [u64; 16],
 }

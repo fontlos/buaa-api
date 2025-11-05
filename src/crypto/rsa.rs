@@ -5,13 +5,14 @@ use rand::Rng;
 
 use super::biguint::BigUint;
 
-// RSA 公钥结构体
+/// RSA PKCS#1 v1.5 instance
 pub struct RsaPkcs1v15 {
     n: BigUint, // 模数
     e: BigUint, // 指数
 }
 
 impl RsaPkcs1v15 {
+    /// Create RsaPkcs1v15 from PEM formatted public key
     pub fn from_pem(pem: &str) -> Self {
         // 提取 Base64 部分
         let base64_str = pem
@@ -118,6 +119,7 @@ impl RsaPkcs1v15 {
         padded
     }
 
+    /// Encrypt data using RSA with PKCS#1 v1.5 padding
     pub fn encrypt(&self, data: &[u8]) -> Vec<u8> {
         // RSA 加密: ciphertext = plaintext^e mod n
 

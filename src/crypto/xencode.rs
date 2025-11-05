@@ -1,3 +1,5 @@
+//! XEncode implementation for WIFI API
+
 use base64::alphabet::Alphabet;
 use base64::engine::{Engine, GeneralPurpose, GeneralPurposeConfig};
 

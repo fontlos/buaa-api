@@ -1,3 +1,5 @@
+//! Self-implemented cryptographic algorithms and utilities
+
 pub mod aes;
 pub mod biguint;
 pub mod des;
@@ -10,7 +12,7 @@ mod test;
 
 use base64::engine::{Engine, general_purpose};
 
-/// Converts an array of bytes to a hexadecimal string
+/// Converts bytes to a hexadecimal string
 pub fn bytes2hex(bytes: &[u8]) -> String {
     const HEX_LOWER: &[u8; 16] = b"0123456789abcdef";
 
@@ -24,6 +26,7 @@ pub fn bytes2hex(bytes: &[u8]) -> String {
     unsafe { String::from_utf8_unchecked(hex_bytes) }
 }
 
+/// Encodes bytes to a Base64 string
 pub fn encode_base64<T>(bytes: T) -> String
 where
     T: AsRef<[u8]>,
@@ -31,6 +34,7 @@ where
     general_purpose::STANDARD.encode(bytes)
 }
 
+/// Decodes a Base64 string to bytes
 pub fn decode_base64<T>(s: T) -> Vec<u8>
 where
     T: AsRef<[u8]>,
