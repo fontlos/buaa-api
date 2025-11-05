@@ -1,6 +1,7 @@
 //! Self-implemented SHA1, use to make dependencies minimize,
 //! and the performance gap is negligible for the small amount of data we pass on
 
+/// Sha1 instance
 pub struct Sha1 {
     state: [u32; 5],
     count: [u64; 2],

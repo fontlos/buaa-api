@@ -1,6 +1,7 @@
 //! Self-implemented MD5, use to make dependencies minimize,
 //! and the performance gap is negligible for the small amount of data we pass on
 
+/// Md5 instance
 pub struct Md5 {
     state: [u32; 4],
     count: [u64; 2],
@@ -150,6 +151,7 @@ impl Md5 {
     }
 }
 
+/// HmacMd5 instance
 pub struct HmacMd5 {
     key_block: [u8; 64],
 }
@@ -159,11 +161,9 @@ impl HmacMd5 {
     pub fn new(key: &[u8]) -> Self {
         let mut key_block = [0u8; 64];
 
-        // 如果密钥比块大小长，先哈希它，然后补零到块大小
+        // 如果密钥比块大小长, 先哈希它, 然后补零到块大小
         if key.len() > 64 {
-            let mut hash = Md5::new();
-            hash.update(key);
-            let hash = hash.finalize();
+            let hash = Md5::digest(key);
             key_block[..16].copy_from_slice(&hash);
         } else {
             key_block[..key.len()].copy_from_slice(key);
