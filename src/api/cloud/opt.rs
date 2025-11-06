@@ -208,4 +208,20 @@ impl super::CloudApi {
         let res = serde_json::from_slice::<SizeRes>(&bytes)?;
         Ok(res)
     }
+
+    /// Check hash before upload
+    pub async fn check_hash(&self, md5: &str, length: u64) -> crate::Result<bool> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/predupload";
+        let data = serde_json::json!({
+            "slice_md5": md5,
+            "length": length
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        let res = utils::parse_by_tag(&bytes, ":\"", "\"")
+            .map(|b| b == "true")
+            .ok_or_else(|| Error::server("Can not check hash").with_label("Cloud"))?;
+        Ok(res)
+    }
 }
