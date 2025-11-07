@@ -29,5 +29,6 @@ pub use error::{Error, Result};
 pub mod exports {
     //! Some useful internal items are re-exported here for external use.
     pub use crate::context::ContextBuilder;
+    pub use crate::crypto::crc::Crc32;
     pub use crate::crypto::md5::Md5;
 }
