@@ -2,6 +2,7 @@
 
 pub mod aes;
 pub mod biguint;
+pub mod crc;
 pub mod des;
 pub mod md5;
 pub mod rsa;

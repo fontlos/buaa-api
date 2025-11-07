@@ -23,6 +23,14 @@ mod tests {
     }
 
     #[test]
+    fn test_crc() {
+        let data = std::fs::read("License").expect("Read License");
+        let crc32 = crc::Crc32::digest(&data);
+        let hex = format!("{:08x}", crc32);
+        assert_eq!(&hex, "6d3f72ad");
+    }
+
+    #[test]
     fn test_des() {
         let cipher = des::Des::new(b"Jyd#351*");
         let encrypted = cipher.encrypt_ecb(b"HelloWorld");
