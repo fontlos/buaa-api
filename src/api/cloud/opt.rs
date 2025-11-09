@@ -1,10 +1,11 @@
+use log::error;
 use reqwest::Method;
 use serde_json::Value;
 
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{Body, CreateRes, Dir, Item, MoveRes, Root, RootDir, SizeRes};
+use super::data::{Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, SizeRes};
 
 impl super::CloudApi {
     /// Get root directory by [Root]
@@ -219,9 +220,21 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
-        let res = utils::parse_by_tag(&bytes, ":\"", "\"")
-            .map(|b| b == "true")
-            .ok_or_else(|| Error::server("Can not check hash").with_label("Cloud"))?;
-        Ok(res)
+        #[derive(serde::Deserialize)]
+        struct _Res {
+            #[serde(rename = "match")]
+            status: bool,
+        }
+
+        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
+
+        res.res.map(|r| r.status).ok_or_else(|| {
+            error!(
+                "Server err: {}, msg: {}",
+                res.cause.unwrap_or_default(),
+                res.message.unwrap_or_default()
+            );
+            Error::server("Can not check hash").with_label("Cloud")
+        })
     }
 }

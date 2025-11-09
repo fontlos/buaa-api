@@ -1,5 +1,13 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Deserialize)]
+pub(super) struct Res<T> {
+    #[serde(flatten)]
+    pub res: Option<T>,
+    pub cause: Option<String>,
+    pub message: Option<String>,
+}
+
 pub(super) enum Body<'a, Q: Serialize + ?Sized> {
     Query(&'a Q),
     Json(&'a Q),
