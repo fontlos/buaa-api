@@ -86,6 +86,29 @@ mod tests {
 
         context.save_auth("./data");
     }
+
+    #[tokio::test]
+    async fn test_fast_upload() {
+        use buaa_api::crypto;
+        let file = std::fs::read("./data/c.bat").unwrap();
+        let length = file.len() as u64;
+        let md5 = crypto::bytes2hex(&crypto::md5::Md5::digest(&file));
+        let crc32 = format!("{:08x}", crypto::crc::Crc32::digest(&file));
+
+        let context = Context::with_auth("./data");
+
+        let cloud = context.cloud();
+        let user_dir = cloud.get_user_dir_id().await.unwrap();
+
+        let res = cloud.check_hash(&md5, length).await.unwrap();
+        println!("Hash exists: {}", res);
+        if res {
+            let res = cloud.fast_upload(&user_dir, "c.bat", length, &md5, &crc32).await.unwrap();
+            println!("Fast upload success: {}", res);
+        }
+
+        context.save_auth("./data");
+    }
 }
 
 fn main() {}

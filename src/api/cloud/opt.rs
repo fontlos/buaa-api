@@ -237,4 +237,45 @@ impl super::CloudApi {
             Error::server("Can not check hash").with_label("Cloud")
         })
     }
+
+    /// Fast upload file if hash exists
+    pub async fn fast_upload(
+        &self,
+        dir: &str,
+        name: &str,
+        length: u64,
+        md5: &str,
+        crc32: &str,
+    ) -> crate::Result<bool> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/dupload";
+        let data = serde_json::json!({
+            "client_mtime": utils::get_time_millis(),
+            "crc32": crc32,
+            "csflevel": 0,
+            "docid": dir,
+            "length": length,
+            "md5": md5,
+            "name": name,
+            "ondup": 1
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        #[derive(serde::Deserialize)]
+        struct _Res {
+            #[serde(rename = "success")]
+            status: bool,
+        }
+
+        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
+
+        res.res.map(|r| r.status).ok_or_else(|| {
+            let source = format!(
+                "Server err: {}, msg: {}",
+                res.cause.unwrap_or_default(),
+                res.message.unwrap_or_default()
+            );
+            Error::server("Can not upload").with_label("Cloud").with_source(source)
+        })
+    }
 }
