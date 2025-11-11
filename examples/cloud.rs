@@ -103,7 +103,10 @@ mod tests {
         let res = cloud.check_hash(&md5, length).await.unwrap();
         println!("Hash exists: {}", res);
         if res {
-            let res = cloud.fast_upload(&user_dir, "c.bat", length, &md5, &crc32).await.unwrap();
+            let res = cloud
+                .fast_upload(&user_dir, "c.bat", length, &md5, &crc32)
+                .await
+                .unwrap();
             println!("Fast upload success: {}", res);
         }
 

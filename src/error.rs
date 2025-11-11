@@ -7,7 +7,7 @@ use std::fmt::Display;
 /// A `Result` alias where the `Err` case is `buaa_api::Error`.
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub(crate) type BoxError = Box<dyn StdError + Send + Sync>;
+type BoxError = Box<dyn StdError + Send + Sync>;
 
 /// The Error type for `buaa-api`
 #[derive(Debug)]

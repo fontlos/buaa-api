@@ -1,4 +1,4 @@
-use log::{error, trace};
+use log::trace;
 
 use crate::api::Sso;
 use crate::error::Error;
@@ -44,8 +44,12 @@ impl super::SsoApi {
             cred.refresh::<Sso>();
             Ok(())
         } else {
-            error!("Response Code: {}", status);
-            Err(Error::server("Login failed. Maybe wrong username or password").with_label("Sso"))
+            let source = format!("Response Code: {}", status);
+            Err(
+                Error::server("Login failed. Maybe wrong username or password")
+                    .with_label("Sso")
+                    .with_source(source),
+            )
         }
     }
 }
