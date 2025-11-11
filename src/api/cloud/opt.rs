@@ -1,4 +1,3 @@
-use log::error;
 use reqwest::Method;
 use serde_json::Value;
 
@@ -229,12 +228,14 @@ impl super::CloudApi {
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
 
         res.res.map(|r| r.status).ok_or_else(|| {
-            error!(
+            let source = format!(
                 "Server err: {}, msg: {}",
                 res.cause.unwrap_or_default(),
                 res.message.unwrap_or_default()
             );
-            Error::server("Can not check hash").with_label("Cloud")
+            Error::server("Can not check hash")
+                .with_label("Cloud")
+                .with_source(source)
         })
     }
 
@@ -275,7 +276,9 @@ impl super::CloudApi {
                 res.cause.unwrap_or_default(),
                 res.message.unwrap_or_default()
             );
-            Error::server("Can not upload").with_label("Cloud").with_source(source)
+            Error::server("Can not upload")
+                .with_label("Cloud")
+                .with_source(source)
         })
     }
 }

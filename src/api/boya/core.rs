@@ -1,4 +1,4 @@
-use log::{error, trace};
+use log::trace;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
@@ -148,9 +148,11 @@ impl super::BoyaApi {
 
         // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
         if res.status != "0" {
-            error!("Status Code: {}. Error Message: {}", res.status, res.errmsg);
             trace!("URL: {}, Query: {}", url, serde_json::to_string(&query)?);
-            return Err(Error::server("Operation failed").with_label("Boya"));
+            let source = format!("Status Code: {}. Error Message: {}", res.status, res.errmsg);
+            return Err(Error::server("Operation failed")
+                .with_label("Boya")
+                .with_source(source));
         }
 
         // 刷新 Token 时效

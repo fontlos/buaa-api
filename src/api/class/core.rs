@@ -1,4 +1,4 @@
-use log::{error, trace};
+use log::trace;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
@@ -98,9 +98,11 @@ impl super::ClassApi {
         let res = serde_json::from_slice::<Res<T>>(&res)?;
 
         if res.status != "0" {
-            error!("Status Code: {}. Error Message: {:?}", res.status, res.msg);
             trace!("URL: {}, Query: {}", url, serde_json::to_string(&query)?);
-            return Err(Error::server("Operation failed").with_label("Class"));
+            let source = format!("Status Code: {}. Error Message: {:?}", res.status, res.msg);
+            return Err(Error::server("Operation failed")
+                .with_label("Class")
+                .with_source(source));
         }
 
         match res.result {
