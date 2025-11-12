@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Res<T> {
@@ -124,4 +124,60 @@ pub struct SizeRes {
     /// Item size (in bytes)
     #[serde(rename = "totalsize")]
     pub size: i64,
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct _UploadAuthRes {
+    #[serde(deserialize_with = "deserialize_upload_args")]
+    #[serde(rename = "authrequest")]
+    pub auth: UploadAuth,
+    // docid, name, rev 没有多少解析的必要
+}
+
+/// Upload request authorization
+#[derive(Debug, Deserialize)]
+pub struct UploadAuth {
+    /// URL
+    pub url: String,
+    /// Policy
+    pub policy: String,
+    /// Signature
+    pub signature: String,
+    /// Key
+    pub key: String,
+}
+
+fn deserialize_upload_args<'de, D>(deserializer: D) -> Result<UploadAuth, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: Vec<String> = Deserialize::deserialize(deserializer)?;
+    if value.len() != 7 {
+        return Err(serde::de::Error::custom("Invalid upload args format"));
+    }
+    let url = value
+        .get(1)
+        .ok_or_else(|| serde::de::Error::custom("missing field `url`"))?
+        .to_string();
+    let policy = value
+        .get(4)
+        .and_then(|s| s.split_once(": ").map(|(_, v)| v))
+        .ok_or_else(|| serde::de::Error::custom("missing field `policy`"))?
+        .to_string();
+    let signature = value
+        .get(5)
+        .and_then(|s| s.split_once(": ").map(|(_, v)| v))
+        .ok_or_else(|| serde::de::Error::custom("missing field `signature`"))?
+        .to_string();
+    let key = value
+        .get(6)
+        .and_then(|s| s.split_once(": ").map(|(_, v)| v))
+        .ok_or_else(|| serde::de::Error::custom("missing field `key`"))?
+        .to_string();
+    Ok(UploadAuth {
+        url,
+        policy,
+        signature,
+        key,
+    })
 }
