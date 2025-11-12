@@ -4,7 +4,9 @@ use serde_json::Value;
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, SizeRes};
+use super::data::{
+    _UploadAuthRes, Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, SizeRes, UploadAuth,
+};
 
 impl super::CloudApi {
     /// Get root directory by [Root]
@@ -271,6 +273,40 @@ impl super::CloudApi {
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
 
         res.res.map(|r| r.status).ok_or_else(|| {
+            let source = format!(
+                "Server err: {}, msg: {}",
+                res.cause.unwrap_or_default(),
+                res.message.unwrap_or_default()
+            );
+            Error::server("Can not upload")
+                .with_label("Cloud")
+                .with_source(source)
+        })
+    }
+
+    /// Get upload authorization
+    pub async fn upload_auth(
+        &self,
+        dir: &str,
+        name: &str,
+        length: u64,
+    ) -> crate::Result<UploadAuth> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osbeginupload";
+        let data = serde_json::json!({
+            "client_mtime": utils::get_time_millis(),
+            "docid": dir,
+            "length": length,
+            "name": name,
+            "ondup": 1,
+            "reqmethod": "POST",
+            "usehttps": true,
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        let res = serde_json::from_slice::<Res<_UploadAuthRes>>(&bytes)?;
+
+        res.res.map(|r| r.auth).ok_or_else(|| {
             let source = format!(
                 "Server err: {}, msg: {}",
                 res.cause.unwrap_or_default(),

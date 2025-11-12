@@ -112,6 +112,18 @@ mod tests {
 
         context.save_auth("./data");
     }
+
+    #[tokio::test]
+    async fn test_upload() {
+        let context = Context::with_auth("./data");
+
+        let cloud = context.cloud();
+        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let res = cloud.upload_auth(&user_dir, "test.txt", 20).await.unwrap();
+        println!("Upload auth: {:#?}", res);
+
+        context.save_auth("./data");
+    }
 }
 
 fn main() {}
