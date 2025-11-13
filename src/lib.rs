@@ -29,4 +29,6 @@ pub use error::{Error, Result};
 pub mod exports {
     //! Some useful internal items are re-exported here for external use.
     pub use crate::context::ContextBuilder;
+    #[cfg(feature = "multipart")]
+    pub use reqwest::multipart::Part;
 }

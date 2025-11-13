@@ -39,7 +39,11 @@
   - [x] Get a zip of multiple items download URL
   - [x] Move item
   - [x] Rename item
-  - [ ] Upload item
+  - [x] Upload item
+    - [x] Check hash
+    - [x] Fast upload
+    - [x] Get upload authorization
+    - [x] Upload (Need `multipart` feature)
 - [ ] Spoc Platform: `spoc`
   - [x] Login
   - [x] Query teaching week
@@ -151,3 +155,5 @@ async fn main() {
     wifi.logout().await.unwrap();
 }
 ```
+
+More usage see `examples`

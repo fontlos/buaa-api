@@ -115,12 +115,27 @@ mod tests {
 
     #[tokio::test]
     async fn test_upload() {
+        let file = std::fs::read("./data/c.bat").unwrap();
+        let length = file.len() as u64;
+
         let context = Context::with_auth("./data");
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
-        let res = cloud.upload_auth(&user_dir, "test.txt", 20).await.unwrap();
-        println!("Upload auth: {:#?}", res);
+
+        let filename = "c.bat";
+        let res = cloud
+            .upload_auth(&user_dir, filename, length)
+            .await
+            .unwrap();
+
+        println!("Upload Args: {:?}", &res);
+
+        #[cfg(feature = "multipart")]
+        {
+            let part = buaa_api::exports::Part::bytes(file);
+            cloud.upload(res, part).await.unwrap();
+        }
 
         context.save_auth("./data");
     }

@@ -1,12 +1,12 @@
 use reqwest::Method;
+#[cfg(feature = "multipart")]
+use reqwest::multipart::{Form, Part};
 use serde_json::Value;
 
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{
-    _UploadAuthRes, Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, SizeRes, UploadAuth,
-};
+use super::data::{Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, SizeRes, UploadArgs};
 
 impl super::CloudApi {
     /// Get root directory by [Root]
@@ -285,12 +285,14 @@ impl super::CloudApi {
     }
 
     /// Get upload authorization
+    ///
+    /// **Note**: You need [super::CloudApi::upload()] for final upload which need enable `multipart` feature.
     pub async fn upload_auth(
         &self,
         dir: &str,
         name: &str,
         length: u64,
-    ) -> crate::Result<UploadAuth> {
+    ) -> crate::Result<UploadArgs> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osbeginupload";
         let data = serde_json::json!({
             "client_mtime": utils::get_time_millis(),
@@ -304,9 +306,9 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
-        let res = serde_json::from_slice::<Res<_UploadAuthRes>>(&bytes)?;
+        let res = serde_json::from_slice::<Res<UploadArgs>>(&bytes)?;
 
-        res.res.map(|r| r.auth).ok_or_else(|| {
+        res.res.map(|r| r).ok_or_else(|| {
             let source = format!(
                 "Server err: {}, msg: {}",
                 res.cause.unwrap_or_default(),
@@ -316,5 +318,53 @@ impl super::CloudApi {
                 .with_label("Cloud")
                 .with_source(source)
         })
+    }
+
+    /// Upload file with given [UploadArgs] and file part
+    ///
+    /// **Note**: MIME of `part` is allready set internally.
+    #[cfg(feature = "multipart")]
+    pub async fn upload(&self, args: UploadArgs, part: Part) -> crate::Result<()> {
+        let auth = args.auth;
+        let form = Form::new()
+            .text("AWSAccessKeyId", "bhtenant")
+            // 似乎只在 part 中设置即可
+            // .text("Content-Type", "application/octet-stream")
+            .text("Policy", auth.policy)
+            .text("Signature", auth.signature)
+            .text("key", auth.key)
+            .part("file", part.mime_str("application/octet-stream").unwrap());
+        let res = self.client.post(auth.url).multipart(form).send().await?;
+
+        let status = res.status().as_u16();
+        if status != 204 {
+            return Err(Error::server("Upload failed")
+                .with_label("Cloud")
+                .with_source(format!("HTTP status: {}", status)));
+        }
+
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osendupload";
+        let data = serde_json::json!({
+            "csflevel": 0,
+            "docid": args.id,
+            "rev": args.hash,
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        // editor, modified 字段没有任何用, 暂时不解析
+        let res = serde_json::from_slice::<Res<()>>(&bytes)?;
+
+        if res.cause.is_some() {
+            let source = format!(
+                "Server err: {}, msg: {}",
+                res.cause.unwrap_or_default(),
+                res.message.unwrap_or_default()
+            );
+            return Err(Error::server("Can not finalize upload")
+                .with_label("Cloud")
+                .with_source(source));
+        }
+        Ok(())
     }
 }

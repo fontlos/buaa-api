@@ -126,12 +126,20 @@ pub struct SizeRes {
     pub size: i64,
 }
 
+/// Args for real upload
 #[derive(Debug, Deserialize)]
-pub(crate) struct _UploadAuthRes {
+pub struct UploadArgs {
+    /// Upload request authorization
     #[serde(deserialize_with = "deserialize_upload_args")]
     #[serde(rename = "authrequest")]
     pub auth: UploadAuth,
-    // docid, name, rev 没有多少解析的必要
+    /// Uploaded item ID
+    #[serde(rename = "docid")]
+    pub id: String,
+    /// Uploaded item hash
+    #[serde(rename = "rev")]
+    pub hash: String,
+    // name没有解析的必要
 }
 
 /// Upload request authorization
