@@ -85,6 +85,143 @@ impl Item {
     pub fn is_dir(&self) -> bool {
         self.size == -1
     }
+
+    /// For `share_item` method
+    pub fn to_share(&self) -> Share {
+        let kind = if self.is_dir() { "folder" } else { "file" };
+        Share {
+            item: ShareItem {
+                id: self.id.clone(),
+                kind,
+                permission: Permission::new(),
+            },
+            title: self.name.clone(),
+            expires_at: "1970-01-01T08:00:00+08:00".to_string(),
+            password: "".to_string(),
+            limited_times: -1,
+        }
+
+    }
+}
+
+/// Share Item
+#[derive(Debug, Serialize)]
+pub struct Share {
+    item: ShareItem,
+    title: String,
+    expires_at: String,
+    password: String,
+    limited_times: i64,
+}
+
+impl Share {
+    /// Set share link title
+    pub fn title(mut self, title: &str) -> Self {
+        self.title = title.to_string();
+        self
+    }
+
+    /// Set share link password. Four characters.
+    pub fn password(mut self, password: &str) -> Self {
+        self.password = password.to_string();
+        self
+    }
+
+    /// Set share link expiration time
+    ///
+    /// Format: "YYYY-MM-DDTHH:MM:SS+08:00"
+    pub fn expires(mut self, expires: &str) -> Self {
+        self.expires_at = expires.to_string();
+        self
+    }
+
+    /// Set share link limited times
+    pub fn limited_times(mut self, times: i64) -> Self {
+        self.limited_times = times;
+        self
+    }
+
+    /// Enable preview permission
+    pub fn enable_preview(mut self) -> Self {
+        self.item.permission.0 |= Permission::PREVIEW;
+        self
+    }
+
+    /// Enable download permission
+    pub fn enable_download(mut self) -> Self {
+        self.item.permission.0 |= Permission::DOWNLOAD;
+        self
+    }
+
+    /// Enable upload permission (create + modify)
+    pub fn enable_upload(mut self) -> Self {
+        self.item.permission.0 |= Permission::CREATE | Permission::MODIFY;
+        self
+    }
+
+    /// Enable modify permission
+    pub fn enable_modify(mut self) -> Self {
+        self.item.permission.0 |= Permission::MODIFY;
+        self
+    }
+
+    /// Enable create permission
+    pub fn enable_create(mut self) -> Self {
+        self.item.permission.0 |= Permission::CREATE;
+        self
+    }
+}
+
+#[derive(Debug, Serialize)]
+struct ShareItem {
+    id: String,
+    #[serde(rename = "type")]
+    kind: &'static str,
+    #[serde(rename = "allow")]
+    permission: Permission,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Permission(u8);
+
+impl Permission {
+    const CREATE: u8 = 0b00001;
+    const MODIFY: u8 = 0b00010;
+    const DOWNLOAD: u8 = 0b00100;
+    const PREVIEW: u8 = 0b01000;
+    const DISPLAY: u8 = 0b10000;
+
+    pub const fn new() -> Self {
+        Self(Self::DISPLAY)
+    }
+
+    fn contains(&self, perm: u8) -> bool {
+        (self.0 & perm) != 0
+    }
+}
+
+impl Serialize for Permission {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeSeq;
+        // 预计算数量
+        let mut cnt = 0usize;
+        if self.contains(Self::DISPLAY) { cnt += 1; }
+        if self.contains(Self::DOWNLOAD) { cnt += 1; }
+        if self.contains(Self::PREVIEW)  { cnt += 1; }
+        if self.contains(Self::CREATE)   { cnt += 1; }
+        if self.contains(Self::MODIFY)   { cnt += 1; }
+
+        let mut seq = serializer.serialize_seq(Some(cnt))?;
+        if self.contains(Self::CREATE)   { seq.serialize_element("create")?; }
+        if self.contains(Self::MODIFY)   { seq.serialize_element("modify")?; }
+        if self.contains(Self::DOWNLOAD) { seq.serialize_element("download")?; }
+        if self.contains(Self::PREVIEW)  { seq.serialize_element("preview")?; }
+        if self.contains(Self::DISPLAY) { seq.serialize_element("display")?; }
+        seq.end()
+    }
 }
 
 /// Response for move operation

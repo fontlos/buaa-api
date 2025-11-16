@@ -139,6 +139,21 @@ mod tests {
 
         context.save_auth("./data");
     }
+
+    #[tokio::test]
+    async fn test_share() {
+        let context = Context::with_auth("./data");
+
+        let cloud = context.cloud();
+        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let list = cloud.list_dir(&user_dir).await.unwrap();
+
+        let share = list.dirs[0].to_share().enable_preview().enable_download();
+        let share_id = cloud.share_item(&share).await.unwrap();
+        println!("Share Link: {}", share_id);
+
+        context.save_auth("./data");
+    }
 }
 
 fn main() {}
