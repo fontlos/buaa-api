@@ -121,10 +121,17 @@ impl super::CloudApi {
             Body::Query(f) => res.query(f),
             Body::Json(j) => res.json(j),
         };
-        let res = res.send().await?.bytes().await?;
+        let res = res.send().await?;
+
+        let status = res.status();
+        if !status.is_success() {
+            return Err(Error::server("Operation failed")
+                .with_label("Cloud")
+                .with_source(format!("Status Code: {status}")));
+        }
 
         cred.refresh::<Cloud>();
 
-        Ok(res)
+        Ok(res.bytes().await?)
     }
 }
