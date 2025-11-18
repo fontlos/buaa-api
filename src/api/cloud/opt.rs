@@ -6,7 +6,9 @@ use serde_json::Value;
 use crate::error::Error;
 use crate::utils;
 
-use super::data::{Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, SizeRes, UploadArgs, Share};
+use super::data::{
+    Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, Share, SizeRes, UploadArgs,
+};
 
 impl super::CloudApi {
     /// Get root directory by [Root]
@@ -368,7 +370,9 @@ impl super::CloudApi {
         Ok(())
     }
 
-    /// Create a share link for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
+    /// Create a share ID for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
+    ///
+    /// **Note**: The share link can be formed as `https://bhpan.buaa.edu.cn/link/{ID}`.
     pub async fn share_item(&self, share: &Share) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous";
 
@@ -382,15 +386,17 @@ impl super::CloudApi {
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
 
-        res.res.map(|r| format!("https://bhpan.buaa.edu.cn/link/{}", r.id)).ok_or_else(|| {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                res.cause.unwrap_or_default(),
-                res.message.unwrap_or_default()
-            );
-            Error::server("Can not create share link")
-                .with_label("Cloud")
-                .with_source(source)
-        })
+        res.res
+            .map(|r| r.id)
+            .ok_or_else(|| {
+                let source = format!(
+                    "Server err: {}, msg: {}",
+                    res.cause.unwrap_or_default(),
+                    res.message.unwrap_or_default()
+                );
+                Error::server("Can not create share link")
+                    .with_label("Cloud")
+                    .with_source(source)
+            })
     }
 }

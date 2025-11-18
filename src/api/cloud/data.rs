@@ -100,7 +100,6 @@ impl Item {
             password: "".to_string(),
             limited_times: -1,
         }
-
     }
 }
 
@@ -208,18 +207,38 @@ impl Serialize for Permission {
         use serde::ser::SerializeSeq;
         // 预计算数量
         let mut cnt = 0usize;
-        if self.contains(Self::DISPLAY) { cnt += 1; }
-        if self.contains(Self::DOWNLOAD) { cnt += 1; }
-        if self.contains(Self::PREVIEW)  { cnt += 1; }
-        if self.contains(Self::CREATE)   { cnt += 1; }
-        if self.contains(Self::MODIFY)   { cnt += 1; }
+        if self.contains(Self::DISPLAY) {
+            cnt += 1;
+        }
+        if self.contains(Self::DOWNLOAD) {
+            cnt += 1;
+        }
+        if self.contains(Self::PREVIEW) {
+            cnt += 1;
+        }
+        if self.contains(Self::CREATE) {
+            cnt += 1;
+        }
+        if self.contains(Self::MODIFY) {
+            cnt += 1;
+        }
 
         let mut seq = serializer.serialize_seq(Some(cnt))?;
-        if self.contains(Self::CREATE)   { seq.serialize_element("create")?; }
-        if self.contains(Self::MODIFY)   { seq.serialize_element("modify")?; }
-        if self.contains(Self::DOWNLOAD) { seq.serialize_element("download")?; }
-        if self.contains(Self::PREVIEW)  { seq.serialize_element("preview")?; }
-        if self.contains(Self::DISPLAY) { seq.serialize_element("display")?; }
+        if self.contains(Self::CREATE) {
+            seq.serialize_element("create")?;
+        }
+        if self.contains(Self::MODIFY) {
+            seq.serialize_element("modify")?;
+        }
+        if self.contains(Self::DOWNLOAD) {
+            seq.serialize_element("download")?;
+        }
+        if self.contains(Self::PREVIEW) {
+            seq.serialize_element("preview")?;
+        }
+        if self.contains(Self::DISPLAY) {
+            seq.serialize_element("display")?;
+        }
         seq.end()
     }
 }
