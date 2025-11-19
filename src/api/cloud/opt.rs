@@ -399,4 +399,14 @@ impl super::CloudApi {
                     .with_source(source)
             })
     }
+
+    /// Update share link by Share ID and new [Share]
+    pub async fn share_update(&self, id: &str, share: &Share) -> crate::Result<()> {
+        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
+
+        let body = Body::Json(&share);
+        self.universal_request(Method::PUT, &url, &body).await?;
+
+        Ok(())
+    }
 }
