@@ -148,9 +148,12 @@ mod tests {
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        let share = list.dirs[0].to_share().enable_preview().enable_download();
+        let share = list.dirs[0].to_share();
         let share_id = cloud.share_item(&share).await.unwrap();
-        println!("Share Link: {}", share_id);
+        println!("Share Link: https://bhpan.buaa.edu.cn/link/{}", share_id);
+
+        let share = share.enable_preview().enable_upload();
+        cloud.share_update(&share_id, &share).await.unwrap();
 
         context.save_auth("./data");
     }
