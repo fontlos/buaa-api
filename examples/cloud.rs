@@ -154,6 +154,7 @@ mod tests {
 
         let share = share.enable_preview().enable_upload();
         cloud.share_update(&share_id, &share).await.unwrap();
+        cloud.share_delete(&share_id).await.unwrap();
 
         context.save_auth("./data");
     }
