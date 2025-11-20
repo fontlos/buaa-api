@@ -11,6 +11,7 @@ pub(super) struct Res<T> {
 pub(super) enum Body<'a, Q: Serialize + ?Sized> {
     Query(&'a Q),
     Json(&'a Q),
+    None,
 }
 
 /// Root directory type

@@ -120,6 +120,7 @@ impl super::CloudApi {
         let res = match body {
             Body::Query(f) => res.query(f),
             Body::Json(j) => res.json(j),
+            Body::None => res,
         };
         let res = res.send().await?;
 

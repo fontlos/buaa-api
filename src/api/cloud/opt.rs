@@ -409,4 +409,14 @@ impl super::CloudApi {
 
         Ok(())
     }
+
+    /// Delete share link by Share ID
+    pub async fn share_delete(&self, id: &str) -> crate::Result<()> {
+        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
+
+        let body = Body::<'_, ()>::None;
+        self.universal_request(Method::DELETE, &url, &body).await?;
+
+        Ok(())
+    }
 }
