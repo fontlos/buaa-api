@@ -7,7 +7,7 @@ use crate::error::Error;
 use crate::utils;
 
 use super::data::{
-    Body, CreateRes, Dir, Item, MoveRes, Res, Root, RootDir, Share, SizeRes, UploadArgs,
+    Body, CreateRes, Dir, Item, MoveRes, RecycleDir, Res, Root, RootDir, Share, SizeRes, UploadArgs,
 };
 
 impl super::CloudApi {
@@ -386,18 +386,16 @@ impl super::CloudApi {
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
 
-        res.res
-            .map(|r| r.id)
-            .ok_or_else(|| {
-                let source = format!(
-                    "Server err: {}, msg: {}",
-                    res.cause.unwrap_or_default(),
-                    res.message.unwrap_or_default()
-                );
-                Error::server("Can not create share link")
-                    .with_label("Cloud")
-                    .with_source(source)
-            })
+        res.res.map(|r| r.id).ok_or_else(|| {
+            let source = format!(
+                "Server err: {}, msg: {}",
+                res.cause.unwrap_or_default(),
+                res.message.unwrap_or_default()
+            );
+            Error::server("Can not create share link")
+                .with_label("Cloud")
+                .with_source(source)
+        })
     }
 
     /// Update share link by Share ID and new [Share]
@@ -418,5 +416,20 @@ impl super::CloudApi {
         self.universal_request(Method::DELETE, &url, &body).await?;
 
         Ok(())
+    }
+
+    /// List recycle bin contents of user's personal directory
+    pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
+        let id = self.get_user_dir_id().await?;
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
+        let data = serde_json::json!({
+            "by": "time", // name/size
+            "docid": id,
+            "sort": "desc" // asc
+        });
+        let body = Body::Json(&data);
+        let res = self.universal_request(Method::POST, url, &body).await?;
+        let res = serde_json::from_slice::<RecycleDir>(&res)?;
+        Ok(res)
     }
 }

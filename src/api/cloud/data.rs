@@ -346,3 +346,27 @@ where
         key,
     })
 }
+
+/// Recycle Directory info
+#[derive(Debug, Deserialize)]
+pub struct RecycleDir {
+    /// Subdirectories
+    pub dirs: Vec<RecycleItem>,
+    /// Files
+    pub files: Vec<RecycleItem>,
+}
+
+/// Recycle File or Directory info
+#[derive(Debug, Deserialize)]
+pub struct RecycleItem {
+    /// Modification time (timestamp)
+    #[serde(rename = "modified")]
+    pub modify: u64,
+    /// Item ID
+    #[serde(rename = "docid")]
+    pub id: String,
+    /// Item name
+    pub name: String,
+    /// Item size (in bytes, -1 for directories)
+    pub size: i64,
+}
