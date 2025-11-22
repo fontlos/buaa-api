@@ -13,6 +13,8 @@ mod tests {
         println!("List: {list:#?}");
         let size = cloud.get_item_size(&user_dir).await.unwrap();
         println!("Size: {size:#?}");
+        let recycle = cloud.list_recycle().await.unwrap();
+        println!("Recycle: {recycle:#?}");
 
         context.save_auth("./data");
     }
