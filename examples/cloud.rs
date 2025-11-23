@@ -150,6 +150,9 @@ mod tests {
         let user_dir = cloud.get_user_dir_id().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
+        let shares = cloud.share_record(&list.dirs[0].id).await.unwrap();
+        println!("Shares: {shares:#?}");
+
         let share = list.dirs[0].to_share();
         let share_id = cloud.share_item(&share).await.unwrap();
         println!("Share Link: https://bhpan.buaa.edu.cn/link/{}", share_id);

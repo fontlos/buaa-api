@@ -370,6 +370,29 @@ impl super::CloudApi {
         Ok(())
     }
 
+    /// Get share record by [Item::id]
+    pub async fn share_record(&self, id: &str) -> crate::Result<Vec<Share>> {
+        let url = format!(
+            "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/folder/{}?type=anonymous",
+            id.replace(':', "%3A").replace('/', "%2F")
+        );
+
+        let body = Body::<'_, ()>::None;
+        let bytes = self.universal_request(Method::GET, &url, &body).await?;
+
+        let res = serde_json::from_slice::<Res<Vec<Share>>>(&bytes)?;
+        res.res.map(|r| r).ok_or_else(|| {
+            let source = format!(
+                "Server err: {}, msg: {}",
+                res.cause.unwrap_or_default(),
+                res.message.unwrap_or_default()
+            );
+            Error::server("Can not get share record")
+                .with_label("Cloud")
+                .with_source(source)
+        })
+    }
+
     /// Create a share ID for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
     ///
     /// **Note**: The share link can be formed as `https://bhpan.buaa.edu.cn/link/{ID}`.

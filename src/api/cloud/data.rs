@@ -91,9 +91,10 @@ impl Item {
     pub fn to_share(&self) -> Share {
         let kind = if self.is_dir() { "folder" } else { "file" };
         Share {
+            id: None,
             item: ShareItem {
-                id: self.id.clone(),
-                kind,
+                id: Some(self.id.clone()),
+                kind: Some(kind),
                 permission: Permission::new(),
             },
             title: self.name.clone(),
@@ -104,9 +105,15 @@ impl Item {
     }
 }
 
+// 得益于服务端垃圾设计
+// 共享 API 和共享管理 API 所需的 JSON 相似但又不完全相似
+// 导致这整个结构很扭曲
 /// Share Item
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Share {
+    // 只在反序列化时用到的字段
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
     item: ShareItem,
     title: String,
     expires_at: String,
@@ -116,13 +123,13 @@ pub struct Share {
 
 impl Share {
     /// Set share link title
-    pub fn title(mut self, title: &str) -> Self {
+    pub fn set_title(mut self, title: &str) -> Self {
         self.title = title.to_string();
         self
     }
 
     /// Set share link password. Four characters.
-    pub fn password(mut self, password: &str) -> Self {
+    pub fn set_password(mut self, password: &str) -> Self {
         self.password = password.to_string();
         self
     }
@@ -130,13 +137,15 @@ impl Share {
     /// Set share link expiration time
     ///
     /// Format: "YYYY-MM-DDTHH:MM:SS+08:00"
-    pub fn expires(mut self, expires: &str) -> Self {
-        self.expires_at = expires.to_string();
+    ///
+    /// Default is "1970-01-01T08:00:00+08:00" (never expire)
+    pub fn set_expire_time(mut self, expire: &str) -> Self {
+        self.expires_at = expire.to_string();
         self
     }
 
     /// Set share link limited times
-    pub fn limited_times(mut self, times: i64) -> Self {
+    pub fn set_limited_times(mut self, times: i64) -> Self {
         self.limited_times = times;
         self
     }
@@ -172,11 +181,15 @@ impl Share {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct ShareItem {
-    id: String,
+    #[serde(default)]
+    #[serde(skip_deserializing)]
+    id: Option<String>,
+    #[serde(default)]
+    #[serde(skip_deserializing)]
     #[serde(rename = "type")]
-    kind: &'static str,
+    kind: Option<&'static str>,
     #[serde(rename = "allow")]
     permission: Permission,
 }
@@ -197,6 +210,27 @@ impl Permission {
 
     fn contains(&self, perm: u8) -> bool {
         (self.0 & perm) != 0
+    }
+}
+
+impl<'de> Deserialize<'de> for Permission {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let vec: Vec<&'de str> = Deserialize::deserialize(deserializer)?;
+        let mut perm = Self::new();
+        for p in vec {
+            match p {
+                "create" => perm.0 |= Self::CREATE,
+                "modify" => perm.0 |= Self::MODIFY,
+                "download" => perm.0 |= Self::DOWNLOAD,
+                "preview" => perm.0 |= Self::PREVIEW,
+                "display" => perm.0 |= Self::DISPLAY,
+                _ => {}
+            }
+        }
+        Ok(perm)
     }
 }
 
