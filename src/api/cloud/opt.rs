@@ -231,16 +231,7 @@ impl super::CloudApi {
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
 
-        res.res.map(|r| r.status).ok_or_else(|| {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                res.cause.unwrap_or_default(),
-                res.message.unwrap_or_default()
-            );
-            Error::server("Can not check hash")
-                .with_label("Cloud")
-                .with_source(source)
-        })
+        res.unpack_with(|r| r.status, "Can not check hash")
     }
 
     /// Fast upload file if hash exists
@@ -274,16 +265,7 @@ impl super::CloudApi {
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
 
-        res.res.map(|r| r.status).ok_or_else(|| {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                res.cause.unwrap_or_default(),
-                res.message.unwrap_or_default()
-            );
-            Error::server("Can not upload")
-                .with_label("Cloud")
-                .with_source(source)
-        })
+        res.unpack_with(|r| r.status, "Can not fast upload")
     }
 
     /// Get upload authorization
@@ -310,16 +292,7 @@ impl super::CloudApi {
 
         let res = serde_json::from_slice::<Res<UploadArgs>>(&bytes)?;
 
-        res.res.map(|r| r).ok_or_else(|| {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                res.cause.unwrap_or_default(),
-                res.message.unwrap_or_default()
-            );
-            Error::server("Can not upload")
-                .with_label("Cloud")
-                .with_source(source)
-        })
+        res.unpack_with(|r| r, "Can not get upload auth")
     }
 
     /// Upload file with given [UploadArgs] and file part
@@ -381,16 +354,7 @@ impl super::CloudApi {
         let bytes = self.universal_request(Method::GET, &url, &body).await?;
 
         let res = serde_json::from_slice::<Res<Vec<Share>>>(&bytes)?;
-        res.res.map(|r| r).ok_or_else(|| {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                res.cause.unwrap_or_default(),
-                res.message.unwrap_or_default()
-            );
-            Error::server("Can not get share record")
-                .with_label("Cloud")
-                .with_source(source)
-        })
+        res.unpack_with(|r| r, "Can not get share record")
     }
 
     /// Create a share ID for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
@@ -409,16 +373,7 @@ impl super::CloudApi {
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
 
-        res.res.map(|r| r.id).ok_or_else(|| {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                res.cause.unwrap_or_default(),
-                res.message.unwrap_or_default()
-            );
-            Error::server("Can not create share link")
-                .with_label("Cloud")
-                .with_source(source)
-        })
+        res.unpack_with(|r| r.id, "Can not create share link")
     }
 
     /// Update share link by Share ID and new [Share]

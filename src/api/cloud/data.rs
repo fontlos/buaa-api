@@ -8,6 +8,24 @@ pub(super) struct Res<T> {
     pub message: Option<String>,
 }
 
+impl<T> Res<T> {
+    pub(crate) fn unpack_with<U, F>(self, map: F, errmsg: &'static str) -> crate::Result<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        self.res.map(map).ok_or_else(|| {
+            let source = format!(
+                "Server err: {}, msg: {}",
+                self.cause.unwrap_or_default(),
+                self.message.unwrap_or_default()
+            );
+            crate::Error::server(errmsg)
+                .with_label("Cloud")
+                .with_source(source)
+        })
+    }
+}
+
 pub(super) enum Body<'a, Q: Serialize + ?Sized> {
     Query(&'a Q),
     Json(&'a Q),
