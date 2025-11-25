@@ -17,8 +17,8 @@ impl super::CloudApi {
         let query = root.as_query();
         let body = Body::Query(&query);
         let res = self.universal_request(Method::GET, url, &body).await?;
-        let res = serde_json::from_slice::<Vec<RootDir>>(&res)?;
-        Ok(res)
+        let res = serde_json::from_slice::<Res<Vec<RootDir>>>(&res)?;
+        res.unpack_with(|r| r, "Can not get root dir")
     }
 
     /// Return User Root directory ID
@@ -42,8 +42,8 @@ impl super::CloudApi {
         });
         let body = Body::Json(&data);
         let res = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<Dir>(&res)?;
-        Ok(res)
+        let res = serde_json::from_slice::<Res<Dir>>(&res)?;
+        res.unpack_with(|r| r, "Can not get dir list")
     }
 
     // 内部方法
@@ -162,8 +162,8 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
-        let res = serde_json::from_slice::<MoveRes>(&bytes)?;
-        Ok(res.id)
+        let res = serde_json::from_slice::<Res<MoveRes>>(&bytes)?;
+        res.unpack_with(|r| r.id, "Can not move item")
     }
 
     /// Create directory in given parent directory with name. [Item::id]
@@ -177,8 +177,8 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
-        let res = serde_json::from_slice::<CreateRes>(&bytes)?;
-        Ok(res)
+        let res = serde_json::from_slice::<Res<CreateRes>>(&bytes)?;
+        res.unpack_with(|r| r, "Can not create dir")
     }
 
     /// Get a suggested name for a new directory in given parent directory. [Item::id]
@@ -209,8 +209,8 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
 
-        let res = serde_json::from_slice::<SizeRes>(&bytes)?;
-        Ok(res)
+        let res = serde_json::from_slice::<Res<SizeRes>>(&bytes)?;
+        res.unpack_with(|r| r, "Can not get item size")
     }
 
     /// Check hash before upload
@@ -407,7 +407,7 @@ impl super::CloudApi {
         });
         let body = Body::Json(&data);
         let res = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<RecycleDir>(&res)?;
-        Ok(res)
+        let res = serde_json::from_slice::<Res<RecycleDir>>(&res)?;
+        res.unpack_with(|r| r, "Can not get recycle dir")
     }
 }
