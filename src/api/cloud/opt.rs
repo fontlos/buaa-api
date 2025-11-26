@@ -16,9 +16,9 @@ impl super::CloudApi {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
         let body = Body::Query(&query);
-        let res = self.universal_request(Method::GET, url, &body).await?;
-        let res = serde_json::from_slice::<Res<Vec<RootDir>>>(&res)?;
-        res.unpack_with(|r| r, "Can not get root dir")
+        let bytes = self.universal_request(Method::GET, url, &body).await?;
+        let res = serde_json::from_slice::<Vec<RootDir>>(&bytes)?;
+        Ok(res)
     }
 
     /// Return User Root directory ID
@@ -41,8 +41,8 @@ impl super::CloudApi {
             "sort": "asc" // desc
         });
         let body = Body::Json(&data);
-        let res = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<Res<Dir>>(&res)?;
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let res = serde_json::from_slice::<Res<Dir>>(&bytes)?;
         res.unpack_with(|r| r, "Can not get dir list")
     }
 
@@ -92,9 +92,7 @@ impl super::CloudApi {
 
         // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
         let token = self.cred.load().value::<crate::api::Cloud>()?;
-
         let url = format!("{raw_url}?token={token}");
-
         Ok(url)
     }
 
@@ -138,6 +136,7 @@ impl super::CloudApi {
         Ok(())
     }
 
+    // 重命名不存在的文件会在上层触发 400 错误
     /// Rename a file or directory by its ID. [Item::id]
     pub async fn rename_item(&self, id: &str, new: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/rename";
@@ -161,7 +160,6 @@ impl super::CloudApi {
         });
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
-
         let res = serde_json::from_slice::<Res<MoveRes>>(&bytes)?;
         res.unpack_with(|r| r.id, "Can not move item")
     }
@@ -176,7 +174,6 @@ impl super::CloudApi {
         });
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
-
         let res = serde_json::from_slice::<Res<CreateRes>>(&bytes)?;
         res.unpack_with(|r| r, "Can not create dir")
     }
@@ -192,7 +189,6 @@ impl super::CloudApi {
         });
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
-
         let res = utils::parse_by_tag(&bytes, ":\"", "\"")
             .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?
             .to_string();
@@ -208,7 +204,6 @@ impl super::CloudApi {
         });
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
-
         let res = serde_json::from_slice::<Res<SizeRes>>(&bytes)?;
         res.unpack_with(|r| r, "Can not get item size")
     }
@@ -230,7 +225,6 @@ impl super::CloudApi {
         }
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-
         res.unpack_with(|r| r.status, "Can not check hash")
     }
 
@@ -264,7 +258,6 @@ impl super::CloudApi {
         }
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-
         res.unpack_with(|r| r.status, "Can not fast upload")
     }
 
@@ -289,9 +282,7 @@ impl super::CloudApi {
         });
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
-
         let res = serde_json::from_slice::<Res<UploadArgs>>(&bytes)?;
-
         res.unpack_with(|r| r, "Can not get upload auth")
     }
 
@@ -343,18 +334,17 @@ impl super::CloudApi {
         Ok(())
     }
 
+    // 传入不存在的 id 会在上层触发 400 错误
     /// Get share record by [Item::id]
     pub async fn share_record(&self, id: &str) -> crate::Result<Vec<Share>> {
         let url = format!(
             "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/folder/{}?type=anonymous",
             id.replace(':', "%3A").replace('/', "%2F")
         );
-
         let body = Body::<'_, ()>::None;
         let bytes = self.universal_request(Method::GET, &url, &body).await?;
-
-        let res = serde_json::from_slice::<Res<Vec<Share>>>(&bytes)?;
-        res.unpack_with(|r| r, "Can not get share record")
+        let res = serde_json::from_slice::<Vec<Share>>(&bytes)?;
+        Ok(res)
     }
 
     /// Create a share ID for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
@@ -372,27 +362,22 @@ impl super::CloudApi {
         }
 
         let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-
         res.unpack_with(|r| r.id, "Can not create share link")
     }
 
     /// Update share link by Share ID and new [Share]
     pub async fn share_update(&self, id: &str, share: &Share) -> crate::Result<()> {
         let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
-
         let body = Body::Json(&share);
         self.universal_request(Method::PUT, &url, &body).await?;
-
         Ok(())
     }
 
     /// Delete share link by Share ID
     pub async fn share_delete(&self, id: &str) -> crate::Result<()> {
         let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
-
         let body = Body::<'_, ()>::None;
         self.universal_request(Method::DELETE, &url, &body).await?;
-
         Ok(())
     }
 
