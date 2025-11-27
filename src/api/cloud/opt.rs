@@ -11,6 +11,8 @@ use super::data::{
 };
 
 impl super::CloudApi {
+    // 这种返回数组类型的如果参数错误都会在上层直接触发 400 错误,
+    // 而不是详细的 Json 错误, 所以不能用 Res<T> 包裹
     /// Get root directory by [Root]
     pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
@@ -46,6 +48,7 @@ impl super::CloudApi {
         res.unpack_with(|r| r, "Can not get dir list")
     }
 
+    // 下载相关的参数错误也会在上层触发 400 错误
     // 内部方法
     /// Get a download URL for a single file.
     ///
@@ -125,9 +128,25 @@ impl super::CloudApi {
     }
 
     // 重复删掉文件也不会报错
-    /// Delete a file or directory by its ID. [Item::id]
+    /// Delete a file or directory to recycle bin by its ID. [Item::id]
+    ///
+    /// **Note**: Delete multiple files need call multiple times.
     pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
+        let data = serde_json::json!({
+            "docid": id,
+        });
+        let body = Body::Json(&data);
+        self.universal_request(Method::POST, url, &body).await?;
+        Ok(())
+    }
+
+    // 重复删掉文件也不会报错
+    /// Delete a file or directory forever by its ID. [Item::id]
+    ///
+    /// **Note**: Delete multiple files need call multiple times.
+    pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/delete";
         let data = serde_json::json!({
             "docid": id,
         });
@@ -151,6 +170,8 @@ impl super::CloudApi {
     }
 
     /// Move a file or directory by its ID. [Item::id]
+    ///
+    /// **Note**: Move multiple files need call multiple times.
     pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/move";
         let data = serde_json::json!({

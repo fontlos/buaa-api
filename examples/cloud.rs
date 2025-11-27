@@ -13,14 +13,12 @@ mod tests {
         println!("List: {list:#?}");
         let size = cloud.get_item_size(&user_dir).await.unwrap();
         println!("Size: {size:#?}");
-        let recycle = cloud.list_recycle().await.unwrap();
-        println!("Recycle: {recycle:#?}");
 
         context.save_auth("./data");
     }
 
     #[tokio::test]
-    async fn test_get_url() {
+    async fn test_get_download_url() {
         let context = Context::with_auth("./data");
 
         let cloud = context.cloud();
@@ -43,6 +41,19 @@ mod tests {
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
         cloud.delete_item(&list.files[0].id).await.unwrap();
+
+        context.save_auth("./data");
+    }
+
+    #[tokio::test]
+    async fn test_recycle() {
+        let context = Context::with_auth("./data");
+
+        let cloud = context.cloud();
+
+        let recycle = cloud.list_recycle().await.unwrap();
+        println!("Recycle: {recycle:#?}");
+        cloud.delete_recycle_item(&recycle.dirs[0].id).await.unwrap();
 
         context.save_auth("./data");
     }
