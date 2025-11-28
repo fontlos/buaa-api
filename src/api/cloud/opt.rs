@@ -185,6 +185,22 @@ impl super::CloudApi {
         res.unpack_with(|r| r.id, "Can not move item")
     }
 
+    /// Copy a file or directory by its ID. [Item::id]
+    ///
+    /// **Note**: Copy multiple files need call multiple times.
+    pub async fn copy_item(&self, dir: &str, id: &str) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/copy";
+        let data = serde_json::json!({
+            "destparent": dir,
+            "docid": id,
+            "ondup": 1
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let res = serde_json::from_slice::<Res<MoveRes>>(&bytes)?;
+        res.unpack_with(|r| r.id, "Can not copy item")
+    }
+
     /// Create directory in given parent directory with name. [Item::id]
     pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<CreateRes> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
