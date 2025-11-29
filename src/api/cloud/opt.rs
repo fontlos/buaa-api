@@ -48,83 +48,19 @@ impl super::CloudApi {
         res.unpack_with(|r| r, "Can not get dir list")
     }
 
-    // 下载相关的参数错误也会在上层触发 400 错误
-    // 内部方法
-    /// Get a download URL for a single file.
-    ///
-    /// **Note**: If you pass a dir, it will return a bad URL.
-    async fn get_single_download_url(&self, item: &Item) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osdownload";
+    /// List recycle bin contents of user's personal directory
+    pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
+        let id = self.get_user_dir_id().await?;
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
         let data = serde_json::json!({
-            "docid": item.id,
-            "authtype": "QUERY_STRING",
+            "by": "time", // name/size
+            "docid": id,
+            "sort": "desc" // asc
         });
         let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
-        let res = utils::parse_by_tag(&bytes, ",\"", "\"")
-            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
-        Ok(res.to_string())
-    }
-
-    // 内部方法
-    /// Get a download URL of a zip package for multiple files or a dir.
-    ///
-    /// **Note**: If you pass a single file(not a dir), it will return a bad URL.
-    async fn get_muti_download_url(&self, items: &[&Item]) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/open-doc/v1/file-download";
-        let ids: Vec<Value> = items
-            .iter()
-            .map(|item| {
-                // 从文件路径 id 反向找到文件 id, 找不到就用原 id, 这不会引起错误, 只会导致无法下载这个文件
-                // 同样是下载, 单个文件就用完整 id, 多个文件就用文件 id, 那证明文件 id 就够用了, 这什么 ** 设计
-                let file_id = match item.id.rfind('/') {
-                    Some(idx) => &item.id[idx + 1..],
-                    None => &item.id,
-                };
-                serde_json::json!({ "id": file_id })
-            })
-            .collect();
-        let data = serde_json::json!({
-            "name": "download.zip",
-            "doc": ids
-        });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
-        let raw_url = utils::parse_by_tag(&bytes, "package_address\":\"", "\"")
-            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
-
-        // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
-        let token = self.cred.load().value::<crate::api::Cloud>()?;
-        let url = format!("{raw_url}?token={token}");
-        Ok(url)
-    }
-
-    /// Get a download URL with the indexes of items.
-    ///
-    /// **Note**: If indexes is empty, it means all items.
-    pub async fn get_download_url(
-        &self,
-        items: &[Item],
-        indexes: &[usize],
-    ) -> crate::Result<String> {
-        let items: Vec<&Item> = if indexes.is_empty() {
-            // 全部文件
-            items.iter().collect()
-        } else {
-            indexes.iter().filter_map(|&idx| items.get(idx)).collect()
-        };
-
-        if items.is_empty() {
-            return Err(Error::parameter("No valid file selected").with_label("Cloud"));
-        }
-
-        // 下载单个文件只能用这个, 不然得到的链接无法使用
-        // 但如果下载单个文件夹不能用这个, 不然得到的链接也无法使用
-        if items.len() == 1 && !items[0].is_dir() {
-            return self.get_single_download_url(items[0]).await;
-        } else {
-            return self.get_muti_download_url(&items).await;
-        }
+        let res = self.universal_request(Method::POST, url, &body).await?;
+        let res = serde_json::from_slice::<Res<RecycleDir>>(&res)?;
+        res.unpack_with(|r| r, "Can not get recycle dir")
     }
 
     // 重复删掉文件也不会报错
@@ -142,7 +78,7 @@ impl super::CloudApi {
     }
 
     // 重复删掉文件也不会报错
-    /// Delete a file or directory forever by its ID. [Item::id]
+    /// Delete a file or directory forever by its ID. [RecycleItem::id]
     ///
     /// **Note**: Delete multiple files need call multiple times.
     pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
@@ -153,6 +89,28 @@ impl super::CloudApi {
         let body = Body::Json(&data);
         self.universal_request(Method::POST, url, &body).await?;
         Ok(())
+    }
+
+    /// Restore a file or directory from recycle bin by its ID. [RecycleItem::id]
+    ///
+    /// **Note**: Restore multiple files need call multiple times.
+    pub async fn restore_recycle_item(&self, id: &str) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/restore";
+        let data = serde_json::json!({
+            "docid": id,
+            "ondup": 1
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        #[derive(serde::Deserialize)]
+        struct _Res {
+            #[serde(rename = "docid")]
+            id: String,
+        }
+
+        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
+        res.unpack_with(|r| r.id, "Can not restore recycle item")
     }
 
     // 重命名不存在的文件会在上层触发 400 错误
@@ -243,6 +201,132 @@ impl super::CloudApi {
         let bytes = self.universal_request(Method::POST, url, &body).await?;
         let res = serde_json::from_slice::<Res<SizeRes>>(&bytes)?;
         res.unpack_with(|r| r, "Can not get item size")
+    }
+
+    // 传入不存在的 id 会在上层触发 400 错误
+    /// Get share record by [Item::id]
+    pub async fn share_record(&self, id: &str) -> crate::Result<Vec<Share>> {
+        let url = format!(
+            "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/folder/{}?type=anonymous",
+            id.replace(':', "%3A").replace('/', "%2F")
+        );
+        let body = Body::<'_, ()>::None;
+        let bytes = self.universal_request(Method::GET, &url, &body).await?;
+        let res = serde_json::from_slice::<Vec<Share>>(&bytes)?;
+        Ok(res)
+    }
+
+    /// Create a share ID for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
+    ///
+    /// **Note**: The share link can be formed as `https://bhpan.buaa.edu.cn/link/{ID}`.
+    pub async fn share_item(&self, share: &Share) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous";
+
+        let body = Body::Json(&share);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+
+        #[derive(serde::Deserialize)]
+        struct _Res {
+            id: String,
+        }
+
+        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
+        res.unpack_with(|r| r.id, "Can not create share link")
+    }
+
+    /// Update share link by Share ID and new [Share]
+    pub async fn share_update(&self, id: &str, share: &Share) -> crate::Result<()> {
+        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
+        let body = Body::Json(&share);
+        self.universal_request(Method::PUT, &url, &body).await?;
+        Ok(())
+    }
+
+    /// Delete share link by Share ID
+    pub async fn share_delete(&self, id: &str) -> crate::Result<()> {
+        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
+        let body = Body::<'_, ()>::None;
+        self.universal_request(Method::DELETE, &url, &body).await?;
+        Ok(())
+    }
+
+    // 下载相关的参数错误也会在上层触发 400 错误
+    // 内部方法
+    /// Get a download URL for a single file.
+    ///
+    /// **Note**: If you pass a dir, it will return a bad URL.
+    async fn get_single_download_url(&self, item: &Item) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osdownload";
+        let data = serde_json::json!({
+            "docid": item.id,
+            "authtype": "QUERY_STRING",
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let res = utils::parse_by_tag(&bytes, ",\"", "\"")
+            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
+        Ok(res.to_string())
+    }
+
+    // 内部方法
+    /// Get a download URL of a zip package for multiple files or a dir.
+    ///
+    /// **Note**: If you pass a single file(not a dir), it will return a bad URL.
+    async fn get_muti_download_url(&self, items: &[&Item]) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/open-doc/v1/file-download";
+        let ids: Vec<Value> = items
+            .iter()
+            .map(|item| {
+                // 从文件路径 id 反向找到文件 id, 找不到就用原 id, 这不会引起错误, 只会导致无法下载这个文件
+                // 同样是下载, 单个文件就用完整 id, 多个文件就用文件 id, 那证明文件 id 就够用了, 这什么 ** 设计
+                let file_id = match item.id.rfind('/') {
+                    Some(idx) => &item.id[idx + 1..],
+                    None => &item.id,
+                };
+                serde_json::json!({ "id": file_id })
+            })
+            .collect();
+        let data = serde_json::json!({
+            "name": "download.zip",
+            "doc": ids
+        });
+        let body = Body::Json(&data);
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let raw_url = utils::parse_by_tag(&bytes, "package_address\":\"", "\"")
+            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
+
+        // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
+        let token = self.cred.load().value::<crate::api::Cloud>()?;
+        let url = format!("{raw_url}?token={token}");
+        Ok(url)
+    }
+
+    /// Get a download URL with the indexes of items.
+    ///
+    /// **Note**: If indexes is empty, it means all items.
+    pub async fn get_download_url(
+        &self,
+        items: &[Item],
+        indexes: &[usize],
+    ) -> crate::Result<String> {
+        let items: Vec<&Item> = if indexes.is_empty() {
+            // 全部文件
+            items.iter().collect()
+        } else {
+            indexes.iter().filter_map(|&idx| items.get(idx)).collect()
+        };
+
+        if items.is_empty() {
+            return Err(Error::parameter("No valid file selected").with_label("Cloud"));
+        }
+
+        // 下载单个文件只能用这个, 不然得到的链接无法使用
+        // 但如果下载单个文件夹不能用这个, 不然得到的链接也无法使用
+        if items.len() == 1 && !items[0].is_dir() {
+            return self.get_single_download_url(items[0]).await;
+        } else {
+            return self.get_muti_download_url(&items).await;
+        }
     }
 
     /// Check hash before upload
@@ -369,67 +453,5 @@ impl super::CloudApi {
                 .with_source(source));
         }
         Ok(())
-    }
-
-    // 传入不存在的 id 会在上层触发 400 错误
-    /// Get share record by [Item::id]
-    pub async fn share_record(&self, id: &str) -> crate::Result<Vec<Share>> {
-        let url = format!(
-            "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/folder/{}?type=anonymous",
-            id.replace(':', "%3A").replace('/', "%2F")
-        );
-        let body = Body::<'_, ()>::None;
-        let bytes = self.universal_request(Method::GET, &url, &body).await?;
-        let res = serde_json::from_slice::<Vec<Share>>(&bytes)?;
-        Ok(res)
-    }
-
-    /// Create a share ID for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
-    ///
-    /// **Note**: The share link can be formed as `https://bhpan.buaa.edu.cn/link/{ID}`.
-    pub async fn share_item(&self, share: &Share) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous";
-
-        let body = Body::Json(&share);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
-
-        #[derive(serde::Deserialize)]
-        struct _Res {
-            id: String,
-        }
-
-        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-        res.unpack_with(|r| r.id, "Can not create share link")
-    }
-
-    /// Update share link by Share ID and new [Share]
-    pub async fn share_update(&self, id: &str, share: &Share) -> crate::Result<()> {
-        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
-        let body = Body::Json(&share);
-        self.universal_request(Method::PUT, &url, &body).await?;
-        Ok(())
-    }
-
-    /// Delete share link by Share ID
-    pub async fn share_delete(&self, id: &str) -> crate::Result<()> {
-        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
-        let body = Body::<'_, ()>::None;
-        self.universal_request(Method::DELETE, &url, &body).await?;
-        Ok(())
-    }
-
-    /// List recycle bin contents of user's personal directory
-    pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
-        let id = self.get_user_dir_id().await?;
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
-        let data = serde_json::json!({
-            "by": "time", // name/size
-            "docid": id,
-            "sort": "desc" // asc
-        });
-        let body = Body::Json(&data);
-        let res = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<Res<RecycleDir>>(&res)?;
-        res.unpack_with(|r| r, "Can not get recycle dir")
     }
 }

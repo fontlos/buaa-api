@@ -52,8 +52,10 @@ mod tests {
         let cloud = context.cloud();
 
         let recycle = cloud.list_recycle().await.unwrap();
-        println!("Recycle: {recycle:#?}");
-        cloud.delete_recycle_item(&recycle.dirs[0].id).await.unwrap();
+        // println!("Recycle: {recycle:#?}");
+        // cloud.delete_recycle_item(&recycle.dirs[0].id).await.unwrap();
+        let id = cloud.restore_recycle_item(&recycle.files[0].id).await.unwrap();
+        println!("Restored: {}", id);
 
         context.save_auth("./data");
     }
