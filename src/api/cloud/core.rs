@@ -83,7 +83,6 @@ impl super::CloudApi {
             return Err(Error::server("Login failed. Unknown error").with_label("Cloud"));
         }
 
-        // is_previous_login_3rd_party=true 和 oauth2.isSkip=true 两个 cookie 似乎没有用, 这里就不添加了
         match self
             .cookies
             .load()
@@ -92,6 +91,20 @@ impl super::CloudApi {
             Some(t) => {
                 self.cred.update(|s| {
                     s.update::<Cloud>(t.value().to_string());
+                });
+                // 在这里删掉 client.oauth2_(refresh_)token 以外所有 cookie
+                // 防止刷新权限时干扰
+                self.cookies.update(|cookies|{
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_consent_csrf_612664744");
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_login_csrf_612664744");
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "SignoutLogin3rdPartyStatus");
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "client.origin_uri");
+                    // 这个与刷新 refresh_token 有关
+                    // cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_session");
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "id_token");
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "state");
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "_csrf");
+                    cookies.remove("bhpan.buaa.edu.cn", "/", "lang");
                 });
                 Ok(())
             }
