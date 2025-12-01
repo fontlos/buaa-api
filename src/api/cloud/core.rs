@@ -139,9 +139,15 @@ impl super::CloudApi {
 
         let status = res.status();
         if !status.is_success() {
+            let bytes = res.bytes().await?;
+            let res = serde_json::from_slice::<serde_json::Value>(&bytes).unwrap_or_default();
+            let cause = res
+                .get("cause")
+                .and_then(|m| m.as_str())
+                .unwrap_or("Unknown error");
             return Err(Error::server("Operation failed")
                 .with_label("Cloud")
-                .with_source(format!("Status Code: {status}")));
+                .with_source(format!("Status Code: {status}, Cause: {cause}")));
         }
 
         cred.refresh::<Cloud>();
