@@ -123,6 +123,69 @@ impl Item {
     }
 }
 
+/// Response for item size
+#[derive(Debug, Deserialize)]
+pub struct SizeRes {
+    /// Number of directories
+    #[serde(rename = "dirnum")]
+    pub dir: i64,
+    /// Number of files
+    #[serde(rename = "filenum")]
+    pub file: i64,
+    /// Item size (in bytes)
+    #[serde(rename = "totalsize")]
+    pub size: i64,
+}
+
+/// Response for create directory
+#[derive(Debug, Deserialize)]
+pub struct CreateRes {
+    /// Creation time (timestamp)
+    #[serde(rename = "create_time")]
+    pub create: u64,
+    /// Modification time (timestamp)
+    #[serde(rename = "modified")]
+    pub modify: u64,
+    /// Item ID
+    #[serde(rename = "docid")]
+    pub id: String,
+    /// Item hash
+    #[serde(rename = "rev")]
+    pub hash: String,
+}
+
+/// Response for move operation
+#[derive(Debug, Deserialize)]
+pub(crate) struct MoveRes {
+    /// Moved item ID
+    #[serde(rename = "docid")]
+    pub id: String,
+}
+
+/// Recycle Directory info
+#[derive(Debug, Deserialize)]
+pub struct RecycleDir {
+    /// Subdirectories
+    pub dirs: Vec<RecycleItem>,
+    /// Files
+    pub files: Vec<RecycleItem>,
+}
+
+/// Recycle File or Directory info
+#[derive(Debug, Deserialize)]
+pub struct RecycleItem {
+    /// Modification time (timestamp)
+    #[serde(rename = "modified")]
+    pub modify: u64,
+    /// Item ID
+    #[serde(rename = "docid")]
+    pub id: String,
+    /// Item name
+    pub name: String,
+    /// Item size (in bytes, -1 for directories)
+    pub size: i64,
+}
+
 // 得益于服务端垃圾设计
 // 共享 API 和共享管理 API 所需的 JSON 相似但又不完全相似
 // 导致这整个结构很扭曲
@@ -296,45 +359,6 @@ impl Serialize for Permission {
     }
 }
 
-/// Response for move operation
-#[derive(Debug, Deserialize)]
-pub(crate) struct MoveRes {
-    /// Moved item ID
-    #[serde(rename = "docid")]
-    pub id: String,
-}
-
-/// Response for create directory
-#[derive(Debug, Deserialize)]
-pub struct CreateRes {
-    /// Creation time (timestamp)
-    #[serde(rename = "create_time")]
-    pub create: u64,
-    /// Modification time (timestamp)
-    #[serde(rename = "modified")]
-    pub modify: u64,
-    /// Item ID
-    #[serde(rename = "docid")]
-    pub id: String,
-    /// Item hash
-    #[serde(rename = "rev")]
-    pub hash: String,
-}
-
-/// Response for item size
-#[derive(Debug, Deserialize)]
-pub struct SizeRes {
-    /// Number of directories
-    #[serde(rename = "dirnum")]
-    pub dir: i64,
-    /// Number of files
-    #[serde(rename = "filenum")]
-    pub file: i64,
-    /// Item size (in bytes)
-    #[serde(rename = "totalsize")]
-    pub size: i64,
-}
-
 /// Args for real upload
 #[derive(Debug, Deserialize)]
 pub struct UploadArgs {
@@ -397,28 +421,4 @@ where
         signature,
         key,
     })
-}
-
-/// Recycle Directory info
-#[derive(Debug, Deserialize)]
-pub struct RecycleDir {
-    /// Subdirectories
-    pub dirs: Vec<RecycleItem>,
-    /// Files
-    pub files: Vec<RecycleItem>,
-}
-
-/// Recycle File or Directory info
-#[derive(Debug, Deserialize)]
-pub struct RecycleItem {
-    /// Modification time (timestamp)
-    #[serde(rename = "modified")]
-    pub modify: u64,
-    /// Item ID
-    #[serde(rename = "docid")]
-    pub id: String,
-    /// Item name
-    pub name: String,
-    /// Item size (in bytes, -1 for directories)
-    pub size: i64,
 }

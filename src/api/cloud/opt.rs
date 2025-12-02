@@ -48,69 +48,48 @@ impl super::CloudApi {
         res.unpack_with(|r| r, "Can not get dir list")
     }
 
-    /// List recycle bin contents of user's personal directory
-    pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
-        let id = self.get_user_dir_id().await?;
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
+    /// Get the size of a file or directory by its ID. [Item::id]
+    pub async fn get_item_size(&self, id: &str) -> crate::Result<SizeRes> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/size";
         let data = serde_json::json!({
-            "by": "time", // name/size
             "docid": id,
-            "sort": "desc" // asc
+            "onlyrecycle": false
         });
         let body = Body::Json(&data);
-        let res = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<Res<RecycleDir>>(&res)?;
-        res.unpack_with(|r| r, "Can not get recycle dir")
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let res = serde_json::from_slice::<Res<SizeRes>>(&bytes)?;
+        res.unpack_with(|r| r, "Can not get item size")
     }
 
-    // 重复删掉文件也不会报错
-    /// Delete a file or directory to recycle bin by its ID. [Item::id]
+    /// Get a suggested name for an item from given name in given parent directory. [Item::id]
     ///
-    /// **Note**: Delete multiple files need call multiple times.
-    pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
+    /// Usually for [super::CloudApi::create_dir]
+    pub async fn get_suggest_name(&self, dir: &str, name: &str) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
         let data = serde_json::json!({
-            "docid": id,
+            "docid": dir,
+            "name": name,
         });
         let body = Body::Json(&data);
-        self.universal_request(Method::POST, url, &body).await?;
-        Ok(())
+        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let res = utils::parse_by_tag(&bytes, ":\"", "\"")
+            .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?
+            .to_string();
+        Ok(res)
     }
 
-    // 重复删掉文件也不会报错
-    /// Delete a file or directory forever by its ID. [RecycleItem::id]
-    ///
-    /// **Note**: Delete multiple files need call multiple times.
-    pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/delete";
+    /// Create directory in given parent directory with name. [Item::id]
+    pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<CreateRes> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
         let data = serde_json::json!({
-            "docid": id,
-        });
-        let body = Body::Json(&data);
-        self.universal_request(Method::POST, url, &body).await?;
-        Ok(())
-    }
-
-    /// Restore a file or directory from recycle bin by its ID. [RecycleItem::id]
-    ///
-    /// **Note**: Restore multiple files need call multiple times.
-    pub async fn restore_recycle_item(&self, id: &str) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/restore";
-        let data = serde_json::json!({
-            "docid": id,
+            "docid": dir,
+            "name": name,
             "ondup": 1
         });
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
-
-        #[derive(serde::Deserialize)]
-        struct _Res {
-            #[serde(rename = "docid")]
-            id: String,
-        }
-
-        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-        res.unpack_with(|r| r.id, "Can not restore recycle item")
+        let res = serde_json::from_slice::<Res<CreateRes>>(&bytes)?;
+        res.unpack_with(|r| r, "Can not create dir")
     }
 
     // 重命名不存在的文件会在上层触发 400 错误
@@ -159,48 +138,68 @@ impl super::CloudApi {
         res.unpack_with(|r| r.id, "Can not copy item")
     }
 
-    /// Create directory in given parent directory with name. [Item::id]
-    pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<CreateRes> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
+    // 重复删掉文件也不会报错
+    /// Delete a file or directory to recycle bin by its ID. [Item::id]
+    ///
+    /// **Note**: Delete multiple files need call multiple times.
+    pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
         let data = serde_json::json!({
-            "docid": dir,
-            "name": name,
+            "docid": id,
+        });
+        let body = Body::Json(&data);
+        self.universal_request(Method::POST, url, &body).await?;
+        Ok(())
+    }
+
+    /// List recycle bin contents of user's personal directory
+    pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
+        let id = self.get_user_dir_id().await?;
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
+        let data = serde_json::json!({
+            "by": "time", // name/size
+            "docid": id,
+            "sort": "desc" // asc
+        });
+        let body = Body::Json(&data);
+        let res = self.universal_request(Method::POST, url, &body).await?;
+        let res = serde_json::from_slice::<Res<RecycleDir>>(&res)?;
+        res.unpack_with(|r| r, "Can not get recycle dir")
+    }
+
+    /// Delete a file or directory forever by its ID. [RecycleItem::id]
+    ///
+    /// **Note**: Delete multiple files need call multiple times.
+    pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/delete";
+        let data = serde_json::json!({
+            "docid": id,
+        });
+        let body = Body::Json(&data);
+        self.universal_request(Method::POST, url, &body).await?;
+        Ok(())
+    }
+
+    /// Restore a file or directory from recycle bin by its ID. [RecycleItem::id]
+    ///
+    /// **Note**: Restore multiple files need call multiple times.
+    pub async fn restore_recycle_item(&self, id: &str) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/restore";
+        let data = serde_json::json!({
+            "docid": id,
             "ondup": 1
         });
         let body = Body::Json(&data);
         let bytes = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<Res<CreateRes>>(&bytes)?;
-        res.unpack_with(|r| r, "Can not create dir")
-    }
 
-    /// Get a suggested name for a new directory in given parent directory. [Item::id]
-    ///
-    /// Usually for [super::CloudApi::create_dir]
-    pub async fn get_suggest_name(&self, dir: &str) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
-        let data = serde_json::json!({
-            "docid": dir,
-            "name": "新建文件夹",
-        });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
-        let res = utils::parse_by_tag(&bytes, ":\"", "\"")
-            .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?
-            .to_string();
-        Ok(res)
-    }
+        #[derive(serde::Deserialize)]
+        struct _Res {
+            #[serde(rename = "docid")]
+            id: String,
+        }
 
-    /// Get the size of a file or directory by its ID. [Item::id]
-    pub async fn get_item_size(&self, id: &str) -> crate::Result<SizeRes> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/size";
-        let data = serde_json::json!({
-            "docid": id,
-            "onlyrecycle": false
-        });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
-        let res = serde_json::from_slice::<Res<SizeRes>>(&bytes)?;
-        res.unpack_with(|r| r, "Can not get item size")
+        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
+        res.unpack_with(|r| r.id, "Can not restore recycle item")
     }
 
     // 传入不存在的 id 会在上层触发 400 错误
