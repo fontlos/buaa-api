@@ -94,7 +94,7 @@ impl super::CloudApi {
                 });
                 // 在这里删掉 client.oauth2_(refresh_)token 以外所有 cookie
                 // 防止刷新权限时干扰
-                self.cookies.update(|cookies|{
+                self.cookies.update(|cookies| {
                     cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_consent_csrf_612664744");
                     cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_login_csrf_612664744");
                     cookies.remove("bhpan.buaa.edu.cn", "/", "SignoutLogin3rdPartyStatus");
