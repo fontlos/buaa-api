@@ -54,7 +54,7 @@ impl super::SpocApi {
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let cred = &self.cred.load();
+        let cred = self.cred.load();
         if cred.is_expired::<Spoc>() {
             self.login().await?;
         }

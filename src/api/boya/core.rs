@@ -93,7 +93,7 @@ impl super::BoyaApi {
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
     {
-        let cred = &self.cred.load();
+        let cred = self.cred.load();
         if cred.is_expired::<Boya>() {
             self.login().await?;
         }
