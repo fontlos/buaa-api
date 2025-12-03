@@ -122,7 +122,7 @@ impl super::CloudApi {
     where
         Q: Serialize + ?Sized,
     {
-        let cred = &self.cred.load();
+        let cred = self.cred.load();
         if cred.is_expired::<Cloud>() {
             self.login().await?;
         }

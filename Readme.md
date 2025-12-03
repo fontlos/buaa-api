@@ -31,17 +31,34 @@
   - [x] Checkin class
 - [ ] BUAA Cloud Disk: `cloud`
   - [x] Login
-  - [x] Get root dir
-  - [x] Get all root dir
-  - [x] Get user root dir
-  - [x] List dir
-  - [x] Get single item download URL
-  - [x] Get a zip of multiple items download URL
-  - [x] Move item
-  - [x] Rename item
+  - [x] Dir & File
+    - [x] Get root dir
+    - [x] Get user root dir
+    - [x] List dir
+    - [x] Get item size
+    - [x] Get suggest name
+  - [x] CRUD
+    - [x] Create dir
+    - [x] Rename item
+    - [x] Move item
+    - [x] Copy item
+    - [x] Delete item
+  - [x] Recycle Bin
+    - [x] List
+    - [x] Delete
+    - [x] Restore
+  - [x] Share
+    - [x] Share record
+    - [x] Share item
+    - [x] Share update
+    - [x] Share delete
+  - [x] Download
+    - [x] Get single item download URL
+    - [x] Get a zip of multiple items download URL
+    - [x] Auto get items download URL
   - [x] Upload item
     - [x] Check hash
-    - [x] Fast upload
+    - [x] Fast upload (Check hash success)
     - [x] Get upload authorization
     - [x] Upload (Need `multipart` feature)
 - [ ] Spoc Platform: `spoc`
@@ -73,7 +90,7 @@
   - [ ] Recharge
 
 
-APIs not listed above might have been overlooked or deemed unimportant by me, but if you need them, feel free to open an issue or submit a pull request.
+APIs not listed above might have been overlooked or deemed unimportant by me, but if you need them, feel free to open an issue or open a pull request.
 
 # Usage
 
@@ -119,7 +136,6 @@ use buaa_api::Context;
 #[tokio::main]
 async fn main() {
     let context = Context::with_auth("./data");
-    context.login().await.unwrap();
 
     let boya = context.boya();
     // You can manually relogin in advance.
@@ -156,4 +172,4 @@ async fn main() {
 }
 ```
 
-More usage see `examples`
+More usage see [`examples`](./examples)
