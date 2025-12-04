@@ -39,17 +39,41 @@ impl super::SsoApi {
         ];
         let res = self.client.post(login_url).form(&form).send().await?;
         // 只有状态码是有效信息
-        let status = res.status().as_u16();
-        if status == 200 {
+        let status = res.status();
+        if status.is_success() {
             cred.refresh::<Sso>();
-            Ok(())
-        } else {
-            let source = format!("Response Code: {}", status);
-            Err(
-                Error::server("Login failed. Maybe wrong username or password")
-                    .with_label("Sso")
-                    .with_source(source),
-            )
+            return Ok(());
         }
+        // 当 "账号存在安全风险", "您的密码已过期或是已知的弱密码" 时尝试忽略风险继续登录
+        let bytes = res.bytes().await?;
+        if bytes
+            .windows(b"continueForm".len())
+            .any(|w| w == b"continueForm")
+        {
+            trace!(
+                "SSO account has security risk, try to ignore and continue. Suggest change password."
+            );
+            let execution = match utils::parse_by_tag(&bytes, "\"execution\" value=\"", "\"") {
+                Some(s) => s,
+                None => {
+                    return Err(Error::server(
+                        "Ignore the risk and continue login failed. No Execution Value",
+                    )
+                    .with_label("Sso"));
+                }
+            };
+            let form = [("execution", execution), ("_eventId", "ignoreAndContinue")];
+            let res = self.client.post(login_url).form(&form).send().await?;
+            if res.status().is_success() {
+                cred.refresh::<Sso>();
+                return Ok(());
+            }
+        }
+        let source = format!("Response Code: {}", status);
+        Err(
+            Error::server("Login failed. Maybe wrong username or password")
+                .with_label("Sso")
+                .with_source(source),
+        )
     }
 }
