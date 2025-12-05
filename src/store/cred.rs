@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
-use crate::api::{Boya, Class, Cloud, Spoc, Srs, Sso};
+use crate::api::{App, Boya, Class, Cloud, Spoc, Srs, Sso};
 use crate::error::{Code, Error, Result};
 use crate::utils;
 
@@ -16,6 +16,8 @@ use crate::utils;
 pub struct CredentialStore {
     pub(crate) username: Option<String>,
     pub(crate) password: Option<String>,
+    /// Mark login expiration time of App
+    pub app: CredentialItem,
     /// Token for Boya API
     pub boya_token: CredentialItem,
     /// Token for Class API
@@ -59,6 +61,8 @@ macro_rules! impl_token {
 
 // 我们这里做保守估计防止 token 意外失效
 
+// 理论上一年内有效, 但 24 小时就够用了
+impl_token!(App, app, 86400);
 // 测得 15 分钟以内有效, 这里用 10 分钟. 使用可刷新时效
 impl_token!(Boya, boya_token, 600);
 // 测得 7 天以内有效, 但 24 小时就够用了

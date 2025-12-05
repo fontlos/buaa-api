@@ -1,6 +1,7 @@
 //! BUAA API
 
 pub mod aas;
+pub mod app;
 pub mod boya;
 pub mod class;
 pub mod cloud;
@@ -16,6 +17,8 @@ pub mod wifi;
 pub struct Core;
 /// Marker type for BUAA Academic Affairs System API Group
 pub struct Aas;
+/// Marker type for BUAA App API Group
+pub struct App;
 /// Marker type for BUAA Boya Course API Group
 pub struct Boya;
 /// Marker type for BUAA Smart Classroom API Group
@@ -41,6 +44,8 @@ pub struct Wifi;
 pub enum Location {
     /// BUAA Academic Affairs System API
     Aas,
+    /// BUAA App API
+    App,
     /// BUAA Boya Course API
     Boya,
     /// BUAA Smart Classroom API
@@ -66,6 +71,7 @@ impl Location {
     pub fn as_str(&self) -> &'static str {
         match self {
             Location::Aas => "Aas",
+            Location::App => "App",
             Location::Boya => "Boya",
             Location::Class => "Class",
             Location::Cloud => "Cloud",
@@ -83,6 +89,10 @@ impl crate::Context<Core> {
     /// Get BUAA Academic Affairs System API Group
     pub const fn aas(&self) -> &crate::Context<Aas> {
         self.api::<Aas>()
+    }
+    /// Get BUAA App API Group
+    pub const fn app(&self) -> &crate::Context<App> {
+        self.api::<App>()
     }
     /// Get BUAA Boya Course API Group
     pub const fn boya(&self) -> &crate::Context<Boya> {
