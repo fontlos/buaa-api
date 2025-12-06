@@ -1,5 +1,7 @@
 //! # BUAA App API
 
+mod core;
+
 /// # BUAA App API Group
 ///
 /// Obtain a context view via [`Context.app()`],
