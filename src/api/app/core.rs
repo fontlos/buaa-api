@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use reqwest::header::USER_AGENT;
 
 use crate::api::{App, Sso};
@@ -27,5 +28,22 @@ impl super::AppApi {
         }
         self.cred.load().refresh::<App>();
         Ok(())
+    }
+
+    /// # Universal Request for AppApi
+    pub async fn universal_request(&self, url: &str) -> crate::Result<Bytes> {
+        let cred = self.cred.load();
+        if cred.is_expired::<App>() {
+            self.login().await?;
+        }
+
+        let res = self
+            .client
+            .get(url)
+            .header(USER_AGENT, APP_UA)
+            .send()
+            .await?;
+
+        Ok(res.bytes().await?)
     }
 }
