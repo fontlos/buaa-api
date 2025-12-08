@@ -1,5 +1,6 @@
 use serde::{Deserialize, Deserializer};
-use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset, format_description};
+use time::macros::format_description;
+use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -29,10 +30,10 @@ pub fn deserialize_datetime<'de, D>(deserializer: D) -> Result<PrimitiveDateTime
 where
     D: Deserializer<'de>,
 {
-    let format_string = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]")
-        .expect("Datetime format should always be valid");
+    let format_string =
+        format_description!("[year]-[month]-[day] [hour]:[minute][optional [:[second]]]");
 
-    let s: String = Deserialize::deserialize(deserializer)?;
+    let s: &'de str = Deserialize::deserialize(deserializer)?;
 
-    PrimitiveDateTime::parse(&s, &format_string).map_err(serde::de::Error::custom)
+    PrimitiveDateTime::parse(s, &format_string).map_err(serde::de::Error::custom)
 }

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Deserializer};
-use time::{PrimitiveDateTime, Weekday, format_description};
+use time::macros::format_description;
+use time::{PrimitiveDateTime, Weekday};
 
 // ====================
 // 用于 get_week
@@ -88,7 +89,7 @@ fn deserialize_time_range<'de, D>(deserializer: D) -> Result<TimeRange, D::Error
 where
     D: Deserializer<'de>,
 {
-    let format_string = format_description::parse("[year]-[month]-[day] [hour]:[minute]").unwrap();
+    let format_string = format_description!("[year]-[month]-[day] [hour]:[minute]");
 
     let s: String = Deserialize::deserialize(deserializer)?;
 

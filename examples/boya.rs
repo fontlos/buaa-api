@@ -35,13 +35,13 @@ mod tests {
     #[tokio::test]
     async fn test_selected() {
         use time::Date;
-        use time::format_description::parse;
+        use time::macros::format_description;
 
         let context = Context::with_auth("./data");
 
         let boya = context.boya();
 
-        let format_string = parse("[year]-[month]-[day]").unwrap();
+        let format_string = format_description!("[year]-[month]-[day]");
 
         let start = Date::parse("2024-08-26", &format_string).unwrap();
         let end = Date::parse("2024-12-29", &format_string).unwrap();
