@@ -3,7 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::request::{Client, client};
-use crate::store::cookies::AtomicCookieStore;
+use crate::store::cookies::{AtomicCookieStore, CookieStore};
 use crate::store::cred::CredentialStore;
 use crate::{api::Core, cell::AtomicCell};
 
@@ -46,9 +46,7 @@ impl Context {
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn with_auth<P: AsRef<Path>>(dir: P) -> Context {
         let cookies_path = dir.as_ref().join("cookies.json");
-        let cookies = Arc::new(AtomicCookieStore::new(AtomicCookieStore::from_file(
-            cookies_path,
-        )));
+        let cookies = CookieStore::from_file(cookies_path);
         let cred_path = dir.as_ref().join("cred.json");
         let cred = CredentialStore::from_file(cred_path);
 
@@ -110,7 +108,7 @@ impl Context {
     }
 
     /// Set cookies
-    pub fn set_cookies(&self, cookies: cookie_store::CookieStore) {
+    pub fn set_cookies(&self, cookies: CookieStore) {
         // 这在理论上是安全的
         // 因为没有理由在多线程中频繁切换 cookie
         // 如果有并发需求应该创建多个 Context 而不是切换这个
@@ -125,8 +123,8 @@ impl Context {
     }
 
     /// Get cookies
-    pub fn get_cookies(&self) -> &AtomicCookieStore {
-        &self.cookies
+    pub fn get_cookies(&self) -> &CookieStore {
+        &self.cookies.load()
     }
 
     /// Get credentials
@@ -150,7 +148,7 @@ impl Context {
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
     pub fn load_auth<P: AsRef<Path>>(&self, dir: P) {
         let cookies_path = dir.as_ref().join("cookies.json");
-        let cookies = AtomicCookieStore::from_file(cookies_path);
+        let cookies = CookieStore::from_file(cookies_path);
         let cred_path = dir.as_ref().join("cred.json");
         let cred = CredentialStore::from_file(cred_path);
         self.set_cookies(cookies);
@@ -209,7 +207,7 @@ impl<G> crate::Context<G> {
 pub struct ContextBuilder {
     client: Option<Client>,
     tls: bool,
-    cookies: Option<Arc<AtomicCookieStore>>,
+    cookies: Option<CookieStore>,
     cred: Option<CredentialStore>,
 }
 
@@ -240,7 +238,7 @@ impl ContextBuilder {
         self
     }
     /// Set the cookie store
-    pub fn cookies(mut self, cookies: Arc<AtomicCookieStore>) -> Self {
+    pub fn cookies(mut self, cookies: CookieStore) -> Self {
         self.cookies = Some(cookies);
         self
     }
@@ -253,6 +251,8 @@ impl ContextBuilder {
     pub fn build(self) -> Context {
         let cookies = self
             .cookies
+            .map(AtomicCookieStore::new)
+            .map(Arc::new)
             .unwrap_or_else(|| Arc::new(AtomicCookieStore::default()));
         let client = self
             .client
