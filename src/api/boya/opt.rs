@@ -43,26 +43,29 @@ impl BoyaApi {
         range: Option<(Date, Date)>,
     ) -> crate::Result<Vec<Selected>> {
         // 考虑到多数情况下只需要查询本学期即可
-        let range = range.unwrap_or_else(|| {
-            // 8 月为分界线
-            let today = utils::get_datetime();
-            if today.month() >= Month::August {
-                // 秋季学期. 应该不会有人在元旦后还选课吧
-                (
-                    Date::from_calendar_date(today.year(), Month::September, 1).unwrap(),
-                    Date::from_calendar_date(today.year(), Month::December, 31).unwrap(),
-                )
-            } else {
-                // 春季学期
-                (
-                    Date::from_calendar_date(today.year(), Month::March, 1).unwrap(),
-                    Date::from_calendar_date(today.year(), Month::July, 1).unwrap(),
-                )
-            }
-        });
+        let range = range
+            .map(|r| (format!("{} 00:00:00", r.0), format!("{} 00:00:00", r.1)))
+            .unwrap_or_else(|| {
+                // 8 月为分界线
+                let today = utils::get_datetime();
+                let year = today.year();
+                if today.month() >= Month::August {
+                    // 秋季学期. 应该不会有人在元旦后还选课吧
+                    (
+                        format!("{}-09-01 00:00:00", year),
+                        format!("{}-12-31 00:00:00", year),
+                    )
+                } else {
+                    // 春季学期
+                    (
+                        format!("{}-03-01 00:00:00", year),
+                        format!("{}-07-01 00:00:00", year),
+                    )
+                }
+            });
         let query = serde_json::json!({
-            "startDate": format!("{} 00:00:00", range.0),
-            "endDate": format!("{} 00:00:00", range.1),
+            "startDate": range.0,
+            "endDate": range.1,
         });
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
         let res: Data<Vec<Selected>> = self.universal_request(url, &query).await?;
