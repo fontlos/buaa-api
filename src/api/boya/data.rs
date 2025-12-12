@@ -347,10 +347,9 @@ where
 {
     let mut value: Vec<Coordinate> = Deserialize::deserialize(deserializer)?;
     // 搞不懂, 但经过两次测试似乎使用的是列表的最后一个值
-    if !value.is_empty() {
-        return Ok(value.pop().unwrap());
-    }
-    Err(serde::de::Error::custom("[Boya] No Coordinate"))
+    value
+        .pop()
+        .ok_or_else(|| serde::de::Error::custom("No Coordinate"))
 }
 
 // ====================
