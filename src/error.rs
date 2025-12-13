@@ -52,6 +52,10 @@ impl Error {
         Self::new(Kind::Auth, message)
     }
 
+    pub(crate) fn io(message: impl Into<Cow<'static, str>>) -> Self {
+        Self::new(Kind::Io, message)
+    }
+
     pub(crate) fn network(message: impl Into<Cow<'static, str>>) -> Self {
         Self::new(Kind::Network, message)
     }
@@ -106,6 +110,8 @@ impl Display for Error {
 pub enum Kind {
     /// Authentication error
     Auth,
+    /// I/O error
+    Io,
     /// Network error
     Network,
     /// Parameter error
@@ -120,6 +126,7 @@ impl Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Kind::Auth => write!(f, "AuthorizationError"),
+            Kind::Io => write!(f, "IOError"),
             Kind::Network => write!(f, "NetworkError"),
             Kind::Parameter => write!(f, "ParameterError"),
             Kind::Parse => write!(f, "ParseError"),

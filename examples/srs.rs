@@ -5,32 +5,32 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_srs() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let srs = context.srs();
 
         let filter = srs.get_default_filter().await.unwrap();
-
         let res = srs.query_course(&filter).await.unwrap();
         println!("{:?}", res);
-
         let batch = srs.get_batch().await.unwrap();
-
         srs.pre_select_course(&res.data[0], &filter, &batch, 1)
             .await
             .unwrap();
+
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
     #[tokio::test]
     async fn test_selected() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let srs = context.srs();
 
         let res = srs.query_selected().await.unwrap();
-
         println!("{:?}", res);
+
+        context.save_auth("./data").unwrap();
     }
 }
 
