@@ -135,7 +135,7 @@ use buaa_api::Context;
 
 #[tokio::main]
 async fn main() {
-    let context = Context::with_auth("./data");
+    let context = Context::with_auth("./data").unwrap();
 
     let boya = context.boya();
     // You can manually relogin in advance.
@@ -151,7 +151,7 @@ async fn main() {
     let res = boya.select_course(id).await.unwrap();
     println!("{}", res);
 
-    context.save_auth();
+    context.save_auth().unwrap();
 }
 ```
 

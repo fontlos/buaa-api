@@ -78,23 +78,25 @@ impl_token!(Sso, sso, 5400);
 
 impl CredentialStore {
     /// Load credential store from file, if file not exist or invalid, return default store
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
-        let file = match OpenOptions::new().read(true).open(path) {
-            Ok(file) => file,
-            Err(_) => return Self::default(),
-        };
-        serde_json::from_reader(file).unwrap_or_default()
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let file = OpenOptions::new()
+            .read(true)
+            .open(path)
+            .map_err(|e| Error::io("Failed to open cred.json").with_source(e))?;
+        serde_json::from_reader(file)
+            .map_err(|e| Error::parse("Failed to read cred.json").with_source(e))
     }
 
     /// Save credential store to file
-    pub fn to_file<P: AsRef<Path>>(&self, path: P) {
+    pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         let file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
             .open(path)
-            .unwrap();
-        serde_json::to_writer(file, self).unwrap();
+            .map_err(|e| Error::io("Failed to open cred.json").with_source(e))?;
+        serde_json::to_writer(file, self)
+            .map_err(|e| Error::io("Failed to write cred.json").with_source(e))
     }
 
     pub(crate) fn username(&self) -> Result<&str> {

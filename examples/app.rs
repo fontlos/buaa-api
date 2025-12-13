@@ -5,14 +5,14 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_app() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let app = context.app();
 
         let exams = app.get_exam().await.unwrap();
         println!("{:#?}", exams);
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 }
 

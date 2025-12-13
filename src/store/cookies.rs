@@ -3,12 +3,13 @@
 use cookie_store::{Cookie, CookieStore as RawCookieStore, RawCookie, RawCookieParseError};
 use reqwest::header::HeaderValue;
 
-use std::fs::{File, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::BufReader;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
 use crate::cell::AtomicCell;
+use crate::error::{Error, Result};
 
 /// Cookie Store
 pub struct CookieStore(RawCookieStore);
@@ -35,34 +36,28 @@ impl DerefMut for CookieStore {
 
 impl CookieStore {
     /// Load cookie store from file, if file not exist or invalid, return default store
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Self {
-        let store = match File::open(&path) {
-            Ok(f) => RawCookieStore::load_all(BufReader::new(f), |s| {
-                serde_json::from_str::<Cookie<'_>>(s)
-            })
-            .unwrap(),
-            Err(_) => RawCookieStore::default(),
-        };
-        CookieStore(store)
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let file = OpenOptions::new()
+            .read(true)
+            .open(path)
+            .map_err(|e| Error::io("Failed to open cookies.json").with_source(e))?;
+        RawCookieStore::load_all(BufReader::new(file), |s| {
+            serde_json::from_str::<Cookie<'_>>(s)
+        })
+        .map(CookieStore)
+        .map_err(|e| Error::parse("Failed to read cookies.json").with_source(e))
     }
 
     /// Save cookie store to file
-    pub fn to_file<P: AsRef<Path>>(&self, path: P) {
-        let mut file = match OpenOptions::new()
+    pub fn to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let mut file = OpenOptions::new()
             .write(true)
             .create(true)
             .truncate(true)
             .open(path)
-        {
-            Ok(f) => f,
-            Err(e) => {
-                eprintln!("Failed to open cookie file: {e}");
-                return;
-            }
-        };
-        if let Err(e) = self.save_incl_expired_and_nonpersistent(&mut file, serde_json::to_string) {
-            eprintln!("Failed to save cookie store: {e}");
-        }
+            .map_err(|e| Error::io("Failed to open cookies.json").with_source(e))?;
+        self.save_incl_expired_and_nonpersistent(&mut file, serde_json::to_string)
+            .map_err(|e| Error::io("Failed to write cookies.json").with_source(e))
     }
 }
 

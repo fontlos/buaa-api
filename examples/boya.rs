@@ -5,7 +5,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_boya() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
         // 2025.5.18 15:00 我们也成功支持 SSO 的自动刷新了
         // 现在真正可以直接调用 API 无需预处理了
         // context.login().await.unwrap();
@@ -17,18 +17,20 @@ mod tests {
         let res = boya.query_course().await.unwrap();
         println!("{:?}", res);
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
     #[tokio::test]
     async fn test_sign_rule() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let boya = context.boya();
 
         let res = boya.query_sign_rule(7882).await.unwrap();
         println!("{:?}", res);
+
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
@@ -37,7 +39,7 @@ mod tests {
         use time::Date;
         use time::macros::format_description;
 
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let boya = context.boya();
 
@@ -48,37 +50,45 @@ mod tests {
 
         let res = boya.query_selected(Some((start, end))).await.unwrap();
         println!("{:?}", res);
+
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
     #[tokio::test]
     async fn test_select() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let boya = context.boya();
 
         boya.select_course(6637).await.unwrap();
+
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
     #[tokio::test]
     async fn test_drop() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let boya = context.boya();
 
         boya.drop_course(6637).await.unwrap();
+
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
     #[tokio::test]
     async fn test_statistic() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let boya = context.boya();
 
         let res = boya.query_statistic().await.unwrap();
         println!("{:?}", res);
+
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
@@ -86,7 +96,7 @@ mod tests {
     async fn test_checkin_checkout() {
         use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let boya = context.boya();
         let id = 7774;
@@ -110,6 +120,8 @@ mod tests {
             println!("Checkout: {:?}", res);
             return;
         }
+
+        context.save_auth("./data").unwrap();
     }
 }
 

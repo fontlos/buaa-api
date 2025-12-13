@@ -4,7 +4,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_dir() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
 
@@ -14,12 +14,12 @@ mod tests {
         let size = cloud.get_item_size(&user_dir).await.unwrap();
         println!("Size: {size:#?}");
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_create() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -29,12 +29,12 @@ mod tests {
             .unwrap();
         let _ = cloud.create_dir(&user_dir, &name).await.unwrap();
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_rename() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -42,12 +42,12 @@ mod tests {
 
         cloud.rename_item(&list.dirs[0].id, "dir").await.unwrap();
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_move() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -59,12 +59,12 @@ mod tests {
 
         println!("Moved item id: {}", res);
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_copy() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -75,12 +75,12 @@ mod tests {
         let res = cloud.copy_item(&dir.id, &file.id).await.unwrap();
         println!("Moved item id: {}", res);
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_delete() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -88,12 +88,12 @@ mod tests {
 
         cloud.delete_item(&list.files[0].id).await.unwrap();
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_recycle() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
 
@@ -106,12 +106,12 @@ mod tests {
             .unwrap();
         println!("Restored: {}", id);
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_share() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -128,12 +128,12 @@ mod tests {
         cloud.share_update(&share_id, &share).await.unwrap();
         cloud.share_delete(&share_id).await.unwrap();
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_get_download_url() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
 
@@ -143,7 +143,7 @@ mod tests {
 
         println!("Download URL: {url}");
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
@@ -154,7 +154,7 @@ mod tests {
         let md5 = crypto::bytes2hex(&crypto::md5::Md5::digest(&file));
         let crc32 = format!("{:08x}", crypto::crc::Crc32::digest(&file));
 
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -169,7 +169,7 @@ mod tests {
             println!("Fast upload success: {}", res);
         }
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
@@ -177,7 +177,7 @@ mod tests {
         let file = std::fs::read("./data/c.bat").unwrap();
         let length = file.len() as u64;
 
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
@@ -196,7 +196,7 @@ mod tests {
             cloud.upload(res, part).await.unwrap();
         }
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 }
 

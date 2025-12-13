@@ -5,7 +5,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_class_checkin() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let class = context.class();
 
@@ -14,13 +14,13 @@ mod tests {
         let res = class.checkin(res[0].id).await.unwrap();
         println!("{}", res);
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 
     #[ignore]
     #[tokio::test]
     async fn test_class_course() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let class = context.class();
 
@@ -31,7 +31,7 @@ mod tests {
         let res = class.checkin(&res.last().unwrap().id).await.unwrap();
         println!("{}", res);
 
-        context.save_auth("./data");
+        context.save_auth("./data").unwrap();
     }
 }
 

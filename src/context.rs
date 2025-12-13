@@ -44,13 +44,13 @@ impl Context {
     ///
     /// If either file doesn't exist or fails to load, default values will be used instead.
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn with_auth<P: AsRef<Path>>(dir: P) -> Context {
+    pub fn with_auth<P: AsRef<Path>>(dir: P) -> crate::Result<Self> {
         let cookies_path = dir.as_ref().join("cookies.json");
-        let cookies = CookieStore::from_file(cookies_path);
+        let cookies = CookieStore::from_file(cookies_path)?;
         let cred_path = dir.as_ref().join("cred.json");
-        let cred = CredentialStore::from_file(cred_path);
+        let cred = CredentialStore::from_file(cred_path)?;
 
-        ContextBuilder::new().cookies(cookies).cred(cred).build()
+        Ok(ContextBuilder::new().cookies(cookies).cred(cred).build())
     }
 
     /// # Context Login
@@ -63,7 +63,7 @@ impl Context {
     ///
     /// ## Note
     ///
-    /// In fact, this is a wrapper of `login()` in [`SsoApi`](./api/sso/type.SsoApi.html).
+    /// In fact, this is a wrapper of `login()` in [crate::api::sso::SsoApi].
     ///
     /// And by default, it will be automatically re-called if the cookie is expired.
     ///
@@ -146,13 +146,14 @@ impl Context {
     /// context.set_cookies(cookie);
     /// ```
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn load_auth<P: AsRef<Path>>(&self, dir: P) {
+    pub fn load_auth<P: AsRef<Path>>(&self, dir: P) -> crate::Result<()> {
         let cookies_path = dir.as_ref().join("cookies.json");
-        let cookies = CookieStore::from_file(cookies_path);
+        let cookies = CookieStore::from_file(cookies_path)?;
         let cred_path = dir.as_ref().join("cred.json");
-        let cred = CredentialStore::from_file(cred_path);
+        let cred = CredentialStore::from_file(cred_path)?;
         self.set_cookies(cookies);
         self.set_cred(cred);
+        Ok(())
     }
 
     /// Save authentication data (credentials and cookies) to specified directory.
@@ -167,11 +168,12 @@ impl Context {
     /// cookies.to_file(path);
     /// ```
     #[cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))]
-    pub fn save_auth<P: AsRef<Path>>(&self, dir: P) {
+    pub fn save_auth<P: AsRef<Path>>(&self, dir: P) -> crate::Result<()> {
         let cookies_path = dir.as_ref().join("cookies.json");
         let cred_path = dir.as_ref().join("cred.json");
-        self.get_cookies().to_file(cookies_path);
-        self.get_cred().to_file(cred_path);
+        self.get_cookies().to_file(cookies_path)?;
+        self.get_cred().to_file(cred_path)?;
+        Ok(())
     }
 }
 

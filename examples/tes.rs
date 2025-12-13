@@ -5,7 +5,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_tes() {
-        let context = Context::with_auth("./data");
+        let context = Context::with_auth("./data").unwrap();
 
         let tes = context.tes();
         tes.login().await.unwrap();
@@ -15,18 +15,14 @@ mod tests {
             if i.state == true {
                 continue;
             }
-
             let form = tes.get_evaluation_form(&i).await.unwrap();
-
             let complete = form.fill_default();
-
             let res = tes.submit_evaluation(complete).await.unwrap();
-
             println!("{}", res.text().await.unwrap());
-
             // 休眠一秒, 防止请求过快被服务器拒绝
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
+        context.save_auth("./data").unwrap();
     }
 }
 
