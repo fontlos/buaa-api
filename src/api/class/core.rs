@@ -83,7 +83,9 @@ impl super::ClassApi {
         let token = cred.value::<Class>()?;
 
         // 因为双 token 机制, 我们暂时只是简单的将其拼在一起
-        let (session, id) = token.split_once('@').unwrap();
+        let (session, id) = token
+            .split_once('@')
+            .ok_or(Error::auth("Cannot split 'session' and 'id' token").with_label("Class"))?;
 
         // 在 URL 中硬编码 id
         let res = self
