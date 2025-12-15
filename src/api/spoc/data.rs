@@ -26,7 +26,9 @@ where
     let s: String = Deserialize::deserialize(deserializer)?;
     let mut s = s.split(",");
     s.next();
-    Ok((s.next().unwrap().to_string(), s.next().unwrap().to_string()))
+    let start = s.next().ok_or_else(|| serde::de::Error::custom("Missing start date"))?;
+    let end = s.next().ok_or_else(|| serde::de::Error::custom("Missing end date"))?;
+    Ok((start.to_string(), end.to_string()))
 }
 
 // ====================
