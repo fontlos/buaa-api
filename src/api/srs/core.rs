@@ -21,16 +21,18 @@ impl super::SrsApi {
             return Err(Error::server("Redirect failed").with_label("Srs"));
         }
         // 储存 token
-        let cookie = self.cookies.load();
-        match cookie.get("byxk.buaa.edu.cn", "/xsxk", "token") {
-            Some(t) => {
-                self.cred.update(|s| {
-                    s.update::<Srs>(t.value().to_string());
-                });
-                Ok(())
-            }
-            None => Err(Error::server("Login failed. No Token").with_label("Srs")),
-        }
+        let token = self
+            .cookies
+            .load()
+            .get_map("byxk.buaa.edu.cn")
+            .and_then(|c| c.get("token"))
+            .and_then(|c| c.value())
+            .ok_or(Error::server("Login failed. No Token").with_label("Srs"))?;
+        self.cred.update(|s| {
+            s.update::<Srs>(token.to_string());
+        });
+
+        Ok(())
     }
 
     pub(super) async fn universal_request<'a, Q, T>(

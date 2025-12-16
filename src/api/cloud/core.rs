@@ -4,6 +4,7 @@ use serde::Serialize;
 
 use crate::api::{Cloud, Sso};
 use crate::error::Error;
+use crate::store::cookies::Cookie;
 
 use super::data::Body;
 
@@ -47,22 +48,15 @@ impl super::CloudApi {
 
         if path == "/oauth2/signin" {
             // 从 URL 解析 login_challenge=xxx
-            let login_challenge = res.url().query().unwrap().to_string();
-
-            let login_challenge = cookie_store::Cookie::parse(
-                login_challenge,
-                &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
-            )
-            .unwrap();
+            let login_challenge = res
+                .url()
+                .query()
+                .map(Cookie::parse)
+                .ok_or(Error::server("No login_challenge").with_label("Cloud"))?;
 
             // 这里有一条需要手动添加的临时 Cookie
             self.cookies.update(|store| {
-                store
-                    .insert(
-                        login_challenge,
-                        &"https://bhpan.buaa.edu.cn/".parse().unwrap(),
-                    )
-                    .unwrap();
+                store.insert("bhpan.buaa.edu.cn", login_challenge);
             });
             // 发起登录请求
             let url =
@@ -70,7 +64,7 @@ impl super::CloudApi {
             let res = self.client.get(url).send().await?;
             // 移除临时 Cookie
             self.cookies.update(|store| {
-                store.remove("bhpan.buaa.edu.cn", "/", "login_challenge");
+                store.remove("bhpan.buaa.edu.cn", "login_challenge");
             });
             // 来到回调地址证明登陆成功
             if res.url().path() != "/anyshare/oauth2/login/callback" {
@@ -86,25 +80,28 @@ impl super::CloudApi {
         match self
             .cookies
             .load()
-            .get("bhpan.buaa.edu.cn", "/", "client.oauth2_token")
+            .get("bhpan.buaa.edu.cn", "client.oauth2_token")
+            .and_then(|c| c.value())
         {
             Some(t) => {
                 self.cred.update(|s| {
-                    s.update::<Cloud>(t.value().to_string());
+                    s.update::<Cloud>(t.to_string());
                 });
                 // 在这里删掉 client.oauth2_(refresh_)token 以外所有 cookie
                 // 防止刷新权限时干扰
                 self.cookies.update(|cookies| {
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_consent_csrf_612664744");
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_login_csrf_612664744");
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "SignoutLogin3rdPartyStatus");
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "client.origin_uri");
-                    // 这个与刷新 refresh_token 有关
-                    // cookies.remove("bhpan.buaa.edu.cn", "/", "ory_hydra_session");
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "id_token");
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "state");
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "_csrf");
-                    cookies.remove("bhpan.buaa.edu.cn", "/", "lang");
+                    if let Some(namemap) = cookies.get_mut_map("bhpan.buaa.edu.cn") {
+                        namemap.remove("ory_hydra_consent_csrf_612664744");
+                        namemap.remove("ory_hydra_login_csrf_612664744");
+                        namemap.remove("SignoutLogin3rdPartyStatus");
+                        namemap.remove("client.origin_uri");
+                        // 这个与刷新 refresh_token 有关
+                        // namemap.remove("ory_hydra_session");
+                        namemap.remove("id_token");
+                        namemap.remove("state");
+                        namemap.remove("_csrf");
+                        namemap.remove("lang");
+                    }
                 });
                 Ok(())
             }
