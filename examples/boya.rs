@@ -27,7 +27,7 @@ mod tests {
 
         let boya = context.boya();
 
-        let res = boya.query_sign_rule(7882).await.unwrap();
+        let res = boya.query_sign_rule(8861).await.unwrap();
         println!("{:?}", res);
 
         context.save_auth("./data").unwrap();
