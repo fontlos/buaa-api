@@ -293,12 +293,12 @@ impl<'de> Deserialize<'de> for Data<Option<SignRule>> {
 
         let i = I::deserialize(deserializer)?;
         if i.rule.is_empty() {
-            return Ok(Data(None));
-        }
-        let rule = i.rule.replace("\\\"", "\"");
-        match serde_json::from_str::<SignRule>(&rule) {
-            Ok(r) => Ok(Data(Some(r))),
-            Err(_) => Ok(Data(None)),
+            Ok(Data(None))
+        } else {
+            let rule = i.rule.replace("\\\"", "\"");
+            serde_json::from_str::<SignRule>(&rule)
+                .map(|r| Data(Some(r)))
+                .map_err(|_| serde::de::Error::custom("Bad CourseSignConfig"))
         }
     }
 }
@@ -338,7 +338,7 @@ pub struct Coordinate {
     #[serde(rename = "lat")]
     pub latitude: f64,
     /// Radius
-    pub radius: i32,
+    pub radius: f64,
 }
 
 fn deserialize_coordinate<'de, D>(deserializer: D) -> Result<Coordinate, D::Error>
