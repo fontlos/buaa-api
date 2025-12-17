@@ -52,6 +52,10 @@ pub struct Course {
     #[serde(deserialize_with = "deserialize_campuses")]
     #[serde(rename = "courseCampusList")]
     pub campuses: Vec<Campus>,
+    /// Sign configuration
+    #[serde(deserialize_with = "deserialize_sign")]
+    #[serde(rename = "courseSignConfig")]
+    pub sign_config: Option<SignConfig>,
     /// Whether the course is selected
     pub selected: bool,
 }
@@ -156,6 +160,98 @@ where
         }
     }
     Ok(campuses)
+}
+
+fn deserialize_sign<'de, D>(deserializer: D) -> Result<Option<SignConfig>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: String = String::deserialize(deserializer)?;
+    if value.is_empty() {
+        Ok(None)
+    } else {
+        let value = value.replace("\\\"", "\"");
+        serde_json::from_str::<SignConfig>(&value)
+            .map(Some)
+            .map_err(|_| serde::de::Error::custom("Bad CourseSignConfig"))
+    }
+}
+
+impl<'de> Deserialize<'de> for Data<Option<SignConfig>> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
+            // #[serde(rename = "courseDesc")]
+            // pub description: String,
+
+            // 同时用于签到签退的信息
+            #[serde(rename = "courseSignConfig")]
+            rule: String,
+        }
+
+        let i = I::deserialize(deserializer)?;
+        if i.rule.is_empty() {
+            Ok(Data(None))
+        } else {
+            let rule = i.rule.replace("\\\"", "\"");
+            serde_json::from_str::<SignConfig>(&rule)
+                .map(|r| Data(Some(r)))
+                .map_err(|_| serde::de::Error::custom("Bad CourseSignConfig"))
+        }
+    }
+}
+
+/// Sign rule info
+#[derive(Debug, Deserialize)]
+pub struct SignConfig {
+    /// Check in start time
+    #[serde(deserialize_with = "deserialize_datetime")]
+    #[serde(rename = "signStartDate")]
+    pub checkin_start: PrimitiveDateTime,
+    /// Check in end time
+    #[serde(deserialize_with = "deserialize_datetime")]
+    #[serde(rename = "signEndDate")]
+    pub checkin_end: PrimitiveDateTime,
+    /// Check out start time
+    #[serde(deserialize_with = "deserialize_datetime")]
+    #[serde(rename = "signOutStartDate")]
+    pub checkout_start: PrimitiveDateTime,
+    /// Check out end time
+    #[serde(deserialize_with = "deserialize_datetime")]
+    #[serde(rename = "signOutEndDate")]
+    pub checkout_end: PrimitiveDateTime,
+    /// Coordinate for check in/out
+    #[serde(deserialize_with = "deserialize_coordinate")]
+    #[serde(rename = "signPointList")]
+    pub coordinate: Coordinate,
+}
+
+/// Coordinate in [SignRule]
+#[derive(Debug, Deserialize)]
+pub struct Coordinate {
+    /// Longitude
+    #[serde(rename = "lng")]
+    pub longitude: f64,
+    /// Latitude
+    #[serde(rename = "lat")]
+    pub latitude: f64,
+    /// Radius
+    pub radius: f64,
+}
+
+fn deserialize_coordinate<'de, D>(deserializer: D) -> Result<Coordinate, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut value: Vec<Coordinate> = Deserialize::deserialize(deserializer)?;
+    // 搞不懂, 但经过两次测试似乎使用的是列表的最后一个值
+    value
+        .pop()
+        .ok_or_else(|| serde::de::Error::custom("No Coordinate"))
 }
 
 // ====================
@@ -275,83 +371,6 @@ pub struct Assessment {
 // 用于 query_sign_rule
 // ====================
 
-impl<'de> Deserialize<'de> for Data<Option<SignRule>> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct I {
-            // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
-            // #[serde(rename = "courseDesc")]
-            // pub description: String,
-
-            // 同时用于签到签退的信息
-            #[serde(rename = "courseSignConfig")]
-            rule: String,
-        }
-
-        let i = I::deserialize(deserializer)?;
-        if i.rule.is_empty() {
-            Ok(Data(None))
-        } else {
-            let rule = i.rule.replace("\\\"", "\"");
-            serde_json::from_str::<SignRule>(&rule)
-                .map(|r| Data(Some(r)))
-                .map_err(|_| serde::de::Error::custom("Bad CourseSignConfig"))
-        }
-    }
-}
-
-/// Sign rule info
-#[derive(Debug, Deserialize)]
-pub struct SignRule {
-    /// Check in start time
-    #[serde(deserialize_with = "deserialize_datetime")]
-    #[serde(rename = "signStartDate")]
-    pub checkin_start: PrimitiveDateTime,
-    /// Check in end time
-    #[serde(deserialize_with = "deserialize_datetime")]
-    #[serde(rename = "signEndDate")]
-    pub checkin_end: PrimitiveDateTime,
-    /// Check out start time
-    #[serde(deserialize_with = "deserialize_datetime")]
-    #[serde(rename = "signOutStartDate")]
-    pub checkout_start: PrimitiveDateTime,
-    /// Check out end time
-    #[serde(deserialize_with = "deserialize_datetime")]
-    #[serde(rename = "signOutEndDate")]
-    pub checkout_end: PrimitiveDateTime,
-    /// Coordinate for check in/out
-    #[serde(deserialize_with = "deserialize_coordinate")]
-    #[serde(rename = "signPointList")]
-    pub coordinate: Coordinate,
-}
-
-/// Coordinate in [SignRule]
-#[derive(Debug, Deserialize)]
-pub struct Coordinate {
-    /// Longitude
-    #[serde(rename = "lng")]
-    pub longitude: f64,
-    /// Latitude
-    #[serde(rename = "lat")]
-    pub latitude: f64,
-    /// Radius
-    pub radius: f64,
-}
-
-fn deserialize_coordinate<'de, D>(deserializer: D) -> Result<Coordinate, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let mut value: Vec<Coordinate> = Deserialize::deserialize(deserializer)?;
-    // 搞不懂, 但经过两次测试似乎使用的是列表的最后一个值
-    value
-        .pop()
-        .ok_or_else(|| serde::de::Error::custom("No Coordinate"))
-}
-
 // ====================
 // 用于 sign_course
 // ====================
@@ -371,7 +390,7 @@ impl<'de> Deserialize<'de> for Data<SignRes> {
         let i = i.info.replace("\\\"", "\"");
         match serde_json::from_str::<SignRes>(&i) {
             Ok(s) => Ok(Data(s)),
-            Err(_) => Err(serde::de::Error::custom("[Boya] Bad SignInfo")),
+            Err(_) => Err(serde::de::Error::custom("Bad SignInfo")),
         }
     }
 }

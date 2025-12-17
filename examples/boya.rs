@@ -14,7 +14,7 @@ mod tests {
         // 2025.5.17 14:00 现在至少 Boya 的 API 是支持自动刷新的
         // boya.login().await.unwrap();
 
-        let res = boya.query_course().await.unwrap();
+        let res = boya.query_courses().await.unwrap();
         println!("{:?}", res);
 
         context.save_auth("./data").unwrap();
