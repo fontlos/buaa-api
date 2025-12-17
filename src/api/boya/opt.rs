@@ -4,12 +4,11 @@ use time::{Date, Month};
 use crate::utils;
 
 use super::BoyaApi;
-use super::data::{Coordinate, Course, Data, Selected, SignRes, SignRule, Statistic};
+use super::data::{Coordinate, Course, Data, Selected, SignRes, SignConfig, Statistic};
 
 impl BoyaApi {
-    // TODO: 考虑在这里并发的给所有 Course 获取签到信息
-    /// # Query Course
-    pub async fn query_course(&self) -> crate::Result<Vec<Course>> {
+    /// # Query Course List
+    pub async fn query_courses(&self) -> crate::Result<Vec<Course>> {
         let query = serde_json::json!({
             "pageNumber": 1,
             "pageSize": 10,
@@ -26,16 +25,16 @@ impl BoyaApi {
     /// - Input: Course ID from [Course] via [BoyaApi::query_course]
     ///
     /// If return `Some`, this means you can sign in this course via [BoyaApi::checkin_course] and [BoyaApi::checkout_course].
-    pub async fn query_sign_rule(&self, id: u32) -> crate::Result<Option<SignRule>> {
+    pub async fn query_sign_rule(&self, id: u32) -> crate::Result<Option<SignConfig>> {
         let query = serde_json::json!({
             "id": id,
         });
         let url = "https://bykc.buaa.edu.cn/sscv/queryCourseById";
-        let res: Data<Option<SignRule>> = self.universal_request(url, &query).await?;
+        let res: Data<Option<SignConfig>> = self.universal_request(url, &query).await?;
         Ok(res.0)
     }
 
-    /// # Query Selected Courses
+    /// # Query Selected Course List
     ///
     /// - Input: Start and end date. If `None`, query current term.
     pub async fn query_selected(
