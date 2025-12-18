@@ -4,7 +4,7 @@ use time::{Date, Month};
 use crate::utils;
 
 use super::BoyaApi;
-use super::data::{Coordinate, Course, Data, Selected, SignRes, SignConfig, Statistic};
+use super::data::{Coordinate, Course, Data, Selected, SignRes, Statistic};
 
 impl BoyaApi {
     /// # Query Course List
@@ -20,18 +20,16 @@ impl BoyaApi {
         Ok(res.0)
     }
 
-    /// # Query Sign Rule
+    /// # Query Single Course Info
     ///
-    /// - Input: Course ID from [Course] via [BoyaApi::query_course]
-    ///
-    /// If return `Some`, this means you can sign in this course via [BoyaApi::checkin_course] and [BoyaApi::checkout_course].
-    pub async fn query_sign_rule(&self, id: u32) -> crate::Result<Option<SignConfig>> {
+    /// - Input: Course ID from [Course] via [BoyaApi::query_courses]
+    pub async fn query_course(&self, id: u32) -> crate::Result<Course> {
         let query = serde_json::json!({
             "id": id,
         });
         let url = "https://bykc.buaa.edu.cn/sscv/queryCourseById";
-        let res: Data<Option<SignConfig>> = self.universal_request(url, &query).await?;
-        Ok(res.0)
+        let res: Course = self.universal_request(url, &query).await?;
+        Ok(res)
     }
 
     /// # Query Selected Course List
@@ -129,8 +127,8 @@ impl BoyaApi {
     /// # Check-in Course
     ///
     /// - Input:
-    ///     - Course ID from [Course] via [BoyaApi::query_course]
-    ///     - Coordinate from [SignRule::coordinate] via [BoyaApi::query_sign_rule]
+    ///     - Course ID from [Course]
+    ///     - Coordinate from [Course.sign_config.coordinate]
     pub async fn checkin_course(&self, id: u32, coordinate: &Coordinate) -> crate::Result<SignRes> {
         self.sign_course(id, coordinate, 1).await
     }
@@ -138,8 +136,8 @@ impl BoyaApi {
     /// # Check-out Course
     ///
     /// - Input:
-    ///     - Course ID from [Course] via [BoyaApi::query_course]
-    ///     - Coordinate from [SignRule::coordinate] via [BoyaApi::query_sign_rule]
+    ///     - Course ID from [Course]
+    ///     - Coordinate from [Course.sign_config.coordinate]
     pub async fn checkout_course(
         &self,
         id: u32,
