@@ -4,7 +4,7 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_boya() {
+    async fn test_courses() {
         let context = Context::with_auth("./data").unwrap();
         // 2025.5.18 15:00 我们也成功支持 SSO 的自动刷新了
         // 现在真正可以直接调用 API 无需预处理了
@@ -22,12 +22,12 @@ mod tests {
 
     #[ignore]
     #[tokio::test]
-    async fn test_sign_rule() {
+    async fn test_course() {
         let context = Context::with_auth("./data").unwrap();
 
         let boya = context.boya();
 
-        let res = boya.query_sign_rule(8861).await.unwrap();
+        let res = boya.query_course(8861).await.unwrap();
         println!("{:?}", res);
 
         context.save_auth("./data").unwrap();
@@ -101,7 +101,7 @@ mod tests {
         let boya = context.boya();
         let id = 7774;
 
-        let rule = boya.query_sign_rule(id).await.unwrap().unwrap();
+        let rule = boya.query_course(id).await.unwrap().sign_config.unwrap();
         println!("{:?}", rule);
 
         let now_utc = OffsetDateTime::now_utc();

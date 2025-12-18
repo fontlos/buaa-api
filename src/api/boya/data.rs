@@ -27,6 +27,10 @@ impl<'de> Deserialize<'de> for Data<Vec<Course>> {
     }
 }
 
+// ====================
+// 用于 query_course
+// ====================
+
 /// Course info
 #[derive(Debug, Deserialize)]
 pub struct Course {
@@ -52,6 +56,9 @@ pub struct Course {
     #[serde(deserialize_with = "deserialize_campuses")]
     #[serde(rename = "courseCampusList")]
     pub campuses: Vec<Campus>,
+    // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
+    // #[serde(rename = "courseDesc")]
+    // pub description: String,
     /// Sign configuration
     #[serde(deserialize_with = "deserialize_sign")]
     #[serde(rename = "courseSignConfig")]
@@ -123,9 +130,20 @@ pub struct Capacity {
     /// Maximum capacity
     #[serde(rename = "courseMaxCount")]
     pub max: u32,
+    // 默认为 0. 不然在解析单个课程时会报错.
+    // 明明解析课程列表就有值, 什么 ** 设计
     /// Current selected count
+    #[serde(deserialize_with = "deserialize_null_default")]
     #[serde(rename = "courseCurrentCount")]
     pub current: u32,
+}
+
+fn deserialize_null_default<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<u32>::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
 }
 
 /// Course campus
@@ -177,35 +195,7 @@ where
     }
 }
 
-impl<'de> Deserialize<'de> for Data<Option<SignConfig>> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct I {
-            // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
-            // #[serde(rename = "courseDesc")]
-            // pub description: String,
-
-            // 同时用于签到签退的信息
-            #[serde(rename = "courseSignConfig")]
-            rule: String,
-        }
-
-        let i = I::deserialize(deserializer)?;
-        if i.rule.is_empty() {
-            Ok(Data(None))
-        } else {
-            let rule = i.rule.replace("\\\"", "\"");
-            serde_json::from_str::<SignConfig>(&rule)
-                .map(|r| Data(Some(r)))
-                .map_err(|_| serde::de::Error::custom("Bad CourseSignConfig"))
-        }
-    }
-}
-
-/// Sign rule info
+/// Sign Configuration
 #[derive(Debug, Deserialize)]
 pub struct SignConfig {
     /// Check in start time
@@ -230,7 +220,7 @@ pub struct SignConfig {
     pub coordinate: Coordinate,
 }
 
-/// Coordinate in [SignRule]
+/// Coordinate in [SignConfig]
 #[derive(Debug, Deserialize)]
 pub struct Coordinate {
     /// Longitude
@@ -258,7 +248,7 @@ where
 // 用于 query_selected
 // ====================
 
-// 由于学校的**设计导致这个与 BoyaCourse 高度相似的结构体完全无法复用
+// 由于学校的**设计导致这个与 Course 高度相似的结构体完全无法复用
 impl<'de> Deserialize<'de> for Data<Vec<Selected>> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -366,10 +356,6 @@ pub struct Assessment {
     #[serde(rename = "undoneAssessmentCount")]
     pub undone: u8,
 }
-
-// ====================
-// 用于 query_sign_rule
-// ====================
 
 // ====================
 // 用于 sign_course
