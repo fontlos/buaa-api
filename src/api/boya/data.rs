@@ -376,20 +376,15 @@ impl<'de> Deserialize<'de> for Data<SignRes> {
         let i = i.info.replace("\\\"", "\"");
         match serde_json::from_str::<SignRes>(&i) {
             Ok(s) => Ok(Data(s)),
-            Err(_) => {
-                Err(serde::de::Error::custom("Bad 'signInfo' field"))
-            }
+            Err(_) => Err(serde::de::Error::custom("Bad 'signInfo' field")),
         }
     }
 }
 
-/// Sign result
 #[derive(Debug, Deserialize)]
-pub struct SignRes {
-    /// Check in info
+pub(crate) struct SignRes {
     #[serde(rename = "signIn")]
     pub checkin: SignInfo,
-    /// Check out info
     #[serde(default)]
     #[serde(rename = "signOut")]
     pub checkout: Option<SignInfo>,
