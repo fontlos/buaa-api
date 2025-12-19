@@ -1,10 +1,10 @@
 use rand::Rng;
 use time::{Date, Month};
 
-use crate::utils;
+use crate::{Error, utils};
 
 use super::BoyaApi;
-use super::data::{Coordinate, Course, Data, Selected, SignRes, Statistic};
+use super::data::{Coordinate, Course, Data, Selected, SignInfo, SignRes, Statistic};
 
 impl BoyaApi {
     /// # Query Course List
@@ -129,8 +129,8 @@ impl BoyaApi {
     /// - Input:
     ///     - Course ID from [Course]
     ///     - Coordinate from [Course.sign_config.coordinate]
-    pub async fn checkin_course(&self, id: u32, coordinate: &Coordinate) -> crate::Result<SignRes> {
-        self.sign_course(id, coordinate, 1).await
+    pub async fn checkin_course(&self, id: u32, c: &Coordinate) -> crate::Result<SignInfo> {
+        Ok(self.sign_course(id, c, 1).await?.checkin)
     }
 
     /// # Check-out Course
@@ -138,11 +138,10 @@ impl BoyaApi {
     /// - Input:
     ///     - Course ID from [Course]
     ///     - Coordinate from [Course.sign_config.coordinate]
-    pub async fn checkout_course(
-        &self,
-        id: u32,
-        coordinate: &Coordinate,
-    ) -> crate::Result<SignRes> {
-        self.sign_course(id, coordinate, 2).await
+    pub async fn checkout_course(&self, id: u32, c: &Coordinate) -> crate::Result<SignInfo> {
+        self.sign_course(id, c, 2)
+            .await?
+            .checkout
+            .ok_or(Error::server("No checkout result").with_label("Boya"))
     }
 }
