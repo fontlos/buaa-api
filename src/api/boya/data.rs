@@ -191,7 +191,7 @@ where
         let value = value.replace("\\\"", "\"");
         serde_json::from_str::<SignConfig>(&value)
             .map(Some)
-            .map_err(|_| serde::de::Error::custom("Bad CourseSignConfig"))
+            .map_err(|_| serde::de::Error::custom("Bad 'courseSignConfig' field"))
     }
 }
 
@@ -376,7 +376,9 @@ impl<'de> Deserialize<'de> for Data<SignRes> {
         let i = i.info.replace("\\\"", "\"");
         match serde_json::from_str::<SignRes>(&i) {
             Ok(s) => Ok(Data(s)),
-            Err(_) => Err(serde::de::Error::custom("Bad SignInfo")),
+            Err(_) => {
+                Err(serde::de::Error::custom("Bad 'signInfo' field"))
+            }
         }
     }
 }
@@ -388,8 +390,9 @@ pub struct SignRes {
     #[serde(rename = "signIn")]
     pub checkin: SignInfo,
     /// Check out info
+    #[serde(default)]
     #[serde(rename = "signOut")]
-    pub checkout: SignInfo,
+    pub checkout: Option<SignInfo>,
 }
 
 /// Sign in/out info
@@ -397,10 +400,10 @@ pub struct SignRes {
 pub struct SignInfo {
     /// Longitude
     #[serde(rename = "lng")]
-    pub lon: f64,
+    pub longitude: f64,
     /// Latitude
     #[serde(rename = "lat")]
-    pub lat: f64,
+    pub latitude: f64,
     /// Whether the sign in/out is successful
     #[serde(rename = "inSignArea")]
     pub is_ok: bool,
