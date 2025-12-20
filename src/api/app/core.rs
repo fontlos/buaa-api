@@ -6,6 +6,9 @@ use crate::error::Error;
 
 const APP_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090a13) UnifiedPCWindowsWechat(0xf2541022) XWEB/16467";
 
+// API 列表
+// https://app.buaa.edu.cn/appsquare/api/app/index?number=&sid=16
+
 impl super::AppApi {
     /// # Login to AppApi
     pub async fn login(&self) -> crate::Result<()> {

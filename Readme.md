@@ -14,8 +14,8 @@
   - [ ] Login
 - [x] BUAA Boya Course: `boya`
   - [x] Login
-  - [x] Query courses
-  - [x] Query course's sign rule
+  - [x] Query courses list
+  - [x] Query single course
   - [x] Query selected courses
   - [x] Query statistic information
   - [x] Select course
