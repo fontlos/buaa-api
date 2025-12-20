@@ -1,6 +1,6 @@
 use crate::{Error, utils};
 
-use super::{_PreSelecteds, Body, Course, Courses, Filter, Opt, Selected};
+use super::{_PreSelecteds, Body, Courses, Filter, Opt, Selected};
 
 impl super::SrsApi {
     /// Get the default course filter.
@@ -61,35 +61,18 @@ impl super::SrsApi {
         Ok(res)
     }
 
+    // 什么 ** 玩意, 课程列表缺少 range 参数, opt 还得从过滤器里借一个,
+    // 还比退选多了个莫名其妙的 batch 参数, 这玩意还写死在 HTML 里
     /// # Pre-Select Course
     ///
     /// **Note**: Only for pre-selection. Late-selection use `select_course`
     ///
     /// **Note**: You cannot call login before calling this, otherwise the verification will fail
     ///
-    /// - Input
-    ///     - `c`: Course to select, obtained from `query_course`
-    ///     - `f`: Filter current used
-    ///     - `b`: Batch ID, obtained from `get_batch`
-    ///     - `i`: Index ID
-    pub async fn pre_select_course(
-        &self,
-        c: &Course,
-        f: &Filter,
-        b: &str,
-        i: u8,
-    ) -> crate::Result<()> {
+    /// - Input: `opt`: call `as_opt` on [Course]. And must call `set_batch` and `set_index` on [Opt]
+    pub async fn pre_select_course<'a>(&self, opt: &'a Opt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
-        // 什么 ** 玩意, 课程列表缺少 range 参数还得从过滤器里借一个,
-        // 还比退选多了个莫名其妙的 batch 参数, 这玩意还写死在 HTML 里
-        let form = [
-            ("clazzType", f.scope.as_str()),
-            ("clazzId", &c.id),
-            ("secretVal", &c.sum),
-            ("batchId", b),
-            ("chooseVolunteer", &i.to_string()),
-        ];
-        let body = Body::Form(&form);
+        let body = Body::Form(&opt);
         let _: Option<()> = self.universal_request(url, body).await?;
 
         Ok(())
@@ -101,7 +84,7 @@ impl super::SrsApi {
     ///
     /// **Note**: You cannot call login before calling this, otherwise the verification will fail
     ///
-    /// - Input: `opt`: call `as_opt` on `SrsCourse` or `SrsSelected`
+    /// - Input: `opt`: call `as_opt` on [Course]
     pub async fn select_course<'a>(&self, opt: &'a Opt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
         let body = Body::Form(opt);
@@ -114,7 +97,7 @@ impl super::SrsApi {
     ///
     /// **Note**: You cannot call login before calling this, otherwise the verification will fail
     ///
-    /// - Input: `opt`: call `as_opt` on `SrsCourse` or `SrsSelected`
+    /// - Input: `opt`: call `as_opt` on [Course] or [Selected]
     pub async fn drop_course<'a>(&self, opt: &'a Opt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
         let body = Body::Form(opt);
