@@ -11,11 +11,12 @@ mod tests {
 
         let filter = srs.get_default_filter().await.unwrap();
         let res = srs.query_course(&filter).await.unwrap();
-        println!("{:?}", res);
         let batch = srs.get_batch().await.unwrap();
-        srs.pre_select_course(&res.data[0], &filter, &batch, 1)
-            .await
-            .unwrap();
+        println!("{:?}", res);
+        let mut opt = res.data[0].as_opt(&filter);
+        opt.set_batch(&batch);
+        opt.set_index(1);
+        srs.pre_select_course(&opt).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }

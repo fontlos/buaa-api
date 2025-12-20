@@ -417,11 +417,13 @@ pub struct Schedule {
 impl Course {
     // **的为什么不给 Course 一个 Scope, 还得从 Filter 里借一个
     /// Convert Course to Opt for select or drop course
-    pub fn as_opt<'a>(&'a self, filter: &'a Filter) -> Opt<'a> {
+    pub fn as_opt(&self, filter: &Filter) -> Opt<'_> {
         Opt {
             scope: filter.scope.as_str(),
             id: &self.id,
             sum: &self.sum,
+            batch: None,
+            index: None,
         }
     }
 }
@@ -498,11 +500,13 @@ impl Selected {
     /// It can only be used to drop course,
     /// and you need to make sure that `can_drop` is true,
     /// otherwise it will fail at 'drop_course' or there will be some other unknown error
-    pub fn as_opt<'a>(&'a self) -> Opt<'a> {
+    pub fn as_opt(&self) -> Opt<'_> {
         Opt {
             scope: self.scope.as_deref().unwrap_or(""),
             id: &self.id,
             sum: &self.sum,
+            batch: None,
+            index: None,
         }
     }
 }
@@ -523,4 +527,24 @@ pub struct Opt<'a> {
     // 校验和
     #[serde(rename = "secretVal")]
     sum: &'a str,
+    // 批次 ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "batchId")]
+    batch: Option<&'a str>,
+    // 志愿序号
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "chooseVolunteer")]
+    index: Option<u8>,
+}
+
+impl<'a> Opt<'a> {
+    /// Set batch ID
+    pub fn set_batch(&mut self, batch: &'a str) {
+        self.batch = Some(batch);
+    }
+
+    /// Set index
+    pub fn set_index(&mut self, index: u8) {
+        self.index = Some(index);
+    }
 }
