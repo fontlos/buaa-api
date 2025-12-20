@@ -412,6 +412,7 @@ impl super::CloudApi {
     #[cfg(feature = "multipart")]
     pub async fn upload(&self, args: UploadArgs, part: Part) -> crate::Result<()> {
         let auth = args.auth;
+        let part = part.mime_str("application/octet-stream")?;
         let form = Form::new()
             .text("AWSAccessKeyId", "bhtenant")
             // 似乎只在 part 中设置即可
@@ -419,7 +420,7 @@ impl super::CloudApi {
             .text("Policy", auth.policy)
             .text("Signature", auth.signature)
             .text("key", auth.key)
-            .part("file", part.mime_str("application/octet-stream").unwrap());
+            .part("file", part);
         let res = self.client.post(auth.url).multipart(form).send().await?;
 
         let status = res.status().as_u16();
