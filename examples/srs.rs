@@ -13,7 +13,7 @@ mod tests {
         let res = srs.query_course(&filter).await.unwrap();
         let batch = srs.get_batch().await.unwrap();
         println!("{:?}", res);
-        let mut opt = res.data[0].as_opt(&filter);
+        let mut opt = res.data[0].as_opt();
         opt.set_batch(&batch);
         opt.set_index(1);
         srs.pre_select_course(&opt).await.unwrap();
