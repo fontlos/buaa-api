@@ -70,10 +70,11 @@ pub struct Filter {
 impl Filter {
     /// Create a default course filter
     ///
-    /// **Warning:** make sure the campus is correct, or you can use SrsAPI.gen_filter() to get the default campus
+    /// **Warning:** make sure the campus is correct,
+    /// or you can use `SrsApi.get_default_filter()` to get the default campus
     pub fn new(campus: u8) -> Self {
         Filter {
-            scope: CourseScope::Suggest,
+            scope: CourseScope::default(),
             page: 1,
             size: 10,
             campus,
@@ -141,8 +142,10 @@ impl Filter {
 /// # The scope of the course query
 ///
 /// Be sure to consult the corresponding notes in the document to know the specific scope
+#[derive(Clone, Copy, Debug, Default)]
 pub enum CourseScope {
     /// `班级课表推荐课程`
+    #[default]
     Suggest,
     /// `方案内课程`
     WithinPlan,
@@ -326,6 +329,10 @@ pub struct Course {
     // 教学班 ID
     #[serde(rename = "JXBID")]
     pub(super) id: String,
+    /// Course scope
+    #[serde(skip_deserializing)]
+    #[serde(default)]
+    pub scope: CourseScope,
     /// Campus
     #[serde(rename = "XQ")]
     pub campus: String,
@@ -415,11 +422,11 @@ pub struct Schedule {
 }
 
 impl Course {
-    // **的为什么不给 Course 一个 Scope, 还得从 Filter 里借一个
+    // ** 的为什么不给 Course 一个 Scope, 还得手动插入一批
     /// Convert Course to Opt for select or drop course
-    pub fn as_opt(&self, filter: &Filter) -> Opt<'_> {
+    pub fn as_opt(&self) -> Opt<'_> {
         Opt {
-            scope: filter.scope.as_str(),
+            scope: self.scope.as_str(),
             id: &self.id,
             sum: &self.sum,
             batch: None,

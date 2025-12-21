@@ -37,15 +37,14 @@ impl super::SrsApi {
     pub async fn query_course(&self, filter: &Filter) -> crate::Result<Courses> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
         let body = Body::Json(filter);
-        let res = self.universal_request(url, body).await?;
+        let mut res: Courses = self.universal_request(url, body).await?;
+        // 手动插入 scope, 方便调用
+        res.data.iter_mut().for_each(|c| c.scope = filter.scope);
         Ok(res)
     }
 
     /// Query Pre-Selected Course
     pub async fn query_pre_selected(&self) -> crate::Result<Vec<Selected>> {
-        // 查询退选记录的 URL, 操作相同, 但感觉没啥用
-        // https://byxk.buaa.edu.cn/xsxk/elective/deselect
-
         let url = "https://byxk.buaa.edu.cn/xsxk/volunteer/select";
         let body = Body::<'_, ()>::None;
         let res: Vec<_PreSelecteds> = self.universal_request(url, body).await?;
@@ -60,6 +59,9 @@ impl super::SrsApi {
         let res = self.universal_request(url, body).await?;
         Ok(res)
     }
+
+    // 查询退选记录的 URL, 操作与上面相同, 但感觉没啥用
+    // https://byxk.buaa.edu.cn/xsxk/elective/deselect
 
     // 什么 ** 玩意, 课程列表缺少 range 参数, opt 还得从过滤器里借一个,
     // 还比退选多了个莫名其妙的 batch 参数, 这玩意还写死在 HTML 里
