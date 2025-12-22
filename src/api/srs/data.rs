@@ -40,8 +40,8 @@ where
 pub struct Filter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
-    #[serde(serialize_with = "serialize_course_scope")]
-    pub(super) scope: CourseScope,
+    #[serde(serialize_with = "serialize_scope")]
+    pub(super) scope: Scope,
     // 页码
     #[serde(rename = "pageNumber")]
     page: u8,
@@ -56,12 +56,12 @@ pub struct Filter {
     display_conflict: bool,
     // 课程性质, 必修限修等, 可选
     #[serde(rename = "KCXZ")]
-    #[serde(serialize_with = "serialize_course_requirement")]
-    requirement: Option<CourseRequirement>,
+    #[serde(serialize_with = "serialize_requirement")]
+    requirement: Option<Requirement>,
     // 课程类型, 可选
     #[serde(rename = "KCLB")]
-    #[serde(serialize_with = "serialize_course_category")]
-    category: Option<CourseCategory>,
+    #[serde(serialize_with = "serialize_category")]
+    category: Option<Category>,
     // 搜索关键字, 可选
     #[serde(rename = "KEY")]
     key: Option<String>,
@@ -74,7 +74,7 @@ impl Filter {
     /// or you can use `SrsApi.get_default_filter()` to get the default campus
     pub fn new(campus: u8) -> Self {
         Filter {
-            scope: CourseScope::default(),
+            scope: Scope::default(),
             page: 1,
             size: 10,
             campus,
@@ -86,7 +86,7 @@ impl Filter {
     }
 
     /// Set up the scope of the course query
-    pub fn set_scope(&mut self, scope: CourseScope) {
+    pub fn set_scope(&mut self, scope: Scope) {
         self.scope = scope;
     }
 
@@ -120,12 +120,12 @@ impl Filter {
     }
 
     /// Set up the requirement of the course
-    pub fn set_requirement(&mut self, req: Option<CourseRequirement>) {
+    pub fn set_requirement(&mut self, req: Option<Requirement>) {
         self.requirement = req;
     }
 
     /// Set up the category of the course
-    pub fn set_category(&mut self, category: Option<CourseCategory>) {
+    pub fn set_category(&mut self, category: Option<Category>) {
         self.category = category;
     }
 
@@ -143,7 +143,7 @@ impl Filter {
 ///
 /// Be sure to consult the corresponding notes in the document to know the specific scope
 #[derive(Clone, Copy, Debug, Default)]
-pub enum CourseScope {
+pub enum Scope {
     /// `班级课表推荐课程`
     #[default]
     Suggest,
@@ -165,24 +165,24 @@ pub enum CourseScope {
     All,
 }
 
-impl CourseScope {
+impl Scope {
     pub(crate) fn as_str(&self) -> &'static str {
         match self {
-            CourseScope::Suggest => "TJKC",
-            CourseScope::WithinPlan => "FANKC",
-            CourseScope::OutsidePlan => "FAWKC",
-            CourseScope::Retake => "CXKC",
-            CourseScope::English => "YYKC",
-            CourseScope::PE => "TYKC",
-            CourseScope::General => "XGKC",
-            CourseScope::Research => "KYKT",
-            CourseScope::All => "ALLKC",
+            Scope::Suggest => "TJKC",
+            Scope::WithinPlan => "FANKC",
+            Scope::OutsidePlan => "FAWKC",
+            Scope::Retake => "CXKC",
+            Scope::English => "YYKC",
+            Scope::PE => "TYKC",
+            Scope::General => "XGKC",
+            Scope::Research => "KYKT",
+            Scope::All => "ALLKC",
         }
     }
 }
 
 // 序列化选课过滤器范围为对应的查询字符
-fn serialize_course_scope<S>(scope: &CourseScope, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_scope<S>(scope: &Scope, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -192,7 +192,7 @@ where
 /// # The requirement of the course
 ///
 /// Be sure to consult the corresponding notes in the document to know the specific type
-pub enum CourseRequirement {
+pub enum Requirement {
     /// `必修`
     Compulsory,
     /// `选修`
@@ -204,8 +204,8 @@ pub enum CourseRequirement {
 }
 
 // 序列化选课过滤器性质为对应的查询字符
-fn serialize_course_requirement<S>(
-    requirement: &Option<CourseRequirement>,
+fn serialize_requirement<S>(
+    requirement: &Option<Requirement>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -213,10 +213,10 @@ where
 {
     if let Some(n) = requirement {
         match n {
-            CourseRequirement::Compulsory => serializer.serialize_str("01"),
-            CourseRequirement::Elective => serializer.serialize_str("02"),
-            CourseRequirement::Limited => serializer.serialize_str("03"),
-            CourseRequirement::Optional => serializer.serialize_str("04"),
+            Requirement::Compulsory => serializer.serialize_str("01"),
+            Requirement::Elective => serializer.serialize_str("02"),
+            Requirement::Limited => serializer.serialize_str("03"),
+            Requirement::Optional => serializer.serialize_str("04"),
         }
     } else {
         serializer.serialize_none()
@@ -231,7 +231,7 @@ where
 /// # The category of course
 ///
 /// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
-pub enum CourseCategory {
+pub enum Category {
     /// `数学与自然科学类`
     A,
     /// `工程基础类`
@@ -273,8 +273,8 @@ pub enum CourseCategory {
 }
 
 // 序列化选课过滤器类型为对应的查询字符
-fn serialize_course_category<S>(
-    category: &Option<CourseCategory>,
+fn serialize_category<S>(
+    category: &Option<Category>,
     serializer: S,
 ) -> Result<S::Ok, S::Error>
 where
@@ -282,28 +282,66 @@ where
 {
     if let Some(t) = category {
         match t {
-            CourseCategory::A => serializer.serialize_str("A"),
-            CourseCategory::B => serializer.serialize_str("B"),
-            CourseCategory::C => serializer.serialize_str("C"),
-            CourseCategory::D => serializer.serialize_str("D"),
-            CourseCategory::E => serializer.serialize_str("E"),
-            CourseCategory::F => serializer.serialize_str("FG"),
-            CourseCategory::G => serializer.serialize_str("K"),
-            CourseCategory::H => serializer.serialize_str("011"),
-            CourseCategory::I => serializer.serialize_str("012"),
-            CourseCategory::J => serializer.serialize_str("013"),
-            CourseCategory::K => serializer.serialize_str("021"),
-            CourseCategory::L => serializer.serialize_str("022"),
-            CourseCategory::M => serializer.serialize_str("023"),
-            CourseCategory::N => serializer.serialize_str("024"),
-            CourseCategory::O => serializer.serialize_str("025"),
-            CourseCategory::P => serializer.serialize_str("026"),
-            CourseCategory::Q => serializer.serialize_str("031"),
-            CourseCategory::R => serializer.serialize_str("032"),
-            CourseCategory::S => serializer.serialize_str("01"),
+            Category::A => serializer.serialize_str("A"),
+            Category::B => serializer.serialize_str("B"),
+            Category::C => serializer.serialize_str("C"),
+            Category::D => serializer.serialize_str("D"),
+            Category::E => serializer.serialize_str("E"),
+            Category::F => serializer.serialize_str("FG"),
+            Category::G => serializer.serialize_str("K"),
+            Category::H => serializer.serialize_str("011"),
+            Category::I => serializer.serialize_str("012"),
+            Category::J => serializer.serialize_str("013"),
+            Category::K => serializer.serialize_str("021"),
+            Category::L => serializer.serialize_str("022"),
+            Category::M => serializer.serialize_str("023"),
+            Category::N => serializer.serialize_str("024"),
+            Category::O => serializer.serialize_str("025"),
+            Category::P => serializer.serialize_str("026"),
+            Category::Q => serializer.serialize_str("031"),
+            Category::R => serializer.serialize_str("032"),
+            Category::S => serializer.serialize_str("01"),
         }
     } else {
         serializer.serialize_none()
+    }
+}
+
+// ====================
+// 用于选退操作
+// ====================
+
+/// Structure for course select and drop
+#[derive(Serialize)]
+pub struct Opt<'a> {
+    // 范围
+    #[serde(rename = "clazzType")]
+    scope: &'a str,
+    // 课程 ID
+    #[serde(rename = "clazzId")]
+    id: &'a str,
+    // 校验和
+    #[serde(rename = "secretVal")]
+    sum: &'a str,
+    // 批次 ID
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "batchId")]
+    batch: Option<&'a str>,
+    // 志愿序号
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(rename = "chooseVolunteer")]
+    index: Option<u8>,
+}
+
+impl<'a> Opt<'a> {
+    /// Set batch ID
+    pub fn set_batch(&mut self, batch: &'a str) {
+        self.batch = Some(batch);
+    }
+
+    /// Set index
+    pub fn set_index(&mut self, index: u8) {
+        self.index = Some(index);
     }
 }
 
@@ -315,9 +353,6 @@ where
 /// Course list
 #[derive(Debug, Deserialize)]
 pub struct Courses {
-    /// Total number of courses
-    #[serde(rename = "total")]
-    pub count: u16,
     /// List of courses
     #[serde(rename = "rows")]
     pub data: Vec<Course>,
@@ -332,7 +367,7 @@ pub struct Course {
     /// Course scope
     #[serde(skip_deserializing)]
     #[serde(default)]
-    pub scope: CourseScope,
+    pub scope: Scope,
     /// Campus
     #[serde(rename = "XQ")]
     pub campus: String,
@@ -515,43 +550,5 @@ impl Selected {
             batch: None,
             index: None,
         }
-    }
-}
-
-// ====================
-// 用于选退操作
-// ====================
-
-/// Structure for course select and drop
-#[derive(Serialize)]
-pub struct Opt<'a> {
-    // 范围
-    #[serde(rename = "clazzType")]
-    scope: &'a str,
-    // 课程 ID
-    #[serde(rename = "clazzId")]
-    id: &'a str,
-    // 校验和
-    #[serde(rename = "secretVal")]
-    sum: &'a str,
-    // 批次 ID
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "batchId")]
-    batch: Option<&'a str>,
-    // 志愿序号
-    #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(rename = "chooseVolunteer")]
-    index: Option<u8>,
-}
-
-impl<'a> Opt<'a> {
-    /// Set batch ID
-    pub fn set_batch(&mut self, batch: &'a str) {
-        self.batch = Some(batch);
-    }
-
-    /// Set index
-    pub fn set_index(&mut self, index: u8) {
-        self.index = Some(index);
     }
 }
