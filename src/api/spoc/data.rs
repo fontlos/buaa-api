@@ -1,6 +1,15 @@
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
+
+/// Request Body
+#[derive(Debug, Serialize)]
+pub enum Body<'a, Q: Serialize + ?Sized> {
+    /// Query data
+    Query(&'a Q),
+    /// JSON data
+    Json(&'a Q),
+}
 
 // ====================
 // 用于 get_week
@@ -26,8 +35,12 @@ where
     let s: String = Deserialize::deserialize(deserializer)?;
     let mut s = s.split(",");
     s.next();
-    let start = s.next().ok_or_else(|| serde::de::Error::custom("Missing start date"))?;
-    let end = s.next().ok_or_else(|| serde::de::Error::custom("Missing end date"))?;
+    let start = s
+        .next()
+        .ok_or_else(|| serde::de::Error::custom("Missing start date"))?;
+    let end = s
+        .next()
+        .ok_or_else(|| serde::de::Error::custom("Missing end date"))?;
     Ok((start.to_string(), end.to_string()))
 }
 
