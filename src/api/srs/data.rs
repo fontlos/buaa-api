@@ -1,16 +1,14 @@
 use serde::de::Deserializer;
 use serde::{Deserialize, Serialize, Serializer};
 
-// ====================
-// 用于请求
-// ====================
-
 pub(super) enum Body<'a, Q: Serialize + ?Sized> {
     QueryToken,
     Form(&'a Q),
     Json(&'a Q),
     None,
 }
+
+pub (super) struct Data<T>(pub T);
 
 // ====================
 // 反/序列化布尔值
@@ -349,13 +347,21 @@ impl<'a> Opt<'a> {
 // 用于课程查询
 // ====================
 
-// Res<Courses>
-/// Course list
-#[derive(Debug, Deserialize)]
-pub struct Courses {
-    /// List of courses
-    #[serde(rename = "rows")]
-    pub data: Vec<Course>,
+// Res<Data<Vec<Course>>>
+impl<'de> Deserialize<'de> for Data<Vec<Course>> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Debug, Deserialize)]
+        struct I {
+            // total 总数不解析了
+            #[serde(rename = "rows")]
+            list: Vec<Course>,
+        }
+        let i = I::deserialize(deserializer)?;
+        Ok(Data(i.list))
+    }
 }
 
 /// Course info
@@ -474,13 +480,20 @@ impl Course {
 // 用于查询预选
 // ====================
 
-// 预选会按组管理, 因为有志愿之分, 例如体育课这一组可以选择多个
-// Res<Vec<_PreSelecteds>>
-#[derive(Debug, Deserialize)]
-pub(super) struct _PreSelecteds {
-    // 教学班列表
-    #[serde(rename = "tcList")]
-    pub list: Vec<Selected>,
+// Res<Data<Vec<Vec<Selected>>>>
+impl<'de> Deserialize<'de> for Data<Vec<Vec<Selected>>> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            #[serde(rename = "tcList")]
+            list: Vec<Selected>,
+        }
+        let i = Vec::<I>::deserialize(deserializer)?;
+        Ok(Data(i.into_iter().map(|j| j.list).collect()))
+    }
 }
 
 // ====================
