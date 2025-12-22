@@ -6,6 +6,8 @@ use crate::api::{Spoc, Sso};
 use crate::crypto;
 use crate::error::Error;
 
+use super::data::Body;
+
 // 逆向出来的密钥和初始向量, 用于 AES 加密请求体,
 // 不过既然写死了为什么不用 ECB 而用 CBC 模式啊
 /// From hard-coded in JS
@@ -49,7 +51,7 @@ impl super::SpocApi {
     /// If the API you need but is not implemented, you can extend it with this universal request API.
     ///
     /// **Note**: Type of `T` is the `content` field in JSON response.
-    pub async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
+    pub async fn universal_request<'a, Q, T>(&self, url: &str, body: &Body<'a, Q>) -> crate::Result<T>
     where
         Q: Serialize + ?Sized,
         T: DeserializeOwned,
@@ -60,22 +62,29 @@ impl super::SpocApi {
         }
         let token = cred.value::<Spoc>()?;
 
-        // 初始化 AES
-        let aes = crypto::aes::Aes128::new(SPOC_AES_KEY);
-
-        // 构造请求体, 使用 AES 加密请求参数, Base64 编码
-        let body = serde_json::to_vec(query)?;
-        let body = aes.encrypt_cbc(&body, SPOC_AES_IV);
-        let body = crypto::encode_base64(body);
-        let body = serde_json::json!({
-            "param": body
-        });
-
         let res = self
             .client
             .post(url)
-            .header("Token", token)
-            .json(&body)
+            .header("Token", token);
+
+        let res = match body {
+            Body::Query(q) => res.query(q),
+            Body::Json(j) => {
+                let aes = crypto::aes::Aes128::new(SPOC_AES_KEY);
+
+                // 构造请求体, 使用 AES 加密请求参数, Base64 编码
+                // TODO: 考虑直接序列化到加密器中
+                let body = serde_json::to_vec(j)?;
+                let body = aes.encrypt_cbc(&body, SPOC_AES_IV);
+                let body = crypto::encode_base64(body);
+                let body = serde_json::json!({
+                    "param": body
+                });
+                res.json(&body)
+            },
+        };
+
+        let res = res
             .send()
             .await?
             .bytes()
@@ -85,7 +94,7 @@ impl super::SpocApi {
 
         // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if res.code != 200 {
-            trace!("URL: {}, Query: {}", url, serde_json::to_string(&query)?);
+            trace!("URL: {}, Query: {}", url, serde_json::to_string(&body)?);
             let source = format!("Status Code: {}. Error Message: {:?}", res.code, res.msg);
             return Err(Error::server("Operation failed")
                 .with_label("Spoc")
