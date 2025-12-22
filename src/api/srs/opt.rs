@@ -1,9 +1,10 @@
 use crate::{Error, utils};
 
-use super::{_PreSelecteds, Body, Courses, Filter, Opt, Selected};
+use super::{Body, Course, Filter, Opt, Selected, Data};
 
 impl super::SrsApi {
-    /// Get the default course filter.
+    /// # Get the default course filter.
+    ///
     /// If you know your campus,
     /// you can create the filter by [Filter::new()] directly.
     pub async fn get_default_filter(&self) -> crate::Result<Filter> {
@@ -20,9 +21,11 @@ impl super::SrsApi {
     }
 
     // 预选所需, 有病吧嵌在 HTML 里
-    /// Get the batch id for course selection.
+    /// # Get the batch id for course selection.
     ///
     /// **Note**: Do not need login
+    ///
+    /// **Note**: Only for [super::SrsApi::pre_select_course]
     pub async fn get_batch(&self) -> crate::Result<String> {
         let url = "https://byxk.buaa.edu.cn/xsxk/profile/index.html";
         let res = self.client.get(url).send().await?.bytes().await?;
@@ -33,26 +36,31 @@ impl super::SrsApi {
         }
     }
 
-    /// Query Course
-    pub async fn query_course(&self, filter: &Filter) -> crate::Result<Courses> {
+    /// # Query Course
+    pub async fn query_course(&self, filter: &Filter) -> crate::Result<Vec<Course>> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
         let body = Body::Json(filter);
-        let mut res: Courses = self.universal_request(url, body).await?;
+        let mut res: Data<Vec<Course>> = self.universal_request(url, body).await?;
         // 手动插入 scope, 方便调用
-        res.data.iter_mut().for_each(|c| c.scope = filter.scope);
-        Ok(res)
+        res.0.iter_mut().for_each(|c| c.scope = filter.scope);
+        Ok(res.0)
     }
 
-    /// Query Pre-Selected Course
-    pub async fn query_pre_selected(&self) -> crate::Result<Vec<Selected>> {
+    /// # Query Pre-Selected Course
+    ///
+    /// **Note**: Only for pre-selection. Late-selection use `query_selected`
+    ///
+    /// **Note**: Collect into `Vec` according to volunteer grouping
+    pub async fn query_pre_selected(&self) -> crate::Result<Vec<Vec<Selected>>> {
         let url = "https://byxk.buaa.edu.cn/xsxk/volunteer/select";
         let body = Body::<'_, ()>::None;
-        let res: Vec<_PreSelecteds> = self.universal_request(url, body).await?;
-        let res = res.into_iter().flat_map(|g| g.list).collect();
-        Ok(res)
+        let res: Data<Vec<Vec<Selected>>> = self.universal_request(url, body).await?;
+        Ok(res.0)
     }
 
-    /// Query Selected Course
+    /// # Query Selected Course
+    ///
+    /// **Note**: Only for late-selection. Pre-selection use `query_pre_selected`
     pub async fn query_selected(&self) -> crate::Result<Vec<Selected>> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
         let body = Body::<'_, ()>::None;
