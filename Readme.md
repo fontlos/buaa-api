@@ -75,7 +75,7 @@
   - [x] Pre-select course
   - [x] Select course
   - [x] Drop course
-- [x] BUAA Teacher Evaluation System: `tes`
+- [x] BUAA Teaching Evaluation System: `tes`
   - [x] Login
   - [x] Get list
   - [x] Get form

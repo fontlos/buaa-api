@@ -1,4 +1,4 @@
-use crate::api::Sso;
+use crate::api::{Sso, Tes};
 use crate::error::Error;
 
 impl super::TesApi {
@@ -16,6 +16,7 @@ impl super::TesApi {
             return Err(Error::server("Redirect failed").with_label("Tes"));
         }
         cred.refresh::<Sso>();
+        cred.refresh::<Tes>();
         Ok(())
     }
 }
