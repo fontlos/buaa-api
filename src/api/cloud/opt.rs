@@ -7,7 +7,8 @@ use crate::error::Error;
 use crate::utils;
 
 use super::data::{
-    Body, CreateRes, Dir, Item, MoveRes, RecycleDir, Res, Root, RootDir, Share, SizeRes, UploadArgs,
+    CreateRes, Dir, Item, MoveRes, Payload, RecycleDir, Res, Root, RootDir, Share, SizeRes,
+    UploadArgs,
 };
 
 impl super::CloudApi {
@@ -17,8 +18,8 @@ impl super::CloudApi {
     pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
-        let body = Body::Query(&query);
-        let bytes = self.universal_request(Method::GET, url, &body).await?;
+        let payload = Payload::Query(&query);
+        let bytes = self.universal_request(Method::GET, url, &payload).await?;
         let res = serde_json::from_slice::<Vec<RootDir>>(&bytes)?;
         Ok(res)
     }
@@ -37,13 +38,13 @@ impl super::CloudApi {
     /// List the contents of a directory by its ID. Contain [Item::id] and [RootDir::id].
     pub async fn list_dir(&self, id: &str) -> crate::Result<Dir> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/list";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "by": "name", // time/size
             "docid": id,
             "sort": "asc" // desc
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = serde_json::from_slice::<Res<Dir>>(&bytes)?;
         res.unpack_with(|r| r, "Can not get dir list")
     }
@@ -51,12 +52,12 @@ impl super::CloudApi {
     /// Get the size of a file or directory by its ID. [Item::id]
     pub async fn get_item_size(&self, id: &str) -> crate::Result<SizeRes> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/size";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": id,
             "onlyrecycle": false
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = serde_json::from_slice::<Res<SizeRes>>(&bytes)?;
         res.unpack_with(|r| r, "Can not get item size")
     }
@@ -66,12 +67,12 @@ impl super::CloudApi {
     /// Usually for [super::CloudApi::create_dir]
     pub async fn get_suggest_name(&self, dir: &str, name: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": dir,
             "name": name,
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, ":\"", "\"")
             .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?
             .to_string();
@@ -81,13 +82,13 @@ impl super::CloudApi {
     /// Create directory in given parent directory with name. [Item::id]
     pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<CreateRes> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": dir,
             "name": name,
             "ondup": 1
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = serde_json::from_slice::<Res<CreateRes>>(&bytes)?;
         res.unpack_with(|r| r, "Can not create dir")
     }
@@ -96,13 +97,13 @@ impl super::CloudApi {
     /// Rename a file or directory by its ID. [Item::id]
     pub async fn rename_item(&self, id: &str, new: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/rename";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": id,
             "name": new,
             "ondup": 1
         });
-        let body = Body::Json(&data);
-        self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        self.universal_request(Method::POST, url, &payload).await?;
         Ok(())
     }
 
@@ -111,13 +112,13 @@ impl super::CloudApi {
     /// **Note**: Move multiple files need call multiple times.
     pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/move";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "destparent": dir,
             "docid": id,
             "ondup": 1
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = serde_json::from_slice::<Res<MoveRes>>(&bytes)?;
         res.unpack_with(|r| r.id, "Can not move item")
     }
@@ -127,13 +128,13 @@ impl super::CloudApi {
     /// **Note**: Copy multiple files need call multiple times.
     pub async fn copy_item(&self, dir: &str, id: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/copy";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "destparent": dir,
             "docid": id,
             "ondup": 1
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = serde_json::from_slice::<Res<MoveRes>>(&bytes)?;
         res.unpack_with(|r| r.id, "Can not copy item")
     }
@@ -144,11 +145,11 @@ impl super::CloudApi {
     /// **Note**: Delete multiple files need call multiple times.
     pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": id,
         });
-        let body = Body::Json(&data);
-        self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        self.universal_request(Method::POST, url, &payload).await?;
         Ok(())
     }
 
@@ -156,13 +157,13 @@ impl super::CloudApi {
     pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
         let id = self.get_user_dir_id().await?;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "by": "time", // name/size
             "docid": id,
             "sort": "desc" // asc
         });
-        let body = Body::Json(&data);
-        let res = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let res = self.universal_request(Method::POST, url, &payload).await?;
         let res = serde_json::from_slice::<Res<RecycleDir>>(&res)?;
         res.unpack_with(|r| r, "Can not get recycle dir")
     }
@@ -172,11 +173,11 @@ impl super::CloudApi {
     /// **Note**: Delete multiple files need call multiple times.
     pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/delete";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": id,
         });
-        let body = Body::Json(&data);
-        self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        self.universal_request(Method::POST, url, &payload).await?;
         Ok(())
     }
 
@@ -185,12 +186,12 @@ impl super::CloudApi {
     /// **Note**: Restore multiple files need call multiple times.
     pub async fn restore_recycle_item(&self, id: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/restore";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": id,
             "ondup": 1
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         #[derive(serde::Deserialize)]
         struct _Res {
@@ -209,8 +210,8 @@ impl super::CloudApi {
             "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/folder/{}?type=anonymous",
             id.replace(':', "%3A").replace('/', "%2F")
         );
-        let body = Body::<'_, ()>::None;
-        let bytes = self.universal_request(Method::GET, &url, &body).await?;
+        let payload = Payload::<'_, ()>::Empty;
+        let bytes = self.universal_request(Method::GET, &url, &payload).await?;
         let res = serde_json::from_slice::<Vec<Share>>(&bytes)?;
         Ok(res)
     }
@@ -221,8 +222,8 @@ impl super::CloudApi {
     pub async fn share_item(&self, share: &Share) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous";
 
-        let body = Body::Json(&share);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&share);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         #[derive(serde::Deserialize)]
         struct _Res {
@@ -236,16 +237,17 @@ impl super::CloudApi {
     /// Update share link by Share ID and new [Share]
     pub async fn share_update(&self, id: &str, share: &Share) -> crate::Result<()> {
         let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
-        let body = Body::Json(&share);
-        self.universal_request(Method::PUT, &url, &body).await?;
+        let payload = Payload::Json(&share);
+        self.universal_request(Method::PUT, &url, &payload).await?;
         Ok(())
     }
 
     /// Delete share link by Share ID
     pub async fn share_delete(&self, id: &str) -> crate::Result<()> {
         let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
-        let body = Body::<'_, ()>::None;
-        self.universal_request(Method::DELETE, &url, &body).await?;
+        let payload = Payload::<'_, ()>::Empty;
+        self.universal_request(Method::DELETE, &url, &payload)
+            .await?;
         Ok(())
     }
 
@@ -256,12 +258,12 @@ impl super::CloudApi {
     /// **Note**: If you pass a dir, it will return a bad URL.
     async fn get_single_download_url(&self, item: &Item) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osdownload";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "docid": item.id,
             "authtype": "QUERY_STRING",
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, ",\"", "\"")
             .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
         Ok(res.to_string())
@@ -277,7 +279,7 @@ impl super::CloudApi {
             .iter()
             .map(|item| {
                 // 从文件路径 id 反向找到文件 id, 找不到就用原 id, 这不会引起错误, 只会导致无法下载这个文件
-                // 同样是下载, 单个文件就用完整 id, 多个文件就用文件 id, 那证明文件 id 就够用了, 这什么 ** 设计
+                // 同样是下载, 单个文件就用完整 id, 多个文件就用文件 id, 那证明文件 id 就够用了, 这什么**设计
                 let file_id = match item.id.rfind('/') {
                     Some(idx) => &item.id[idx + 1..],
                     None => &item.id,
@@ -285,12 +287,12 @@ impl super::CloudApi {
                 serde_json::json!({ "id": file_id })
             })
             .collect();
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "name": "download.zip",
             "doc": ids
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let raw_url = utils::parse_by_tag(&bytes, "package_address\":\"", "\"")
             .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
 
@@ -331,12 +333,12 @@ impl super::CloudApi {
     /// Check hash before upload
     pub async fn check_hash(&self, md5: &str, length: u64) -> crate::Result<bool> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/predupload";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "slice_md5": md5,
             "length": length
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         #[derive(serde::Deserialize)]
         struct _Res {
@@ -358,7 +360,7 @@ impl super::CloudApi {
         crc32: &str,
     ) -> crate::Result<bool> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/dupload";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "client_mtime": utils::get_time_millis(),
             "crc32": crc32,
             "csflevel": 0,
@@ -368,8 +370,8 @@ impl super::CloudApi {
             "name": name,
             "ondup": 1
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         #[derive(serde::Deserialize)]
         struct _Res {
@@ -391,7 +393,7 @@ impl super::CloudApi {
         length: u64,
     ) -> crate::Result<UploadArgs> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osbeginupload";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "client_mtime": utils::get_time_millis(),
             "docid": dir,
             "length": length,
@@ -400,8 +402,8 @@ impl super::CloudApi {
             "reqmethod": "POST",
             "usehttps": true,
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = serde_json::from_slice::<Res<UploadArgs>>(&bytes)?;
         res.unpack_with(|r| r, "Can not get upload auth")
     }
@@ -431,13 +433,13 @@ impl super::CloudApi {
         }
 
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osendupload";
-        let data = serde_json::json!({
+        let json = serde_json::json!({
             "csflevel": 0,
             "docid": args.id,
             "rev": args.hash,
         });
-        let body = Body::Json(&data);
-        let bytes = self.universal_request(Method::POST, url, &body).await?;
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         // editor, modified 字段没有任何用, 暂时不解析
         let res = serde_json::from_slice::<Res<()>>(&bytes)?;

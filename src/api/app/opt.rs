@@ -3,7 +3,7 @@ use crate::{Error, utils};
 use super::Exams;
 
 impl super::AppApi {
-    /// Get exam schedule
+    /// # Get exam schedule
     pub async fn get_exam(&self) -> crate::Result<Exams> {
         let url = "https://app.buaa.edu.cn/exam/wap/default/index";
         let bytes = self.universal_request(url).await?;

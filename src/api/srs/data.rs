@@ -1,14 +1,14 @@
 use serde::de::Deserializer;
 use serde::{Deserialize, Serialize, Serializer};
 
-pub(super) enum Body<'a, Q: Serialize + ?Sized> {
-    QueryToken,
-    Form(&'a Q),
-    Json(&'a Q),
-    None,
+pub(super) enum Payload<'a, P: Serialize + ?Sized> {
+    QueryWithToken,
+    Form(&'a P),
+    Json(&'a P),
+    Empty,
 }
 
-pub (super) struct Data<T>(pub T);
+pub(super) struct Data<T>(pub T);
 
 // ====================
 // 反/序列化布尔值
@@ -271,10 +271,7 @@ pub enum Category {
 }
 
 // 序列化选课过滤器类型为对应的查询字符
-fn serialize_category<S>(
-    category: &Option<Category>,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+fn serialize_category<S>(category: &Option<Category>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
@@ -463,7 +460,7 @@ pub struct Schedule {
 }
 
 impl Course {
-    // ** 的为什么不给 Course 一个 Scope, 还得手动插入一批
+    // 你*的为什么不给 Course 一个 Scope, 还得手动插入一批
     /// Convert Course to Opt for select or drop course
     pub fn as_opt(&self) -> Opt<'_> {
         Opt {

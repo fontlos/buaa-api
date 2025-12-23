@@ -17,8 +17,6 @@ Qo6ENA31k5/tYCLEXgjPbEjCK9spiyB62fCT6cqOhbamJB0lcDJRO6Vo1m3dy+fD
 
 impl super::BoyaApi {
     /// # Login to BoyaApi
-    ///
-    /// **Note:** Boya expiration time is fast, so if you write a script to grab course, it is recommended to call this manually 30 seconds before
     pub async fn login(&self) -> crate::Result<()> {
         if self.cred.load().is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
@@ -56,7 +54,7 @@ impl super::BoyaApi {
     ///
     /// - Input:
     ///     - URL: API URL
-    ///     - Query: Serialize JSON
+    ///     - Payload: Serialize JSON
     /// - Output:
     ///     - DeserializeOwned JSON
     ///
@@ -75,22 +73,22 @@ impl super::BoyaApi {
     /// ...
     /// ```
     ///
-    /// You can find `query` in `w = JSON.stringify(x)`
+    /// You can find `payload` in `w = JSON.stringify(x)`
     ///
     /// And then for `getUserProfile` API
     ///
     /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
-    /// - Query: `{}`
+    /// - Payload: `{}`
     ///
     /// ```
     /// use serde_json::Value;
     /// let url = "https://bykc.buaa.edu.cn/sscv/getUserProfile";
-    /// let query = serde_json::json!({});
-    /// let res: Value = self.universal_request::<_, Value>(&url, &query).await?;
+    /// let payload = serde_json::json!({});
+    /// let res: Value = self.universal_request::<_, Value>(&url, &payload).await?;
     /// ```
-    pub async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
+    pub async fn universal_request<P, T>(&self, url: &str, payload: &P) -> crate::Result<T>
     where
-        Q: Serialize + ?Sized,
+        P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
         let cred = self.cred.load();
@@ -112,7 +110,7 @@ impl super::BoyaApi {
         let ak = crypto::encode_base64(ak);
 
         // 查询参数序列化到字节数组
-        let date = serde_json::to_vec(query)?;
+        let date = serde_json::to_vec(payload)?;
 
         // 请求头 Sk 参数, 由查询参数生成
         let sk = crypto::sha1::Sha1::digest(&date);
@@ -140,15 +138,15 @@ impl super::BoyaApi {
             .await?;
 
         // 去掉响应体两端的引号, 先 Base64 解码, 再 AES 解密, 最后反序列化
-        let res = res.bytes().await?;
-        let res = &res[1..res.len() - 1];
-        let res = crypto::decode_base64(res);
+        let bytes = res.bytes().await?;
+        let bytes = &bytes[1..bytes.len() - 1];
+        let res = crypto::decode_base64(bytes);
         let raw_res = aes_cipher.decrypt_ecb(&res);
         let res = serde_json::from_slice::<Res<T>>(&raw_res)?;
 
         // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
         if res.status != "0" {
-            trace!("URL: {}, Query: {}", url, serde_json::to_string(&query)?);
+            trace!("URL: {}, Query: {}", url, serde_json::to_string(&payload)?);
             let source = format!("Status Code: {}. Error Message: {}", res.status, res.errmsg);
             return Err(Error::server("Operation failed")
                 .with_label("Boya")

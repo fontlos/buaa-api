@@ -6,7 +6,7 @@ use crate::api::{Spoc, Sso};
 use crate::crypto;
 use crate::error::Error;
 
-use super::data::Body;
+use super::data::Payload;
 
 // 逆向出来的密钥和初始向量, 用于 AES 加密请求体,
 // 不过既然写死了为什么不用 ECB 而用 CBC 模式啊
@@ -51,9 +51,13 @@ impl super::SpocApi {
     /// If the API you need but is not implemented, you can extend it with this universal request API.
     ///
     /// **Note**: Type of `T` is the `content` field in JSON response.
-    pub async fn universal_request<'a, Q, T>(&self, url: &str, body: &Body<'a, Q>) -> crate::Result<T>
+    pub async fn universal_request<'a, P, T>(
+        &self,
+        url: &str,
+        payload: &Payload<'a, P>,
+    ) -> crate::Result<T>
     where
-        Q: Serialize + ?Sized,
+        P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
         let cred = self.cred.load();
@@ -62,39 +66,36 @@ impl super::SpocApi {
         }
         let token = cred.value::<Spoc>()?;
 
-        let res = self
-            .client
-            .post(url)
-            .header("Token", token);
+        let req = self.client.post(url).header("Token", token);
 
-        let res = match body {
-            Body::Query(q) => res.query(q),
-            Body::Json(j) => {
+        let req = match payload {
+            Payload::Query(q) => req.query(q),
+            Payload::Json(j) => {
                 let aes = crypto::aes::Aes128::new(SPOC_AES_KEY);
 
                 // 构造请求体, 使用 AES 加密请求参数, Base64 编码
                 // TODO: 考虑直接序列化到加密器中
-                let body = serde_json::to_vec(j)?;
-                let body = aes.encrypt_cbc(&body, SPOC_AES_IV);
-                let body = crypto::encode_base64(body);
-                let body = serde_json::json!({
-                    "param": body
+                let data = serde_json::to_vec(j)?;
+                let data = aes.encrypt_cbc(&data, SPOC_AES_IV);
+                let data = crypto::encode_base64(data);
+                let json = serde_json::json!({
+                    "param": data
                 });
-                res.json(&body)
-            },
+                req.json(&json)
+            }
         };
 
-        let res = res
-            .send()
-            .await?
-            .bytes()
-            .await?;
+        let res = req.send().await?.bytes().await?;
 
         let res = serde_json::from_slice::<Res<T>>(&res)?;
 
         // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if res.code != 200 {
-            trace!("URL: {}, Query: {}", url, serde_json::to_string(&body)?);
+            trace!(
+                "URL: {}, Payload: {}",
+                url,
+                serde_json::to_string(&payload)?
+            );
             let source = format!("Status Code: {}. Error Message: {:?}", res.code, res.msg);
             return Err(Error::server("Operation failed")
                 .with_label("Spoc")

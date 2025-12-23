@@ -1,5 +1,11 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
+pub(super) enum Payload<'a, P: Serialize + ?Sized> {
+    Query(&'a P),
+    Json(&'a P),
+    Empty,
+}
+
 #[derive(Debug, Deserialize)]
 pub(super) struct Res<T> {
     #[serde(flatten)]
@@ -24,12 +30,6 @@ impl<T> Res<T> {
                 .with_source(source)
         })
     }
-}
-
-pub(super) enum Body<'a, Q: Serialize + ?Sized> {
-    Query(&'a Q),
-    Json(&'a Q),
-    None,
 }
 
 /// Root directory type

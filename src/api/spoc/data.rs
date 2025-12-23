@@ -2,13 +2,13 @@ use serde::{Deserialize, Deserializer, Serialize};
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
 
-/// Request Body
+/// Request Body Payload
 #[derive(Debug, Serialize)]
-pub enum Body<'a, Q: Serialize + ?Sized> {
+pub enum Payload<'a, P: Serialize + ?Sized> {
     /// Query data
-    Query(&'a Q),
+    Query(&'a P),
     /// JSON data
-    Json(&'a Q),
+    Json(&'a P),
 }
 
 // ====================
