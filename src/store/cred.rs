@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::Location;
-use crate::api::{App, Boya, Class, Cloud, Spoc, Srs, Sso};
+use crate::api::{App, Boya, Class, Cloud, Spoc, Srs, Sso, Tes};
 use crate::error::{Code, Error, Result};
 use crate::utils;
 
@@ -16,7 +16,7 @@ use crate::utils;
 pub struct CredentialStore {
     pub(crate) username: Option<String>,
     pub(crate) password: Option<String>,
-    /// Mark login expiration time of App
+    /// Mark login expiration time of App API
     pub app: CredentialItem,
     /// Token for Boya API
     pub boya_token: CredentialItem,
@@ -30,6 +30,8 @@ pub struct CredentialStore {
     pub srs_token: CredentialItem,
     /// Mark login expiration time of SSO
     pub sso: CredentialItem,
+    /// Mark login expiration time of Tes API
+    pub tes: CredentialItem,
 }
 
 pub(crate) trait Token {
@@ -75,6 +77,8 @@ impl_token!(Spoc, spoc_token, 10800);
 impl_token!(Srs, srs_token, 1200);
 // 测得 90 分钟以内有效. 使用可刷新时效
 impl_token!(Sso, sso, 5400);
+// 测得 60 分钟以内有效
+impl_token!(Tes, tes, 3600);
 
 impl CredentialStore {
     /// Load credential store from file, if file not exist or invalid, return default store

@@ -31,7 +31,7 @@ pub struct Spoc;
 pub struct Srs;
 /// Marker type for BUAA SSO API Group
 pub struct Sso;
-/// Marker type for BUAA Teacher Evaluation System API Group
+/// Marker type for BUAA Teaching Evaluation System API Group
 pub struct Tes;
 /// Marker type for BUAA User Center API Group
 pub struct User;
@@ -58,7 +58,7 @@ pub enum Location {
     Srs,
     /// BUAA SSO API
     Sso,
-    /// BUAA Teacher Evaluation System API
+    /// BUAA Teaching Evaluation System API
     Tes,
     /// BUAA User Center API
     User,
@@ -122,7 +122,7 @@ impl crate::Context<Core> {
     pub const fn sso(&self) -> &crate::Context<Sso> {
         self.api::<Sso>()
     }
-    /// Get BUAA Teacher Evaluation System API Group
+    /// Get BUAA Teaching Evaluation System API Group
     pub const fn tes(&self) -> &crate::Context<Tes> {
         self.api::<Tes>()
     }

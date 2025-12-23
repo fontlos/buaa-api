@@ -1,4 +1,4 @@
-//! # BUAA Teacher Evaluation System API
+//! # BUAA Teaching Evaluation System API
 
 mod auth;
 mod data;
@@ -6,7 +6,7 @@ mod opt;
 
 pub use data::*;
 
-/// # BUAA Teacher Evaluation System API Group
+/// # BUAA Teaching Evaluation System API Group
 ///
 /// Obtain a context view via [`Context.tes()`],
 /// then call specific APIs through this grouping.
