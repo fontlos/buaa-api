@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::api::{Srs, Sso};
 use crate::error::Error;
 
-use super::Body;
+use super::Payload;
 
 impl super::SrsApi {
     /// Login to SrsApi
@@ -35,13 +35,13 @@ impl super::SrsApi {
         Ok(())
     }
 
-    pub(super) async fn universal_request<'a, Q, T>(
+    pub(super) async fn universal_request<'a, P, T>(
         &self,
         url: &str,
-        body: Body<'a, Q>,
+        payload: Payload<'a, P>,
     ) -> crate::Result<T>
     where
-        Q: Serialize + ?Sized,
+        P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
         let cred = self.cred.load();
@@ -50,17 +50,17 @@ impl super::SrsApi {
         }
         let token = cred.value::<Srs>()?;
 
-        let res = self.client.post(url).header("Authorization", token);
+        let req = self.client.post(url).header("Authorization", token);
 
-        let res = match body {
-            Body::QueryToken => res.query(&[("token", token)]),
-            Body::Form(f) => res.form(f),
-            Body::Json(j) => res.json(j),
-            Body::None => res,
+        let req = match payload {
+            Payload::QueryWithToken => req.query(&[("token", token)]),
+            Payload::Form(f) => req.form(f),
+            Payload::Json(j) => req.json(j),
+            Payload::Empty => req,
         };
 
-        let res = res.send().await?.bytes().await?;
-        let res = serde_json::from_slice::<Res<T>>(&res)?;
+        let bytes = req.send().await?.bytes().await?;
+        let res = serde_json::from_slice::<Res<T>>(&bytes)?;
         if res.code != 200 {
             return Err(Error::server(format!("Response: {}", res.msg)).with_label("Srs"));
         }

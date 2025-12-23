@@ -6,7 +6,7 @@ use crate::api::{Cloud, Sso};
 use crate::error::Error;
 use crate::store::cookies::Cookie;
 
-use super::data::Body;
+use super::data::Payload;
 
 // 手动登录用 RSA 密钥, 但我们使用 SSO 登录
 // From https://bhpan.buaa.edu.cn/oauth2/_next/static/chunks/pages/signin-2a57b4f57ddbb54dc27e.js
@@ -110,14 +110,14 @@ impl super::CloudApi {
     }
 
     /// Universal Request for CloudApi (Internal)
-    pub(super) async fn universal_request<'a, Q>(
+    pub(super) async fn universal_request<'a, P>(
         &self,
         m: Method,
         url: &str,
-        body: &Body<'a, Q>,
+        payload: &Payload<'a, P>,
     ) -> crate::Result<Bytes>
     where
-        Q: Serialize + ?Sized,
+        P: Serialize + ?Sized,
     {
         let cred = self.cred.load();
         if cred.is_expired::<Cloud>() {
@@ -125,14 +125,14 @@ impl super::CloudApi {
         }
         let token = cred.value::<Cloud>()?;
 
-        let res = self.client.request(m, url).bearer_auth(token);
+        let req = self.client.request(m, url).bearer_auth(token);
 
-        let res = match body {
-            Body::Query(f) => res.query(f),
-            Body::Json(j) => res.json(j),
-            Body::None => res,
+        let req = match payload {
+            Payload::Query(f) => req.query(f),
+            Payload::Json(j) => req.json(j),
+            Payload::Empty => req,
         };
-        let res = res.send().await?;
+        let res = req.send().await?;
 
         let status = res.status();
         if !status.is_success() {

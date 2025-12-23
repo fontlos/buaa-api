@@ -29,15 +29,15 @@ impl super::ClassApi {
         let cipher = crypto::des::Des::new(CLASS_DES_KEY);
         let url = cipher.encrypt_ecb(url);
         let url = crypto::bytes2hex(&url);
-        let params = [("method", "html5GetPrivateUserInfo"), ("url", &url)];
+        let query = [("method", "html5GetPrivateUserInfo"), ("url", &url)];
         self.client
             .get("https://iclass.buaa.edu.cn:8346/wc/auth/html5GetPrivateUserInfo")
-            .query(&params)
+            .query(&query)
             .send()
             .await?;
 
         // 最终登录
-        let params = [
+        let query = [
             ("phone", session),
             ("password", ""),
             ("verificationType", "2"),
@@ -47,7 +47,7 @@ impl super::ClassApi {
         let res = self
             .client
             .get("https://iclass.buaa.edu.cn:8346/app/user/login.action")
-            .query(&params)
+            .query(&query)
             .send()
             .await?
             .bytes()
@@ -71,9 +71,9 @@ impl super::ClassApi {
     /// Universal Request for ClassApi (Internal)
     ///
     /// **Note**: `token` parameter is already included
-    pub(crate) async fn universal_request<Q, T>(&self, url: &str, query: &Q) -> crate::Result<T>
+    pub(crate) async fn universal_request<P, T>(&self, url: &str, payload: &P) -> crate::Result<T>
     where
-        Q: Serialize + ?Sized,
+        P: Serialize + ?Sized,
         T: DeserializeOwned,
     {
         let cred = self.cred.load();
@@ -92,7 +92,7 @@ impl super::ClassApi {
             .client
             .post(format!("{url}?id={id}"))
             .header("Sessionid", session)
-            .query(&query)
+            .query(&payload)
             .send()
             .await?
             .bytes()
@@ -100,7 +100,7 @@ impl super::ClassApi {
         let res = serde_json::from_slice::<Res<T>>(&res)?;
 
         if res.status != "0" {
-            trace!("URL: {}, Query: {}", url, serde_json::to_string(&query)?);
+            trace!("URL: {}, Query: {}", url, serde_json::to_string(&payload)?);
             let source = format!("Status Code: {}. Error Message: {:?}", res.status, res.msg);
             return Err(Error::server("Operation failed")
                 .with_label("Class")

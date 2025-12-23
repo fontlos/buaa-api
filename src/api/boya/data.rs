@@ -56,7 +56,7 @@ pub struct Course {
     #[serde(deserialize_with = "deserialize_campuses")]
     #[serde(rename = "courseCampusList")]
     pub campuses: Vec<Campus>,
-    // 这玩意几乎啥信息没有, 主办方瞎 ** 写的, 不解析了
+    // 这玩意几乎啥信息没有, 主办方瞎**写的, 不解析了
     // #[serde(rename = "courseDesc")]
     // pub description: String,
     /// Sign configuration
@@ -131,7 +131,7 @@ pub struct Capacity {
     #[serde(rename = "courseMaxCount")]
     pub max: u32,
     // 默认为 0. 不然在解析单个课程时会报错.
-    // 明明解析课程列表就有值, 什么 ** 设计
+    // 明明解析课程列表就有值, 什么**设计
     /// Current selected count
     #[serde(deserialize_with = "deserialize_null_default")]
     #[serde(rename = "courseCurrentCount")]
@@ -167,7 +167,7 @@ where
 {
     let value: Vec<&str> = Deserialize::deserialize(deserializer)?;
     let mut campuses = Vec::with_capacity(value.len());
-    // 最 ** 的设计, 你一共几个校区啊, 就非要三个都显示或只显示一个全部校区并存呗
+    // 最**的设计, 你一共几个校区啊, 就非要三个都显示或只显示一个全部校区并存呗
     for c in value {
         match c {
             "全部校区" => campuses.push(Campus::All),
