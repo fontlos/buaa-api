@@ -12,7 +12,8 @@ const APP_UA: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.
 impl super::AppApi {
     /// # Login to AppApi
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().is_expired::<Sso>() {
+        let cred = self.cred.load();
+        if cred.is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
         }
         let login_url = "https://app.buaa.edu.cn/uc/wap/minigram/cas-login?login_from=xiaochengxu";
@@ -29,7 +30,8 @@ impl super::AppApi {
                 .with_label("App")
                 .with_source(text));
         }
-        self.cred.load().refresh::<App>();
+        cred.refresh::<Sso>();
+        cred.refresh::<App>();
         Ok(())
     }
 
