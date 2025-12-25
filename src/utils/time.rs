@@ -19,6 +19,10 @@ pub fn get_time_millis() -> u128 {
     get_timestamp().as_millis()
 }
 
+pub fn get_time_nanos() -> u128 {
+    get_timestamp().as_nanos()
+}
+
 pub fn get_datetime() -> PrimitiveDateTime {
     let now_utc = OffsetDateTime::now_utc();
     let local_offset = UtcOffset::from_hms(8, 0, 0).expect("Offset should always be valid");

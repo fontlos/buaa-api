@@ -1,9 +1,9 @@
-use rand::Rng;
+use crate::crypto::rand::{Rng, WyRng};
 
 // 生成随机字符, 做密钥用
 pub fn gen_rand_str(size: u8) -> String {
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let mut rng = rand::rng();
+    let mut rng = WyRng::new();
     (0..size)
         .map(|_| {
             let idx = rng.random_range(0..CHARSET.len());

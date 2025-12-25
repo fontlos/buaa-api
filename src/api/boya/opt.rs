@@ -1,6 +1,6 @@
-use rand::Rng;
 use time::{Date, Month};
 
+use crate::crypto::rand::{Rng, WyRng};
 use crate::{Error, utils};
 
 use super::BoyaApi;
@@ -107,7 +107,7 @@ impl BoyaApi {
     /// # Sign Course (Internal)
     async fn sign_course(&self, id: u32, c: &Coordinate, t: u8) -> crate::Result<SignRes> {
         let url = "https://bykc.buaa.edu.cn/sscv/signCourseByUser";
-        let mut rng = rand::rng();
+        let mut rng = WyRng::new();
         let offset = 1e-5;
 
         let lng_offset = rng.random_range(-offset..offset);
