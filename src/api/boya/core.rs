@@ -97,6 +97,9 @@ impl super::BoyaApi {
         }
         let token = cred.value::<Boya>()?;
 
+        // 初始化 RNG. 因为 HTTPS 已经保证安全, 这里无需密码学级别的 RNG, 选一个快速的
+        let mut rng = crypto::rand::WyRng::new();
+
         // 初始化 RSA, 设置公钥
         let rsa_cipher = crypto::rsa::RsaPkcs1v15::from_pem(BOYA_RSA_KEY);
 
@@ -106,7 +109,7 @@ impl super::BoyaApi {
         let aes_cipher = crypto::aes::Aes128::new(aes_key);
 
         // 请求头 Ak 参数, 由 AES Key 生成
-        let ak = rsa_cipher.encrypt(aes_key);
+        let ak = rsa_cipher.encrypt(&mut rng, aes_key);
         let ak = crypto::encode_base64(ak);
 
         // 查询参数序列化到字节数组
@@ -115,7 +118,7 @@ impl super::BoyaApi {
         // 请求头 Sk 参数, 由查询参数生成
         let sk = crypto::sha1::Sha1::digest(&date);
         let sk = crypto::bytes2hex(&sk);
-        let sk = rsa_cipher.encrypt(sk.as_bytes());
+        let sk = rsa_cipher.encrypt(&mut rng, sk.as_bytes());
         let sk = crypto::encode_base64(sk);
 
         // 请求体负载, 由查询参数生成, 使用 AES 加密, Base64 编码

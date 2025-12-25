@@ -1,7 +1,7 @@
 //! Separate implementation of Pkcs1v15Encrypt RSA encryption only to omit dependencies on external RSA Crates
 //! Since the vanilla RSA relies on rand 0.6, this is implemented in order to upgrade the rand
 
-use rand::Rng;
+use crate::crypto::rand::Rng;
 
 use super::biguint::BigUint;
 
@@ -99,7 +99,7 @@ impl RsaPkcs1v15 {
         len
     }
 
-    fn pkcs1v15_pad(&self, data: &[u8]) -> Vec<u8> {
+    fn pkcs1v15_pad(&self, rng: &mut impl Rng, data: &[u8]) -> Vec<u8> {
         // PKCS#1 v1.5 加密填充
         let k = (self.n.bits() / 8) as usize;
         let mut padded = vec![0u8; k];
@@ -108,9 +108,8 @@ impl RsaPkcs1v15 {
         padded[1] = 0x02;
         // 填充随机非零字节
         let ps_len = k - data.len() - 3;
-        let mut rng = rand::rng();
         for i in 0..ps_len {
-            padded[2 + i] = rng.random_range(1..=255);
+            padded[2 + i] = rng.random_range(1u8..=255);
         }
         // 分隔符 0x00
         padded[2 + ps_len] = 0x00;
@@ -120,7 +119,7 @@ impl RsaPkcs1v15 {
     }
 
     /// Encrypt data using RSA with PKCS#1 v1.5 padding
-    pub fn encrypt(&self, data: &[u8]) -> Vec<u8> {
+    pub fn encrypt(&self, rng: &mut impl Rng, data: &[u8]) -> Vec<u8> {
         // RSA 加密: ciphertext = plaintext^e mod n
 
         // 确保数据长度合适 (PKCS#1 v1.5)
@@ -132,7 +131,7 @@ impl RsaPkcs1v15 {
         );
 
         // 应用 PKCS#1 v1.5 填充
-        let padded = self.pkcs1v15_pad(data);
+        let padded = self.pkcs1v15_pad(rng, data);
 
         // 将填充后的数据转换为大整数
         let m = BigUint::from_bytes_be(&padded);
