@@ -1,3 +1,5 @@
+use futures::future;
+
 use crate::{Error, utils};
 
 use super::{_Form, _List, Completed, Form, Task};
@@ -27,10 +29,12 @@ impl super::TesApi {
             .bytes()
             .await?;
 
-        let task_id = match utils::parse_by_tag(&res, "\"rwid\":\"", "\"") {
-            Some(id) => id,
-            None => return Err(Error::server("Empty task").with_label("Tes")),
-        };
+        let task_id = utils::parse_by_tag(&res, "\"rwid\":\"", "\"")
+            .ok_or_else(|| Error::server("Empty task").with_label("Tes"))?;
+        let task_count = utils::parse_by_tag(&res, "\"pjsl\":", ",")
+            .and_then(|s| s.parse::<usize>().ok())
+            // 一个课可能有很多老师, 需要评多次, 如果没找到这个数字就默认 32
+            .unwrap_or(32);
 
         // 获取问卷 ID
         // 已知有五种问卷 ID: 理论课, 实践课, 英语课, 体育课, 科研课堂
@@ -45,7 +49,7 @@ impl super::TesApi {
             .bytes()
             .await?;
 
-        // 暂时不解析这个结构, 循环匹配多个问卷 ID
+        // 不解析这个结构, 直接循环匹配多个问卷 ID
         let left = "\"wjid\":\"";
         let right = "\"";
         let mut form_ids = Vec::new();
@@ -56,22 +60,21 @@ impl super::TesApi {
             start_index = s.as_ptr() as usize - bytes.as_ptr() as usize + s.len() + right.len();
         }
 
-        // 考虑到一个课可能有很多老师, 需要评多次, 但 32 应该足够多数人了
-        let mut list = Vec::<Task>::with_capacity(32);
+        let mut tasks = Vec::<Task>::with_capacity(task_count);
         // 并发处理, 这节约了大概一半的时间
-        let tasks: Vec<_> = form_ids
+        let req: Vec<_> = form_ids
             .iter()
             .map(|id| async move { self.fetch_task(id).await })
             .collect();
 
-        let res = futures::future::join_all(tasks).await;
+        let res = future::join_all(req).await;
 
         for r in res {
-            let mut tasks = r?;
-            list.append(&mut tasks);
+            let mut t = r?;
+            tasks.append(&mut t);
         }
 
-        Ok(list)
+        Ok(tasks)
     }
 
     // 用于并发获取任务
