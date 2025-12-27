@@ -8,6 +8,7 @@ readme = "Readme.md"
 [dependencies]
 base64 = "0.22.1"
 bytes = "1.11.0"
+futures = "0.3.31"
 log = "0.4.29"
 reqwest = { version = "0.12.26", features = ["cookies", "json"] }
 serde = { version = "1.0.228", features = ["derive"] }

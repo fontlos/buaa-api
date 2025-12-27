@@ -4,25 +4,20 @@ use super::{_Form, _List, Completed, Form, Task};
 
 impl super::TesApi {
     /// Get list of evaluation task
-    ///
-    /// The method has made multiple requests inside it, and the speed is slow
     pub async fn get_task(&self) -> crate::Result<Vec<Task>> {
         let cred = self.cred.load();
         let username = cred.username()?;
         // 获取任务 ID
         let url =
             "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/listObtainPersonnelEvaluationTasks";
-        let query = [
-            ("yhdm", username),
-            ("pageNum", "1"),
-            ("pageSize", "10"),
-            // 任务名称
-            // ("rwmc", ""),
-            // 是否已评
-            ("sfyp", "1"),
-            // 学年学期
-            ("xnxq", "2024-20251"),
-        ];
+        // 参数说明: 我们把所有能留空的参数留空, 默认查询当前学期未评任务
+        // 页相关参数只有这里刚需, 否则报错
+        // 任务名称是完全没用的参数, 完全可被学年学期取代
+        // 是否已评 sfyp 只在这里生效, 值为 1 时查看历史评价, 默认留空即是未评任务
+        // 学年学期 xnxq(yyyy-yyyyt). 留空即是全部学期, 和上面留空组合起来就是当前学期未评任务
+        // 这个参数在 `fetch_task` 中更刚需. 因为假如我们查询了所有学期所有任务, 而第一条不是当前学期,
+        // 同时 `fetch_task` 没有设定查询那个指定学期, 则返回空
+        let query = [("yhdm", username), ("pageNum", "1"), ("pageSize", "10")];
         let res = self
             .client
             .get(url)
@@ -40,12 +35,7 @@ impl super::TesApi {
         // 获取问卷 ID
         // 已知有五种问卷 ID: 理论课, 实践课, 英语课, 体育课, 科研课堂
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireListToTask";
-        let query = [
-            ("rwid", task_id),
-            // ("pageNum", "1"),
-            // ("pageSize", "999"),
-            // ("sfyp", "0"),
-        ];
+        let query = [("rwid", task_id)];
         let bytes = self
             .client
             .get(url)
@@ -66,31 +56,37 @@ impl super::TesApi {
             start_index = s.as_ptr() as usize - bytes.as_ptr() as usize + s.len() + right.len();
         }
 
-        // 考虑到一个课可能有很多老师, 需要评多次, 但 30 位应该足够多数人了
-        let mut list = Vec::<Task>::with_capacity(30);
-        // TODO: 并发请求
-        for id in form_ids {
-            let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData";
-            let query = [
-                ("wjid", id),
-                // ("pageNum", "1"),
-                // ("pageSize", "999"),
-                ("sfyp", "1"),
-                ("xnxq", "2024-20251"),
-            ];
-            let res = self
-                .client
-                .get(url)
-                .query(&query)
-                .send()
-                .await?
-                .bytes()
-                .await?;
-            let res = serde_json::from_slice::<_List>(&res)?;
-            list.extend(res.list);
+        // 考虑到一个课可能有很多老师, 需要评多次, 但 32 应该足够多数人了
+        let mut list = Vec::<Task>::with_capacity(32);
+        // 并发处理, 这节约了大概一半的时间
+        let tasks: Vec<_> = form_ids
+            .iter()
+            .map(|id| async move { self.fetch_task(id).await })
+            .collect();
+
+        let res = futures::future::join_all(tasks).await;
+
+        for r in res {
+            let mut tasks = r?;
+            list.append(&mut tasks);
         }
 
         Ok(list)
+    }
+
+    // 用于并发获取任务
+    async fn fetch_task(&self, id: &str) -> crate::Result<Vec<Task>> {
+        let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData";
+        let query = [("wjid", id)];
+        let res = self
+            .client
+            .get(url)
+            .query(&query)
+            .send()
+            .await?
+            .bytes()
+            .await?;
+        Ok(serde_json::from_slice::<_List>(&res)?.list)
     }
 
     /// Get the evaluation form
@@ -122,8 +118,6 @@ impl super::TesApi {
         self.client.post(url).query(&query).send().await?;
         let url = "https://spoc.buaa.edu.cn/pjxt/system/property";
         self.client.post(url).send().await?;
-
-        // {"code":"200","msg":"成功","msg_en":"Operation is successful","result":[{"pjid":"","pjbm":"","sfnm":"1"}]} 是否匿名??
         Ok(res)
     }
 }
