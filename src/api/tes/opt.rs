@@ -7,6 +7,7 @@ use super::{_Form, _List, Completed, Form, Task};
 impl super::TesApi {
     /// Get list of evaluation task
     pub async fn get_task(&self) -> crate::Result<Vec<Task>> {
+        self.refresh().await?;
         let cred = self.cred.load();
         let username = cred.username()?;
         // 获取任务 ID
@@ -78,6 +79,7 @@ impl super::TesApi {
     }
 
     // 用于并发获取任务
+    // 注意我们没必要在这里刷新权限因为它的调用者已经刷新了
     async fn fetch_task(&self, id: &str) -> crate::Result<Vec<Task>> {
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData";
         let query = [("wjid", id)];
@@ -94,6 +96,7 @@ impl super::TesApi {
 
     /// Get the evaluation form
     pub async fn get_form(&self, task: &Task) -> crate::Result<Form> {
+        self.refresh().await?;
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
         let res = self
             .client
@@ -109,6 +112,7 @@ impl super::TesApi {
 
     /// Submit the completed evaluation form
     pub async fn submit_form(&self, complete: Completed<'_>) -> crate::Result<reqwest::Response> {
+        self.refresh().await?;
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/submitSaveEvaluation";
         let res = self.client.post(url).json(&complete).send().await?;
 
