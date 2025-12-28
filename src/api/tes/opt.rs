@@ -2,7 +2,7 @@ use futures::future;
 
 use crate::{Error, utils};
 
-use super::{_Form, _List, Completed, Form, Task};
+use super::{Completed, Data, Form, Task};
 
 impl super::TesApi {
     /// Get list of evaluation task
@@ -91,7 +91,7 @@ impl super::TesApi {
             .await?
             .bytes()
             .await?;
-        Ok(serde_json::from_slice::<_List>(&res)?.list)
+        Ok(serde_json::from_slice::<Data<Vec<Task>>>(&res)?.0)
     }
 
     /// Get the evaluation form
@@ -106,8 +106,8 @@ impl super::TesApi {
             .await?
             .bytes()
             .await?;
-        let res = serde_json::from_slice::<_Form>(&res)?;
-        Ok(res.result)
+        let res = serde_json::from_slice::<Data<Form>>(&res)?;
+        Ok(res.0)
     }
 
     /// Submit the completed evaluation form
