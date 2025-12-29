@@ -8,13 +8,15 @@ use super::data::{Coordinate, Course, Data, Selected, SignInfo, SignRes, Statist
 
 impl BoyaApi {
     /// # Query Course List
-    pub async fn query_courses(&self) -> crate::Result<Vec<Course>> {
+    pub async fn query_courses(&self, page: u8, size: u8) -> crate::Result<Vec<Course>> {
         // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
         // https://d.buaa.edu.cn/https/77726476706e69737468656265737421f2ee4a9f69327d517f468ca88d1b203b/sscv/queryStudentSemesterCourseByPage
         let url = "https://bykc.buaa.edu.cn/sscv/queryStudentSemesterCourseByPage";
+        // 说真的我从来没想过一页十个是不够的. 开放选课半个月后才真的上课, 学校是真**啊
+        // 不过考虑到可以通过 `query_selected` 获取那些选了但是在这里看不到的课, 所以不推荐用这个分页
         let payload = serde_json::json!({
-            "pageNumber": 1,
-            "pageSize": 10,
+            "pageNumber": page,
+            "pageSize": size,
         });
         let res: Data<Vec<Course>> = self.universal_request(url, &payload).await?;
         Ok(res.0)
