@@ -11,7 +11,7 @@ mod tests {
 
         let res = class.query_schedule("20251014").await.unwrap();
         println!("{:#?}", res);
-        let res = class.checkin(res[0].id).await.unwrap();
+        let res = class.checkin(&res[0].id).await.unwrap();
         println!("{}", res);
 
         context.save_auth("./data").unwrap();

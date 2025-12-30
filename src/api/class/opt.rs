@@ -9,7 +9,7 @@ impl super::ClassApi {
     ///
     /// **Input:** Date string, format `YYYYMMDD`,
     pub async fn query_schedule(&self, date: &str) -> crate::Result<Vec<Schedule>> {
-        let url = "https://iclass.buaa.edu.cn:8346/app/course/get_stu_course_sched.action";
+        let url = "https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action";
         let payload = [("dateStr", date)];
         let res: Vec<Schedule> = self.universal_request(url, &payload).await?;
         Ok(res)
@@ -32,7 +32,7 @@ impl super::ClassApi {
     /// Although they have different IDs, the queried `CourseSchedule` is the same.
     /// So you better check the status before signing in to avoid the timestamp being overwritten.
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<Course>> {
-        let url = "https://iclass.buaa.edu.cn:8346/app/choosecourse/get_myall_course.action";
+        let url = "https://iclass.buaa.edu.cn:8347/app/choosecourse/get_myall_course.action";
         let payload = [("user_type", "1"), ("xq_code", id)];
         let res: Vec<Course> = self.universal_request(url, &payload).await?;
         // 需要过滤掉 teacher 为空的字段, 那可能是错误的课程
@@ -49,7 +49,7 @@ impl super::ClassApi {
     /// from [Course::id] via [super::ClassApi::query_course()]
     /// or [Schedule::course_id] via [super::ClassApi::query_schedule()]
     pub async fn query_course_schedule(&self, id: &str) -> crate::Result<Vec<CourseSchedule>> {
-        let url = "https://iclass.buaa.edu.cn:8346/app/my/get_my_course_sign_detail.action";
+        let url = "https://iclass.buaa.edu.cn:8347/app/my/get_my_course_sign_detail.action";
         let payload = [("courseId", id)];
         let res: Vec<CourseSchedule> = self.universal_request(url, &payload).await?;
         Ok(res)

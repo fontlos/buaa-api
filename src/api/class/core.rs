@@ -44,9 +44,14 @@ impl super::ClassApi {
             ("verificationUrl", ""),
             ("userLevel", "1"),
         ];
+        // 2025.12.28 学校后端 NGINX 改错了导致所有 /app/ 路径的 8346 端口被挂载到 /app/app/ 下了
+        // 临时改成 8347 端口绕过
+        // 如果以后不影响使用就保持这样
+        // 包括 opt 模块的一些请求 URL 也是相同的处理
+        // 很难想象能有这种错误发生
         let res = self
             .client
-            .get("https://iclass.buaa.edu.cn:8346/app/user/login.action")
+            .get("https://iclass.buaa.edu.cn:8347/app/user/login.action")
             .query(&query)
             .send()
             .await?
