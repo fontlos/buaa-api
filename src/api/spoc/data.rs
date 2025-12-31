@@ -11,6 +11,32 @@ pub enum Payload<'a, P: Serialize + ?Sized> {
     Json(&'a P),
 }
 
+/// Response Wrapper
+#[derive(Deserialize)]
+pub struct Res<T> {
+    code: u32,
+    msg: Option<String>,
+    content: T,
+}
+
+impl<'de, T: Deserialize<'de>> Res<T> {
+    pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
+        let res: Res<T> = serde_json::from_slice(&v)?;
+        // 凭据过期 code 也是 200, 那你这 code 有什么用啊
+        if res.code != 200 {
+            let source = format!(
+                "Status Code: {}. Error Message: {:?}",
+                res.code,
+                res.msg.unwrap_or_else(|| "No message".to_string())
+            );
+            return Err(crate::Error::server("Operation failed")
+                .with_label("Spoc")
+                .with_source(source));
+        }
+        Ok(res.content)
+    }
+}
+
 // ====================
 // 用于 get_week
 // ====================

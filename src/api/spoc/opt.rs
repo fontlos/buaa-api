@@ -1,15 +1,18 @@
-use super::{Payload, Schedule, Week};
+use reqwest::Method;
+
+use super::{Payload, Schedule, Week, Res};
 
 impl super::SpocApi {
     /// Get current week
     pub async fn get_week(&self) -> crate::Result<Week> {
         let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryOne";
-        // SQL ID 似乎可以是固定值, 应该是用于鉴权的, 不知道是否会过期
+        // SQL ID 是固定值, 应该是对应的数据库键什么的
         let json = serde_json::json!({
             "sqlid": "17275975753144ed8d6fe15425677f752c936d97de1bab76"
         });
         let payload = Payload::Json(&json);
-        let res: Week = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, Method::POST, payload).await?;
+        let res: Week = Res::parse(&bytes)?;
         Ok(res)
     }
 
@@ -24,7 +27,8 @@ impl super::SpocApi {
             "xnxq": week.term
         });
         let payload = Payload::Json(&json);
-        let res: Vec<Schedule> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, Method::POST, payload).await?;
+        let res: Vec<Schedule> = Res::parse(&bytes)?;
         Ok(res)
     }
 }
