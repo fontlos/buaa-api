@@ -5,7 +5,7 @@ use crate::{Error, utils};
 use super::{Completed, Data, Form, Task};
 
 impl super::TesApi {
-    /// Get list of evaluation task
+    /// # Get list of evaluation task
     pub async fn get_task(&self) -> crate::Result<Vec<Task>> {
         self.refresh().await?;
         let cred = self.cred.load();
@@ -94,7 +94,7 @@ impl super::TesApi {
         Ok(serde_json::from_slice::<Data<Vec<Task>>>(&res)?.0)
     }
 
-    /// Get the evaluation form
+    /// # Get the evaluation form
     pub async fn get_form(&self, task: &Task) -> crate::Result<Form> {
         self.refresh().await?;
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getQuestionnaireTopic";
@@ -110,10 +110,26 @@ impl super::TesApi {
         Ok(res.0)
     }
 
-    /// Submit the completed evaluation form
-    pub async fn submit_form(&self, complete: Completed<'_>) -> crate::Result<reqwest::Response> {
+    /// # Submit the completed evaluation form
+    ///
+    /// **Note**: If the [Completed::score] is perfect[Completed::is_perfect] or unqualified[Completed::is_unqualified],
+    /// you must provide a reason that length between 10 and 200 characters.
+    /// Just use [Completed::set_reason()] to set it.
+    ///
+    /// **Warning!**: Due to the poor design of the evaluation system server,
+    /// using this API may cause the evaluation button on the web page to become unclickable.
+    /// But don't worry, the evaluation data has been submitted correctly.
+    /// If you want to view the evaluation results on the web page,
+    /// you can remove the 'disabled' attribute of the button in the browser console,
+    /// and you'll be able to click it.
+    /// Or you might wait a little longer, and it may return to normal.
+    pub async fn submit_form(&self, complete: Completed<'_>) -> crate::Result<()> {
         self.refresh().await?;
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/submitSaveEvaluation";
+        // TODO: 我们需要一个状态机来保证输入的必须是有效的类型, 而非在内部做一次判断
+        if (complete.is_unqualified() || complete.is_perfect()) && complete.no_reason() {
+            return Err(Error::parameter("No reason").with_label("Tes"));
+        }
         let res = self.client.post(url).json(&complete).send().await?;
 
         let rwid = complete.rwid();
@@ -121,10 +137,18 @@ impl super::TesApi {
         // 也许是用于验证是否提交成功的
         let url =
             "https://spoc.buaa.edu.cn/pjxt/personnelEvaluation/checkWhetherTheTaskIsEvaluable";
-        let query = [("rwid", rwid), ("wjid", wjid)];
+        let query = [("rwid", rwid), ("wjid", wjid), ("sfyp", "0")];
         self.client.post(url).query(&query).send().await?;
         let url = "https://spoc.buaa.edu.cn/pjxt/system/property";
         self.client.post(url).send().await?;
-        Ok(res)
+        let bytes = res.bytes().await?;
+        let code = utils::parse_by_tag(&bytes, "\"code\":\"", "\"");
+        if code == Some("200") {
+            Ok(())
+        } else {
+            Err(Error::server("Submit failed. No code")
+                .with_source(format!("Code: {:?}", code))
+                .with_label("Tes"))
+        }
     }
 }

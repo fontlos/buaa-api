@@ -16,10 +16,9 @@ mod tests {
                 continue;
             }
             let form = tes.get_form(&t).await.unwrap();
-
             let complete = form.fill_default();
-            let res = tes.submit_form(complete).await.unwrap();
-            println!("{}", res.text().await.unwrap());
+            tes.submit_form(complete).await.unwrap();
+            println!("'{}' success", t.course);
             // 休眠一秒, 防止请求过快被服务器拒绝
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
