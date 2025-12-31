@@ -1,8 +1,13 @@
 // 所有人都应该来欣赏**学校神乎其神的旷世巨作, 这就是石, 重构的我想死
+// 哪怕在我不敢省略任何一个奇怪的字段仍然有诡异的 Bug
+// 体现在评教网页端按钮变灰. 但不用担心, 评教操作已完成.
+// 网页端真想点进去看可以在浏览器控制台删掉按钮的 disabled 属性, 这只是障眼法, 难以理解
 
 use serde::{Deserialize, Deserializer, Serialize};
 
 use std::borrow::Cow;
+
+use crate::error::Error;
 
 // 当学校能整出这种**玩意时我将觉得这东西没有解析的必要了, 而且**的这个 code 一会是数字一会是字符串的
 // {"code":200,"msg":null,"content":{"timestamp":"","status":500,"error":"","path":""}}
@@ -20,12 +25,21 @@ use std::borrow::Cow;
 // "这种处理方式完全合理，对于垃圾 API 就该用简单的规则" -- DeepSeek
 pub(super) struct Data<T>(pub T);
 
-fn deserialize_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
+// 每个都只用一次是真难绷. 返回的什么一坨石
+fn deserialize_u8_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'de>,
 {
     let value: u8 = Deserialize::deserialize(deserializer)?;
     Ok(matches!(value, 1))
+}
+
+fn deserialize_str_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: &str = Deserialize::deserialize(deserializer)?;
+    Ok(matches!(value, "1"))
 }
 
 // ====================
@@ -60,7 +74,7 @@ pub struct Task {
     // 是否已评
     /// Whether this evaluation is completed
     #[serde(skip_serializing)]
-    #[serde(deserialize_with = "deserialize_bool")]
+    #[serde(deserialize_with = "deserialize_u8_bool")]
     #[serde(rename = "ypjcs")]
     pub state: bool,
     // 顺序号
@@ -146,6 +160,7 @@ struct FormInfo {
     teacher_id: String,
     #[serde(rename = "bprmc")]
     teacher_name: String,
+    // 说好的匿名呢, 没这两个字段直接权限不足
     #[serde(rename = "pjrdm")]
     student_id: String,
     #[serde(rename = "pjrxm")]
@@ -170,7 +185,7 @@ pub struct Question {
     #[serde(rename = "tmid")]
     pub id: String,
     /// Question type: true for choice, false for completion
-    #[serde(deserialize_with = "deserialize_bool")]
+    #[serde(deserialize_with = "deserialize_str_bool")]
     #[serde(rename = "tmlx")]
     pub is_choice: bool,
     /// Question name
@@ -231,7 +246,7 @@ pub enum Answer {
     /// Choice answer
     Choice(usize),
     /// Completion answer
-    Completion(String),
+    Completion(Option<String>),
 }
 
 impl Form {
@@ -251,7 +266,7 @@ impl Form {
                     };
                     Answer::Choice(choice)
                 } else {
-                    Answer::Completion(String::new())
+                    Answer::Completion(None)
                 }
             })
             .collect();
@@ -281,9 +296,18 @@ impl Form {
                             wjstctid: "",
                             question_id: &question.id,
                             answer: vec![Cow::Borrowed(option.id.as_str())],
+                            wtjjy: Some(""),
                         }
                     }
                     Answer::Completion(text) => {
+                        let answer = match text {
+                            Some(text) if !text.is_empty() => {
+                                vec![Cow::Owned(format!("<p>{}</p>", text))]
+                            }
+                            _ => {
+                                vec![]
+                            }
+                        };
                         let option = &question.choices[0];
                         CompletedQuestion {
                             sjly: "1",
@@ -293,7 +317,8 @@ impl Form {
                             wjstctid: &option.id,
                             question_id: &question.id,
                             // 推一个空字符串进去也没什么损失, 反正分配都分配了
-                            answer: vec![Cow::Owned(text)],
+                            answer,
+                            wtjjy: None,
                         }
                     }
                 };
@@ -330,6 +355,7 @@ impl<'a> Completed<'a> {
             info,
             map,
             questions: completed,
+            reason: Cow::Borrowed(""),
             literal: CompletedLiteral::default(),
         }];
         Self {
@@ -348,6 +374,28 @@ impl<'a> Completed<'a> {
     pub fn score(&self) -> f32 {
         self.content[0].score
     }
+    /// Check if the evaluation is unqualified (< 60 points)
+    pub fn is_unqualified(&self) -> bool {
+        self.score() < 60.0
+    }
+    /// Check if the evaluation is perfect (100 points)
+    pub fn is_perfect(&self) -> bool {
+        self.score() >= 100.0
+    }
+    pub(super) fn no_reason(&self) -> bool {
+        self.content[0].reason.is_empty()
+    }
+    /// Set the reason for perfect or unqualified
+    ///
+    /// **Note:** The length must be between 10 and 200 characters
+    pub fn set_reason<S: Into<Cow<'a, str>>>(&mut self, reason: S) -> crate::Result<()> {
+        let reason = reason.into();
+        if 10 < reason.len() && reason.len() > 200 {
+            return Err(Error::parameter("Length must between 10 and 200").with_label("Tes"));
+        }
+        self.content[0].reason = reason.into();
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -362,6 +410,9 @@ struct CompletedContent<'a> {
     map: &'a FormMap,
     #[serde(rename = "pjxxlist")]
     questions: Vec<CompletedQuestion<'a>>,
+    // 问题及建议, 用作满分或不合格原因
+    #[serde(rename = "wtjjy")]
+    reason: Cow<'a, str>,
     #[serde(flatten)]
     literal: CompletedLiteral,
 }
@@ -376,9 +427,11 @@ struct CompletedQuestion<'a> {
     wjstctid: &'a str,
     #[serde(rename = "wjstid")]
     question_id: &'a str,
-    // 单选题为选项 ID, 简答题为 p 标签包裹的字符串, 但懒得包了
+    // 单选题为选项 ID, 简答题为 p 标签包裹的字符串
     #[serde(rename = "xxdalist")]
     answer: Vec<Cow<'a, str>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    wtjjy: Option<&'static str>,
 }
 
 // What can I say! **的为什么有一堆常量啊, 这玩意你不能服务器里面自己加吗
@@ -388,7 +441,6 @@ struct CompletedLiteral {
     pjfs: &'static str,
     pjlx: &'static str,
     stzjid: &'static str,
-    wtjjy: &'static str,
     sfxxpj: &'static str,
     // 是否匿名
     sfnm: &'static str,
@@ -405,7 +457,6 @@ impl Default for CompletedLiteral {
             pjfs: "1",
             pjlx: "2",
             stzjid: "xx",
-            wtjjy: "",
             sfxxpj: "1",
             sfnm: "1",
             xhgs: Null,
