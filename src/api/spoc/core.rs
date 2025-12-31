@@ -1,6 +1,6 @@
-use log::trace;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use bytes::Bytes;
+use reqwest::Method;
+use serde::Serialize;
 
 use crate::api::{Spoc, Sso};
 use crate::crypto;
@@ -49,16 +49,14 @@ impl super::SpocApi {
     /// **Note**: You should use other existing APIs first.
     ///
     /// If the API you need but is not implemented, you can extend it with this universal request API.
-    ///
-    /// **Note**: Type of `T` is the `content` field in JSON response.
-    pub async fn universal_request<'a, P, T>(
+    pub async fn universal_request<P>(
         &self,
         url: &str,
-        payload: &Payload<'a, P>,
-    ) -> crate::Result<T>
+        method: Method,
+        payload: Payload<'_, P>,
+    ) -> crate::Result<Bytes>
     where
         P: Serialize + ?Sized,
-        T: DeserializeOwned,
     {
         let cred = self.cred.load();
         if cred.is_expired::<Spoc>() {
@@ -66,49 +64,22 @@ impl super::SpocApi {
         }
         let token = cred.value::<Spoc>()?;
 
-        let req = self.client.post(url).header("Token", token);
-
+        let req = self.client.request(method, url).header("Token", token);
         let req = match payload {
             Payload::Query(q) => req.query(q),
             Payload::Json(j) => {
-                let aes = crypto::aes::Aes128::new(SPOC_AES_KEY);
-
                 // 构造请求体, 使用 AES 加密请求参数, Base64 编码
+                let aes = crypto::aes::Aes128::new(SPOC_AES_KEY);
                 // TODO: 考虑直接序列化到加密器中
                 let data = serde_json::to_vec(j)?;
                 let data = aes.encrypt_cbc(&data, SPOC_AES_IV);
                 let data = crypto::encode_base64(data);
-                let json = serde_json::json!({
-                    "param": data
-                });
+                let json = serde_json::json!({ "param": data });
                 req.json(&json)
             }
         };
 
         let res = req.send().await?.bytes().await?;
-
-        let res = serde_json::from_slice::<Res<T>>(&res)?;
-
-        // 凭据过期 code 也是 200, 那你这 code 有什么用啊
-        if res.code != 200 {
-            trace!(
-                "URL: {}, Payload: {}",
-                url,
-                serde_json::to_string(&payload)?
-            );
-            let source = format!("Status Code: {}. Error Message: {:?}", res.code, res.msg);
-            return Err(Error::server("Operation failed")
-                .with_label("Spoc")
-                .with_source(source));
-        }
-
-        Ok(res.content)
+        Ok(res)
     }
-}
-
-#[derive(Deserialize)]
-struct Res<T> {
-    code: u32,
-    msg: Option<String>,
-    content: T,
 }
