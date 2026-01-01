@@ -21,6 +21,8 @@ pub struct Res<T> {
 
 impl<'de, T: Deserialize<'de>> Res<T> {
     pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
+        // TODO: 这种错误怎么处理
+        // {"code":0,"msg":"异常错误，错误ID：d0a067d1c90f475381e5654f8847db2e","msg_en":null,"content":"d0a067d1c90f475381e5654f8847db2e"}
         let res: Res<T> = serde_json::from_slice(&v)?;
         // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if res.code != 200 {
@@ -85,7 +87,7 @@ pub struct Schedule {
     /// Classroom
     #[serde(default)]
     #[serde(rename = "skdd")]
-    pub position: String,
+    pub position: Option<String>,
     /// Teacher
     #[serde(rename = "jsxm")]
     pub teacher: String,
@@ -154,4 +156,22 @@ where
         PrimitiveDateTime::parse(&end_time, &format_string).map_err(serde::de::Error::custom)?;
 
     Ok(TimeRange { start, end })
+}
+
+// ====================
+// 用于 query_courses
+// ====================
+
+/// Course item
+#[derive(Debug, Deserialize)]
+pub struct Course {
+    /// Course ID
+    #[serde(rename = "kcid")]
+    pub id: String,
+    /// Course name
+    #[serde(rename = "kcmc")]
+    pub name: String,
+    // // Tearcher name
+    // #[serde(rename = "skjs")]
+    // pub teacher: String,
 }

@@ -1,6 +1,6 @@
 use reqwest::Method;
 
-use super::{Payload, Schedule, Week, Res};
+use super::{Course, Payload, Schedule, Week, Res};
 
 impl super::SpocApi {
     /// Get current week
@@ -29,6 +29,19 @@ impl super::SpocApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(url, Method::POST, payload).await?;
         let res: Vec<Schedule> = Res::parse(&bytes)?;
+        Ok(res)
+    }
+
+    /// # Query courses
+    ///
+    /// `term` format: "yyyy-yyyyt", e.g. "2025-20261" for 2025 fall semester.
+    /// Can get from [Week::term]
+    pub async fn query_courses(&self, term: &str) -> crate::Result<Vec<Course>> {
+        let url = "https://spoc.buaa.edu.cn/spocnewht/jxkj/queryKclb";
+        let query = [("xnxq", term)];
+        let payload = Payload::Query(&query);
+        let bytes = self.universal_request(url, Method::GET, payload).await?;
+        let res: Vec<Course> = Res::parse(&bytes)?;
         Ok(res)
     }
 }
