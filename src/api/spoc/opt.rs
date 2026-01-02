@@ -1,6 +1,6 @@
 use reqwest::Method;
 
-use super::{Course, Payload, Schedule, Week, Res};
+use super::{Course, Data, Homework, Payload, Res, Schedule, Week};
 
 impl super::SpocApi {
     /// Get current week
@@ -43,5 +43,15 @@ impl super::SpocApi {
         let bytes = self.universal_request(url, Method::GET, payload).await?;
         let res: Vec<Course> = Res::parse(&bytes)?;
         Ok(res)
+    }
+
+    /// Query homeworks
+    pub async fn query_homeworks(&self, course: &Course) -> crate::Result<Vec<Homework>> {
+        let url = "https://spoc.buaa.edu.cn/spocnewht/kczy/queryXsZyList";
+        let query = [("sskcid", &course.id)];
+        let payload = Payload::Query(&query);
+        let bytes = self.universal_request(url, Method::GET, payload).await?;
+        let res: Data<Vec<Homework>> = Res::parse(&bytes)?;
+        Ok(res.0)
     }
 }

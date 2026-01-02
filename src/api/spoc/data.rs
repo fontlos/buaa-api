@@ -39,6 +39,9 @@ impl<'de, T: Deserialize<'de>> Res<T> {
     }
 }
 
+// 辅助容器
+pub(super) struct Data<T>(pub T);
+
 // ====================
 // 用于 get_week
 // ====================
@@ -174,4 +177,51 @@ pub struct Course {
     // // Tearcher name
     // #[serde(rename = "skjs")]
     // pub teacher: String,
+}
+
+// ====================
+// 用于 query_homeworks
+// ====================
+
+impl<'de> Deserialize<'de> for Data<Vec<Homework>> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            list: Vec<Homework>,
+        }
+        let i = I::deserialize(deserializer)?;
+        Ok(Data(i.list))
+    }
+}
+
+/// Homework list item
+#[derive(Debug, Deserialize)]
+pub struct Homework {
+    /// Homework ID
+    pub id: String,
+    /// Homework title
+    #[serde(rename = "zymc")]
+    pub title: String,
+    // /// Score
+    // #[serde(rename = "zyfs")]
+    // pub score: u32,
+    /// Start datetime
+    #[serde(rename = "zykssj")]
+    pub start: String,
+    /// End datetime
+    #[serde(rename = "zyjzsj")]
+    pub end: String,
+    // 1 为可提交, 0 为不可提交
+    /// Status
+    #[serde(rename = "sfzysjn")]
+    pub status: String,
+    /// Course ID
+    #[serde(rename = "sskcid")]
+    pub course_id: String,
+    // 作业属于某周某节课
+    // #[serde(rename = "treemlmc")]
+    // pub belong: String,
 }
