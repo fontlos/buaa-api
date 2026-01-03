@@ -6,7 +6,6 @@ use std::fs::OpenOptions;
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::api::Location;
 use crate::api::{App, Boya, Class, Cloud, Spoc, Srs, Sso, Tes};
 use crate::error::{Code, Error, Result};
 use crate::utils;
@@ -35,15 +34,16 @@ pub struct CredentialStore {
 }
 
 pub(crate) trait Token {
+    const NAME: &'static str;
     const EXPIRATION: u64;
     fn field(store: &CredentialStore) -> &CredentialItem;
     fn mut_field(store: &mut CredentialStore) -> &mut CredentialItem;
-    fn as_location() -> Location;
 }
 
 macro_rules! impl_token {
     ($type:ident, $field:ident, $expiration:expr) => {
         impl Token for $type {
+            const NAME: &'static str = stringify!($type);
             const EXPIRATION: u64 = $expiration;
             #[inline]
             fn field(store: &CredentialStore) -> &CredentialItem {
@@ -52,10 +52,6 @@ macro_rules! impl_token {
             #[inline]
             fn mut_field(store: &mut CredentialStore) -> &mut CredentialItem {
                 &mut store.$field
-            }
-            #[inline]
-            fn as_location() -> Location {
-                Location::$type
             }
         }
     };
@@ -119,7 +115,7 @@ impl CredentialStore {
     pub(crate) fn value<T: Token>(&self) -> Result<&str> {
         T::field(self).value.as_deref().ok_or(
             Error::auth("No token")
-                .with_label(T::as_location().as_str())
+                .with_label(T::NAME)
                 .with_code(Code::AuthNoToken),
         )
     }
