@@ -38,53 +38,6 @@ pub struct User;
 /// Marker type for BUAA WiFi API Group
 pub struct Wifi;
 
-// 这必须和 Marker 一一对应, 因为 Token trait 使用宏进行转化
-/// Api location marker
-#[derive(Debug, Eq, PartialEq)]
-pub enum Location {
-    /// BUAA Academic Affairs System API
-    Aas,
-    /// BUAA App API
-    App,
-    /// BUAA Boya Course API
-    Boya,
-    /// BUAA Smart Classroom API
-    Class,
-    /// BUAA Cloud Disk API
-    Cloud,
-    /// BUAA Spoc Platform API
-    Spoc,
-    /// BUAA Undergraduate & Graduate Student Course Registration System API
-    Srs,
-    /// BUAA SSO API
-    Sso,
-    /// BUAA Teaching Evaluation System API
-    Tes,
-    /// BUAA User Center API
-    User,
-    /// BUAA WiFi API
-    Wifi,
-}
-
-impl Location {
-    /// Get the string representation of the location
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Location::Aas => "Aas",
-            Location::App => "App",
-            Location::Boya => "Boya",
-            Location::Class => "Class",
-            Location::Cloud => "Cloud",
-            Location::Spoc => "Spoc",
-            Location::Srs => "Srs",
-            Location::Sso => "Sso",
-            Location::Tes => "Tes",
-            Location::User => "User",
-            Location::Wifi => "Wifi",
-        }
-    }
-}
-
 impl crate::Context<Core> {
     /// Get BUAA Academic Affairs System API Group
     pub const fn aas(&self) -> &crate::Context<Aas> {
