@@ -2,7 +2,29 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use time::PrimitiveDateTime;
 
+use crate::error::Error;
 use crate::utils::deserialize_datetime;
+
+#[derive(Deserialize)]
+pub(crate) struct Res<T> {
+    status: String,
+    errmsg: String,
+    data: T,
+}
+
+impl<'de, T: Deserialize<'de>> Res<T> {
+    pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
+        let res: Res<T> = serde_json::from_slice(&v)?;
+        // 凭据过期 code 也是 200, 那你这 code 有什么用啊
+        if res.status != "0" {
+            let source = format!("Status Code: {}. Error Message: {}", res.status, res.errmsg);
+            return Err(Error::server("Operation failed")
+                .with_label("Boya")
+                .with_source(source));
+        }
+        Ok(res.data)
+    }
+}
 
 // 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
 #[derive(Debug)]

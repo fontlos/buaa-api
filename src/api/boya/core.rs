@@ -1,6 +1,5 @@
-use log::trace;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use bytes::Bytes;
+use serde::Serialize;
 
 use crate::api::{Boya, Sso};
 use crate::error::Error;
@@ -46,7 +45,6 @@ impl super::BoyaApi {
     /// # Universal Request for BoyaApi
     ///
     /// **Note**: You should use other existing APIs first.
-    /// If you really need additional APIs, open Issue or PR firstly
     ///
     /// If the API you need but is not implemented, you can extend it with this universal request API.
     ///
@@ -55,15 +53,11 @@ impl super::BoyaApi {
     /// - Input:
     ///     - URL: API URL
     ///     - Payload: Serialize JSON
-    /// - Output:
-    ///     - DeserializeOwned JSON
-    ///
     ///
     /// ## Example
     ///
-    /// **Note**: Type of `T` is the `data` field in JSON response.
-    ///
-    /// Locate the following sections in the `app.js`(Windows UA)/`main.js`(Android UA) by search `setPublicKey` and set breakpoint to debug.
+    /// Locate the following sections in the `app.js`(Windows UA)/`main.js`(Android UA)
+    /// by search `setPublicKey` and set breakpoint to debug.
     ///
     /// ```js
     /// ...
@@ -73,23 +67,19 @@ impl super::BoyaApi {
     /// ...
     /// ```
     ///
-    /// You can find `payload` in `w = JSON.stringify(x)`
-    ///
+    /// You can find `payload` in `w = JSON.stringify(x)`.
     /// And then for `getUserProfile` API
-    ///
-    /// - URL: `https://bykc.buaa.edu.cn/sscv/getUserProfile`
-    /// - Payload: `{}`
     ///
     /// ```
     /// use serde_json::Value;
     /// let url = "https://bykc.buaa.edu.cn/sscv/getUserProfile";
     /// let payload = serde_json::json!({});
-    /// let res: Value = self.universal_request::<_, Value>(&url, &payload).await?;
+    /// let bytes = self.universal_request(&url, &payload).await?;
+    /// let res: Value = serde_json::from_slice(&bytes)?;
     /// ```
-    pub async fn universal_request<P, T>(&self, url: &str, payload: &P) -> crate::Result<T>
+    pub async fn universal_request<P>(&self, url: &str, payload: &P) -> crate::Result<Bytes>
     where
         P: Serialize + ?Sized,
-        T: DeserializeOwned,
     {
         let cred = self.cred.load();
         if cred.is_expired::<Boya>() {
@@ -136,36 +126,22 @@ impl super::BoyaApi {
             .header("Ak", &ak)
             .header("Sk", &sk)
             .header("Ts", time.to_string())
+            // 虽然请求头是 JSON 但是传的是 Base64 的字符串
             .json(&body)
             .send()
             .await?;
 
-        // 去掉响应体两端的引号, 先 Base64 解码, 再 AES 解密, 最后反序列化
-        let bytes = res.bytes().await?;
-        let bytes = &bytes[1..bytes.len() - 1];
-        let res = crypto::decode_base64(bytes);
-        let raw_res = aes_cipher.decrypt_ecb(&res);
-        let res = serde_json::from_slice::<Res<T>>(&raw_res)?;
-
-        // 98005399 是登陆过期, 但自动刷新机制保证不会发生, 1 是另一个值得一看的错误, 但暂时不重要
-        if res.status != "0" {
-            trace!("URL: {}, Query: {}", url, serde_json::to_string(&payload)?);
-            let source = format!("Status Code: {}. Error Message: {}", res.status, res.errmsg);
-            return Err(Error::server("Operation failed")
-                .with_label("Boya")
-                .with_source(source));
-        }
+        // 去掉响应体两端的引号, 先 Base64 解码, 再 AES 解密, 然后返回原始字节延迟解析
+        let bytes = res
+            .bytes()
+            .await
+            .map(|b| crypto::decode_base64(&b[1..b.len() - 1]))
+            .map(|b| aes_cipher.decrypt_ecb(&b))
+            .map(Bytes::from)?;
 
         // 刷新 Token 时效
         cred.refresh::<Boya>();
 
-        Ok(res.data)
+        Ok(bytes)
     }
-}
-
-#[derive(Deserialize)]
-struct Res<T> {
-    status: String,
-    errmsg: String,
-    data: T,
 }
