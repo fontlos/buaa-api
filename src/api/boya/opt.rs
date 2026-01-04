@@ -4,7 +4,7 @@ use crate::crypto::rand::{Rng, WyRng};
 use crate::{Error, utils};
 
 use super::BoyaApi;
-use super::data::{Coordinate, Course, Data, Selected, SignInfo, SignRes, Statistic};
+use super::data::{Coordinate, Course, Data, Res, Selected, SignInfo, SignRes, Statistic};
 
 impl BoyaApi {
     /// # Query Course List
@@ -18,7 +18,8 @@ impl BoyaApi {
             "pageNumber": page,
             "pageSize": size,
         });
-        let res: Data<Vec<Course>> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Data<Vec<Course>> = Res::parse(&bytes)?;
         Ok(res.0)
     }
 
@@ -30,7 +31,8 @@ impl BoyaApi {
         let payload = serde_json::json!({
             "id": id,
         });
-        let res: Course = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Course = Res::parse(&bytes)?;
         Ok(res)
     }
 
@@ -67,7 +69,8 @@ impl BoyaApi {
             "startDate": range.0,
             "endDate": range.1,
         });
-        let res: Data<Vec<Selected>> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Data<Vec<Selected>> = Res::parse(&bytes)?;
         Ok(res.0)
     }
 
@@ -75,7 +78,8 @@ impl BoyaApi {
     pub async fn query_statistic(&self) -> crate::Result<Statistic> {
         let url = "https://bykc.buaa.edu.cn/sscv/queryStatisticByUserId";
         let payload = serde_json::json!({});
-        let res: Data<Statistic> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Data<Statistic> = Res::parse(&bytes)?;
         Ok(res.0)
     }
 
@@ -88,7 +92,7 @@ impl BoyaApi {
             "courseId": id,
         });
         // data 字段包含一个 courseCurrentCount 字段, 操作后的当前容量, 感觉没什么用
-        let _: () = self.universal_request(url, &payload).await?;
+        let _ = self.universal_request(url, &payload).await?;
         Ok(())
     }
 
@@ -101,7 +105,7 @@ impl BoyaApi {
             "id": id,
         });
         // data 字段包含一个 courseCurrentCount 字段, 操作后的当前容量, 感觉没什么用
-        let _: () = self.universal_request(url, &payload).await?;
+        let _ = self.universal_request(url, &payload).await?;
         Ok(())
     }
 
@@ -122,7 +126,8 @@ impl BoyaApi {
             "signLng": c.longitude + lng_offset,
             "signType": t,
         });
-        let res: Data<SignRes> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Data<SignRes> = Res::parse(&bytes)?;
         Ok(res.0)
     }
 
