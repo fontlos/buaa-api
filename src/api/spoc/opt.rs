@@ -48,7 +48,8 @@ impl super::SpocApi {
     /// Query homeworks
     pub async fn query_homeworks(&self, course: &Course) -> crate::Result<Vec<Homework>> {
         let url = "https://spoc.buaa.edu.cn/spocnewht/kczy/queryXsZyList";
-        let query = [("sskcid", &course.id)];
+        // 有缓存的情况下没有前两个参数也正常, 但没缓存就会返回 Null
+        let query = [("flag", "1"), ("sflx", "2"), ("sskcid", &course.id)];
         let payload = Payload::Query(&query);
         let bytes = self.universal_request(url, Method::GET, payload).await?;
         let res: Data<Vec<Homework>> = Res::parse(&bytes)?;
