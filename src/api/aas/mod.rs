@@ -1,5 +1,7 @@
 //! # BUAA Academic Affairs System API
 
+mod auth;
+
 /// # BUAA Academic Affairs System API Group
 ///
 /// Obtain a context view via [`Context.aas()`],
