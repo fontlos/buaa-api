@@ -225,3 +225,28 @@ pub struct Homework {
     // #[serde(rename = "treemlmc")]
     // pub belong: String,
 }
+
+// 上面有的字段这里都有, 但没什么用
+/// Homework detail
+#[derive(Debug, Deserialize)]
+pub struct HomeworkDetail {
+    /// Homework content (Contain \n)
+    #[serde(deserialize_with = "deserialize_homework_content")]
+    #[serde(rename = "zynr")]
+    pub content: String,
+    /// File type
+    #[serde(rename = "xzwjlx")]
+    pub file: String,
+    /// submit times limits
+    #[serde(rename = "xztjcs")]
+    pub submit_limit: String,
+}
+
+fn deserialize_homework_content<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let str: String = Deserialize::deserialize(deserializer)?;
+    let str = str.replace("<p>", "").replace("</p>", "");
+    Ok(str)
+}
