@@ -16,18 +16,16 @@ impl super::SpocApi {
         Ok(res)
     }
 
-    /// Get schedule of a week
-    pub async fn get_week_schedule(&self, week: &Week) -> crate::Result<Vec<Schedule>> {
-        let url = "https://spoc.buaa.edu.cn/spocnewht/inco/ht/queryList";
-        // 后面三个值分别是开始日期, 结束日期和学年学期
-        let json = serde_json::json!({
-            "sqlid": "17138556333937a86d7c38783bc62811e7c6bb5ef955a",
-            "zksrq": week.date.0,
-            "zjsrq": week.date.1,
-            "xnxq": week.term
-        });
-        let payload = Payload::Json(&json);
-        let bytes = self.universal_request(url, Method::POST, payload).await?;
+    /// Query schedule of a week
+    pub async fn query_week_schedules(&self, week: &Week) -> crate::Result<Vec<Schedule>> {
+        let url = "https://spoc.buaa.edu.cn/spocnewht/jxkj/queryRlData";
+        let query = [
+            ("rllx", "1"), // 日历类型
+            ("zksrq", &week.date.0),
+            ("zjsrq", &week.date.1),
+        ];
+        let payload = Payload::Query(&query);
+        let bytes = self.universal_request(url, Method::GET, payload).await?;
         let res: Vec<Schedule> = Res::parse(&bytes)?;
         Ok(res)
     }
