@@ -7,6 +7,15 @@ use super::data::{
 };
 
 impl BoyaApi {
+    /// # Get Current Semester
+    pub async fn get_semester(&self) -> crate::Result<Semester> {
+        let url = "https://bykc.buaa.edu.cn/sscv/getAllConfig";
+        let payload = serde_json::json!({});
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Data<Semester> = Res::parse(&bytes)?;
+        Ok(res.0)
+    }
+
     /// # Query Course List
     pub async fn query_courses(&self, page: u8, size: u8) -> crate::Result<Vec<Course>> {
         // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
