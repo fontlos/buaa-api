@@ -1,9 +1,9 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use time::PrimitiveDateTime;
+use time::{Date, Month, PrimitiveDateTime, Time};
 
 use crate::error::Error;
-use crate::utils::deserialize_datetime;
+use crate::utils::{self, deserialize_datetime};
 
 #[derive(Deserialize)]
 pub(crate) struct Res<T> {
@@ -29,6 +29,82 @@ impl<'de, T: Deserialize<'de>> Res<T> {
 // 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
 #[derive(Debug)]
 pub(super) struct Data<T>(pub T);
+
+// ====================
+// 用于 get_semester
+// ====================
+
+/// Semester
+#[derive(Debug, Deserialize)]
+pub struct Semester {
+    /// Semester start date
+    #[serde(rename = "semesterStartDate")]
+    #[serde(deserialize_with = "deserialize_datetime")]
+    pub start: PrimitiveDateTime,
+    /// Semester end date
+    #[serde(rename = "semesterEndDate")]
+    #[serde(deserialize_with = "deserialize_datetime")]
+    pub end: PrimitiveDateTime,
+}
+
+impl<'de> Deserialize<'de> for Data<Semester> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct I {
+            semester: Vec<Semester>,
+        }
+
+        let i = I::deserialize(deserializer)?;
+        let res = i
+            .semester
+            .into_iter()
+            .next()
+            .ok_or_else(|| serde::de::Error::missing_field("semester"))?;
+        Ok(Data(res))
+    }
+}
+
+impl Semester {
+    /// Get current semester based on local time. This is ONLY an estimation.
+    pub fn estimated_current() -> Self {
+        let now = utils::get_datetime();
+        let year = now.year();
+        let datetime_helper = |y, m, d| {
+            PrimitiveDateTime::new(Date::from_calendar_date(y, m, d).unwrap(), Time::MIDNIGHT)
+        };
+        // 秋/春季学期
+        let (start, end) = if now.month() >= Month::August {
+            (
+                datetime_helper(year, Month::September, 1),
+                datetime_helper(year + 1, Month::January, 1),
+            )
+        } else {
+            (
+                datetime_helper(year, Month::March, 1),
+                datetime_helper(year, Month::July, 1),
+            )
+        };
+        Semester {
+            start,
+            end,
+        }
+    }
+
+    /// Convert to (start_year, end_year, term) tuple
+    pub fn as_term(&self) -> (i32, i32, u8) {
+        let start_year = self.start.year();
+        let end_year = self.end.year();
+        let term = if self.start.month() >= Month::August {
+            1
+        } else {
+            2
+        };
+        (start_year, end_year, term)
+    }
+}
 
 // ====================
 // 用于 query_courses
