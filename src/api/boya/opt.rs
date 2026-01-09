@@ -1,10 +1,10 @@
-use time::{Date, Month};
-
+use crate::Error;
 use crate::crypto::rand::{Rng, WyRng};
-use crate::{Error, utils};
 
 use super::BoyaApi;
-use super::data::{Coordinate, Course, Data, Res, Selected, SignInfo, SignRes, Statistic};
+use super::data::{
+    Coordinate, Course, Data, Res, Selected, Semester, SignInfo, SignRes, Statistic,
+};
 
 impl BoyaApi {
     /// # Query Course List
@@ -38,36 +38,13 @@ impl BoyaApi {
 
     /// # Query Selected Course List
     ///
-    /// - Input: Start and end date. If `None`, query current term.
-    pub async fn query_selected(
-        &self,
-        range: Option<(Date, Date)>,
-    ) -> crate::Result<Vec<Selected>> {
+    /// - Input: Semester from [Semester::estimated_current]
+    pub async fn query_selected(&self, semester: Semester) -> crate::Result<Vec<Selected>> {
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
-        // 考虑到多数情况下只需要查询本学期即可
-        let range = range
-            .map(|r| (format!("{} 00:00:00", r.0), format!("{} 00:00:00", r.1)))
-            .unwrap_or_else(|| {
-                // 8 月为分界线
-                let today = utils::get_datetime();
-                let year = today.year();
-                if today.month() >= Month::August {
-                    // 秋季学期. 应该不会有人在元旦后还选课吧
-                    (
-                        format!("{}-09-01 00:00:00", year),
-                        format!("{}-12-31 00:00:00", year),
-                    )
-                } else {
-                    // 春季学期
-                    (
-                        format!("{}-03-01 00:00:00", year),
-                        format!("{}-07-01 00:00:00", year),
-                    )
-                }
-            });
+        // 要求时间格式为 hh:mm:ss, to_string 方法会导致 秒 有小数点, 不过似乎不影响
         let payload = serde_json::json!({
-            "startDate": range.0,
-            "endDate": range.1,
+            "startDate": semester.start.to_string(),
+            "endDate": semester.end.to_string(),
         });
         let bytes = self.universal_request(url, &payload).await?;
         let res: Data<Vec<Selected>> = Res::parse(&bytes)?;
