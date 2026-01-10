@@ -87,10 +87,7 @@ impl Semester {
                 datetime_helper(year, Month::July, 1),
             )
         };
-        Semester {
-            start,
-            end,
-        }
+        Semester { start, end }
     }
 
     /// Convert to (start_year, end_year, term) tuple
