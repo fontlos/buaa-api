@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer};
-use time::macros::format_description;
-use time::{OffsetDateTime, PrimitiveDateTime, UtcOffset};
+use time::macros::{format_description, offset};
+use time::{OffsetDateTime, PrimitiveDateTime};
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -24,10 +24,8 @@ pub fn get_time_nanos() -> u128 {
 }
 
 pub fn get_datetime() -> PrimitiveDateTime {
-    let now_utc = OffsetDateTime::now_utc();
-    let local_offset = UtcOffset::from_hms(8, 0, 0).expect("Offset should always be valid");
-    let now_local = now_utc.to_offset(local_offset);
-    PrimitiveDateTime::new(now_local.date(), now_local.time())
+    let now = OffsetDateTime::now_utc().to_offset(offset!(+8));
+    PrimitiveDateTime::new(now.date(), now.time())
 }
 
 pub fn deserialize_datetime<'de, D>(deserializer: D) -> Result<PrimitiveDateTime, D::Error>
