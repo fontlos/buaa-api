@@ -1,6 +1,11 @@
+#[cfg(feature = "multipart")]
+use reqwest::multipart::{Form, Part};
 use serde::{Deserialize, Deserializer, Serialize};
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
+
+#[cfg(feature = "multipart")]
+use crate::{Error, crypto};
 
 /// Request Body Payload
 #[derive(Debug, Serialize)]
@@ -249,4 +254,162 @@ where
     let str: String = Deserialize::deserialize(deserializer)?;
     let str = str.replace("<p>", "").replace("</p>", "");
     Ok(str)
+}
+
+/// Upload file arguments
+#[cfg(feature = "multipart")]
+#[derive(Debug, Serialize)]
+pub(super) struct UploadArgs {
+    #[serde(rename = "chunkNumber")]
+    index: usize,
+    /// Size of each chunk (fixed)
+    #[serde(rename = "chunkSize")]
+    chunk_size: usize,
+    #[serde(rename = "currentChunkSize")]
+    current_chunk_size: usize,
+    #[serde(rename = "totalSize")]
+    len: usize,
+    identifier: String,
+    // 不能缺少的字段, 这个名字仅在匹配上传时生效, 可以起到一个重命名的作用
+    pub(super) filename: String,
+    // #[serde(rename = "relativePath")]
+    // relative_path: String,
+    #[serde(rename = "totalChunks")]
+    total_chunks: usize,
+}
+
+/// Merge file arguments
+#[cfg(feature = "multipart")]
+#[derive(Debug, Serialize)]
+pub(super) struct MergeArgs<'a> {
+    identifier: &'a str,
+    #[serde(rename = "totalSize")]
+    len: usize,
+    filename: &'a str,
+}
+
+#[cfg(feature = "multipart")]
+impl UploadArgs {
+    /// Create UploadArgs from reader
+    pub fn from_reader<R>(mut reader: R, name: String) -> crate::Result<Self>
+    where
+        R: std::io::Read,
+    {
+        // 暂时先定死 chunk 大小, 这也是网页端规定的大小
+        let chunk_size = 2048000;
+
+        let mut len = 0;
+        let mut hasher = crypto::md5::Md5::new();
+        let mut buffer = [0u8; 8192];
+        loop {
+            let n = reader
+                .read(&mut buffer)
+                .map_err(|_| Error::io("Read Failed"))?;
+            if n == 0 {
+                break;
+            }
+            hasher.update(&buffer[..n]);
+            len += n;
+        }
+        let hash = hasher.finalize();
+        let identifier = crypto::bytes2hex(&hash);
+        // 用满了就用满的
+        let current_chunk_size = if len > chunk_size { chunk_size } else { len };
+        // 块总数
+        let total_chunks = if len % chunk_size == 0 {
+            len / chunk_size
+        } else {
+            len / chunk_size + 1
+        };
+        Ok(UploadArgs {
+            index: 1,
+            chunk_size,
+            current_chunk_size,
+            len,
+            identifier,
+            filename: name,
+            total_chunks,
+        })
+    }
+
+    fn build_form(&self, index: usize, data: Vec<u8>) -> Form {
+        let current_chunk_size = data.len();
+        Form::new()
+            .text("chunkNumber", index.to_string())
+            .text("chunkSize", self.chunk_size.to_string())
+            .text("currentChunkSize", current_chunk_size.to_string())
+            .text("totalSize", self.len.to_string())
+            .text("identifier", self.identifier.clone())
+            // .text("filename", self.filename.clone())
+            // .text("relativePath", self.filename.clone())
+            .text("totalChunks", self.total_chunks.to_string())
+            .part(
+                "file",
+                Part::bytes(data)
+                    // 这个字段很重要, 但具体名字不重要
+                    // 名字取决于 merge 操作, 但它必须是 PDF 文件骗骗文件系统
+                    // .file_name(self.filename.clone())
+                    .file_name("file.pdf")
+                    .mime_str("application/pdf")
+                    .unwrap(),
+            )
+    }
+
+    /// Convert to multiple Form iterator
+    pub(super) fn chunk_iter<R>(&self, mut reader: R) -> impl Iterator<Item = crate::Result<Form>>
+    where
+        R: std::io::Read,
+    {
+        let mut chunk_index = 1;
+        let mut remaining = self.len;
+
+        std::iter::from_fn(move || {
+            if remaining == 0 {
+                return None;
+            }
+
+            let to_read = std::cmp::min(self.chunk_size, remaining);
+            let mut buffer = vec![0u8; to_read];
+            match reader.read_exact(&mut buffer) {
+                Ok(()) => {
+                    remaining -= to_read;
+                    let form = self.build_form(chunk_index, buffer);
+                    chunk_index += 1;
+                    Some(Ok(form))
+                }
+                Err(e) => Some(Err(Error::io(format!(
+                    "Failed to read chunk {}: {}",
+                    chunk_index, e
+                )))),
+            }
+        })
+    }
+
+    pub(super) fn to_merge<'a>(&'a self, name: &'a str) -> MergeArgs<'a> {
+        MergeArgs {
+            identifier: &self.identifier,
+            len: self.len,
+            filename: name,
+        }
+    }
+}
+
+/// Upload file response
+#[cfg(feature = "multipart")]
+pub struct UploadRes {
+    /// File ID
+    pub id: String,
+    /// File name
+    pub name: String,
+}
+
+#[cfg(feature = "multipart")]
+impl UploadRes {
+    /// Convert to download URL
+    pub fn as_url(&self) -> String {
+        format!(
+            "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/downLoadFile?scjlid={}",
+            self.id
+        )
+    }
 }

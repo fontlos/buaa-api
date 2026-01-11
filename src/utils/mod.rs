@@ -1,5 +1,10 @@
+#![allow(unused)]
+
+mod blocking;
+pub use blocking::*;
+
 mod str;
-pub(crate) use str::{gen_rand_str, parse_by_tag};
+pub use str::*;
 
 mod time;
 pub use time::*;
