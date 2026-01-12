@@ -70,6 +70,33 @@ impl super::SpocApi {
         Ok(res)
     }
 
+    /// Submit homework
+    pub async fn submit_homework(&self, hw: &Homework, file: &UploadRes) -> crate::Result<()> {
+        let url = "https://spoc.buaa.edu.cn/spocnewht/kczy/submitKcz2";
+        // TODO: name 字段真的重要吗, 服务器已经将 ID 与 name 关联在一起了
+        let form = [
+            ("ytjcs", "2"),
+            ("tjfs", "5"),
+            ("tjlx", "5"),
+            ("scwjid_name", &file.name),
+            ("sskcid", &hw.course_id),
+            ("kczyid", &hw.id),
+            ("scwjid", &file.id),
+        ];
+        // 虽然也行但改成form
+        let payload = Payload::Query(&form);
+        let bytes = self.universal_request(url, Method::POST, payload).await?;
+        // 能写出这种返回值的家里请高人了, msg_en 是给你这么用的吗
+        // {"code":200,"msg":"操作成功","msg_en":"操作时间xxx","content":null}
+        // TODO: 这里需要交给 Res 结构处理
+        if let Some(code) = crate::utils::parse_by_tag(&bytes, "\"code\":", ",") {
+            if code == "200" {
+                return Ok(());
+            }
+        }
+        Ok(())
+    }
+
     // 查看提交情况, 包括文件 ID 什么的
     // https://spoc.buaa.edu.cn/spocnewht/kczy/queryXsSubmitKczyInfo?kczyid=
 
