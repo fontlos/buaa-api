@@ -1,6 +1,5 @@
-use log::trace;
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use bytes::Bytes;
+use serde::Serialize;
 
 use crate::api::{Class, Sso};
 use crate::error::Error;
@@ -76,10 +75,9 @@ impl super::ClassApi {
     /// Universal Request for ClassApi (Internal)
     ///
     /// **Note**: `token` parameter is already included
-    pub(crate) async fn universal_request<P, T>(&self, url: &str, payload: &P) -> crate::Result<T>
+    pub(crate) async fn universal_request<P>(&self, url: &str, payload: &P) -> crate::Result<Bytes>
     where
         P: Serialize + ?Sized,
-        T: DeserializeOwned,
     {
         let cred = self.cred.load();
         if cred.is_expired::<Class>() {
@@ -93,7 +91,7 @@ impl super::ClassApi {
             .ok_or(Error::auth("Cannot split 'session' and 'id' token").with_label("Class"))?;
 
         // 在 URL 中硬编码 id
-        let res = self
+        let bytes = self
             .client
             .post(format!("{url}?id={id}"))
             .header("Sessionid", session)
@@ -102,28 +100,6 @@ impl super::ClassApi {
             .await?
             .bytes()
             .await?;
-        let res = serde_json::from_slice::<Res<T>>(&res)?;
-
-        if res.status != "0" {
-            trace!("URL: {}, Query: {}", url, serde_json::to_string(&payload)?);
-            let source = format!("Status Code: {}. Error Message: {:?}", res.status, res.msg);
-            return Err(Error::server("Operation failed")
-                .with_label("Class")
-                .with_source(source));
-        }
-
-        match res.result {
-            Some(r) => Ok(r),
-            None => Err(Error::server("No result").with_label("Class")),
-        }
+        Ok(bytes)
     }
-}
-
-#[derive(Deserialize)]
-struct Res<T> {
-    #[serde(rename = "STATUS")]
-    status: String,
-    #[serde(rename = "ERRMSG")]
-    msg: Option<String>,
-    result: Option<T>,
 }

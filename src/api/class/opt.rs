@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::utils;
 
-use super::data::{Course, CourseSchedule, Schedule};
+use super::data::{Course, CourseSchedule, Schedule, Res};
 
 impl super::ClassApi {
     /// # Query one day's all schedules
@@ -11,7 +11,8 @@ impl super::ClassApi {
     pub async fn query_schedule(&self, date: &str) -> crate::Result<Vec<Schedule>> {
         let url = "https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action";
         let payload = [("dateStr", date)];
-        let res: Vec<Schedule> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Vec<Schedule> = Res::parse(&bytes)?;
         Ok(res)
     }
 
@@ -34,7 +35,8 @@ impl super::ClassApi {
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<Course>> {
         let url = "https://iclass.buaa.edu.cn:8347/app/choosecourse/get_myall_course.action";
         let payload = [("user_type", "1"), ("xq_code", id)];
-        let res: Vec<Course> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Vec<Course> = Res::parse(&bytes)?;
         // 需要过滤掉 teacher 为空的字段, 那可能是错误的课程
         let filtered = res
             .into_iter()
@@ -51,7 +53,8 @@ impl super::ClassApi {
     pub async fn query_course_schedule(&self, id: &str) -> crate::Result<Vec<CourseSchedule>> {
         let url = "https://iclass.buaa.edu.cn:8347/app/my/get_my_course_sign_detail.action";
         let payload = [("courseId", id)];
-        let res: Vec<CourseSchedule> = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        let res: Vec<CourseSchedule> = Res::parse(&bytes)?;
         Ok(res)
     }
 
@@ -66,7 +69,9 @@ impl super::ClassApi {
             ("courseSchedId", id),
             ("timestamp", &utils::get_time_millis().to_string()),
         ];
-        let res: Value = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(url, &payload).await?;
+        // TODO: 检查类型移除 Value
+        let res: Value = Res::parse(&bytes)?;
         Ok(res)
     }
 }

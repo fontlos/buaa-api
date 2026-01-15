@@ -1,6 +1,34 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::error::Error;
 use crate::utils::deserialize_datetime;
+
+/// Respond wrapper
+#[derive(Deserialize)]
+pub(crate) struct Res<T> {
+    #[serde(rename = "STATUS")]
+    status: String,
+    #[serde(rename = "ERRMSG")]
+    msg: Option<String>,
+    result: Option<T>,
+}
+
+impl<'de, T: Deserialize<'de>> Res<T> {
+    pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
+        let res: Res<T> = serde_json::from_slice(&v)?;
+        if res.status != "0" {
+            let source = format!("Status Code: {}. Error Message: {:?}", res.status, res.msg);
+            return Err(Error::server("Operation failed")
+                .with_label("Class")
+                .with_source(source));
+        }
+
+        match res.result {
+            Some(r) => Ok(r),
+            None => Err(Error::server("No result").with_label("Class")),
+        }
+    }
+}
 
 /// Schedule of some day
 #[derive(Debug, Deserialize)]
