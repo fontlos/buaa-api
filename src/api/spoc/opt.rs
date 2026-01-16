@@ -100,9 +100,10 @@ impl super::SpocApi {
     // 查看提交情况, 包括文件 ID 什么的
     // https://spoc.buaa.edu.cn/spocnewht/kczy/queryXsSubmitKczyInfo?kczyid=
 
-    // 似乎是不限制大小, 不限制类型. 我们可以在内部用 PDF 后缀骗骗文件系统
-    //
-    // 有一个问题是一旦上传出错了, 几乎是不可修改的, 因为 MD5 值已经传上去了, 再上传会触发已经匹配
+    // 这甚至不需要授权就可以上传下载,
+    // 似乎是不限制大小, 不限制类型. 我们可以在内部用 PDF 后缀骗骗文件系统.
+    // 有一个问题是一旦上传出错了, 几乎是不可修改的, 因为 MD5 值已经传上去了, 再上传会触发已经匹配.
+    // Check 和 Merge ID 是不同的, 但是对应的文件是相同的
     //
     // 可以通过 `https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/downLoadFile?scjlid=<ID>` 来下载文件.
     // 但这里有个诡异的问题. 文件刚上传不久时, 由于服务器缓存会导致文件分发混乱.
@@ -113,8 +114,6 @@ impl super::SpocApi {
     // 简单来说, 你想要得到正确的文件, 需要访问同一个 URL 两次并丢弃第一次的内容.
     // 这似乎是难以修复的, 因为即使在 Spoc 网页端它们也是通过两次访问同一个 URL 并丢弃第一个来获取正确文件的.
     // 不过好消息是经过几分钟后, 服务器能处理好这种情况.
-    //
-    // Check 和 Merge ID 是不同的, 但是对应的文件是相同的
     //
     /// # Upload file
     ///
@@ -139,8 +138,9 @@ impl super::SpocApi {
         // 检查是否匹配
         let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
         let payload = Payload::Query(&args);
-        let res_bytes = self.universal_request(url, Method::GET, payload).await?;
-        let id = crate::utils::parse_by_tag(&res_bytes, "id\":\"", "\"");
+        let res = self.client.get(url).query(&payload).send().await?;
+        let bytes = res.bytes().await?;
+        let id = crate::utils::parse_by_tag(&bytes, "id\":\"", "\"");
         if let Some(id) = id {
             let res = UploadRes {
                 id: id.to_string(),
@@ -160,8 +160,9 @@ impl super::SpocApi {
         let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
         let form = args.to_merge(&args.filename);
         let payload = Payload::Query(&form);
-        let res_bytes = self.universal_request(url, Method::POST, payload).await?;
-        crate::utils::parse_by_tag(&res_bytes, "id\":\"", "\"")
+        let res = self.client.post(url).query(&payload).send().await?;
+        let bytes = res.bytes().await?;
+        crate::utils::parse_by_tag(&bytes, "id\":\"", "\"")
             .map(|s| UploadRes {
                 id: s.to_string(),
                 name: args.filename,
