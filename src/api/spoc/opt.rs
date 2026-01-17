@@ -137,8 +137,7 @@ impl super::SpocApi {
 
         // 检查是否匹配
         let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
-        let payload = Payload::Query(&args);
-        let res = self.client.get(url).query(&payload).send().await?;
+        let res = self.client.get(url).query(&args).send().await?;
         let bytes = res.bytes().await?;
         let id = crate::utils::parse_by_tag(&bytes, "id\":\"", "\"");
         if let Some(id) = id {
@@ -159,8 +158,7 @@ impl super::SpocApi {
         // 合并上传的块
         let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
         let form = args.to_merge(&args.filename);
-        let payload = Payload::Query(&form);
-        let res = self.client.post(url).query(&payload).send().await?;
+        let res = self.client.post(url).query(&form).send().await?;
         let bytes = res.bytes().await?;
         crate::utils::parse_by_tag(&bytes, "id\":\"", "\"")
             .map(|s| UploadRes {
