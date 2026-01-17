@@ -1,6 +1,6 @@
 //! # BUAA Academic Affairs System API
 
-mod auth;
+mod core;
 
 /// # BUAA Academic Affairs System API Group
 ///

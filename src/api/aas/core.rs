@@ -1,4 +1,7 @@
-use crate::api::Sso;
+use bytes::Bytes;
+use reqwest::Method;
+
+use crate::api::{Aas, Sso};
 use crate::error::Error;
 
 impl super::AasApi {
@@ -15,5 +18,29 @@ impl super::AasApi {
             return Err(Error::server("Login failed").with_label("Aas"));
         }
         Ok(())
+    }
+
+    /// # Universal request for AasApi
+    pub async fn universal_request<P>(
+        &self,
+        url: &str,
+        method: Method,
+        payload: &P,
+    ) -> crate::Result<Bytes>
+    where
+        P: serde::Serialize + ?Sized,
+    {
+        let cred = self.cred.load();
+        if cred.is_expired::<Aas>() {
+            self.login().await?;
+        }
+
+        let res = self
+            .client
+            .request(method, url)
+            .query(&payload)
+            .send()
+            .await?;
+        Ok(res.bytes().await?)
     }
 }
