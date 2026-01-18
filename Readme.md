@@ -11,7 +11,7 @@
 - [x] BUAA SSO: `sso`
   - [x] Login: built in `Context`
 - [ ] BUAA Academic Affairs System: `aas`
-  - [ ] Login
+  - [x] Login
 - [x] BUAA Boya Course: `boya`
   - [x] Login
   - [x] Query courses list
@@ -65,6 +65,14 @@
   - [x] Login
   - [x] Query teaching week
   - [x] Query weekly schedule
+  - [x] Query courses
+  - [ ] Homework
+    - [x] Query list
+    - [x] Query detail
+    - [x] Submit
+  - [ ] Upload
+    - [x] Upload fast
+    - [x] Upload file
   - [x] A universal request API for extensions
 - [x] BUAA Undergraduate & Graduate Student Course Registration System: `srs`
   - [x] Login

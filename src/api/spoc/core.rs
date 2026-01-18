@@ -67,6 +67,7 @@ impl super::SpocApi {
         let req = self.client.request(method, url).header("Token", token);
         let req = match payload {
             Payload::Query(q) => req.query(q),
+            // 它们是不是把这个玩意忘了, 做了这么多加密结果只有一个接口在用
             Payload::Json(j) => {
                 // 构造请求体, 使用 AES 加密请求参数, Base64 编码
                 let aes = crypto::aes::Aes128::new(SPOC_AES_KEY);

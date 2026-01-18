@@ -2,7 +2,7 @@ use serde_json::Value;
 
 use crate::utils;
 
-use super::data::{Course, CourseSchedule, Schedule, Res};
+use super::data::{Course, CourseSchedule, Res, Schedule};
 
 impl super::ClassApi {
     /// # Query one day's all schedules
