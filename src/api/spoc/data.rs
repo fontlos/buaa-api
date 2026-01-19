@@ -4,7 +4,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
 
-#[cfg(feature = "multipart")]
 use crate::{Error, crypto};
 
 /// Request Body Payload
@@ -257,9 +256,8 @@ where
 }
 
 /// Upload file arguments
-#[cfg(feature = "multipart")]
 #[derive(Debug, Serialize)]
-pub(super) struct UploadArgs {
+pub struct UploadArgs {
     #[serde(rename = "chunkNumber")]
     index: usize,
     /// Size of each chunk (fixed)
@@ -271,24 +269,13 @@ pub(super) struct UploadArgs {
     len: usize,
     identifier: String,
     // 不能缺少的字段, 这个名字仅在匹配上传时生效, 可以起到一个重命名的作用
-    pub(super) filename: String,
+    filename: String,
     // #[serde(rename = "relativePath")]
     // relative_path: String,
     #[serde(rename = "totalChunks")]
     total_chunks: usize,
 }
 
-/// Merge file arguments
-#[cfg(feature = "multipart")]
-#[derive(Debug, Serialize)]
-pub(super) struct MergeArgs<'a> {
-    identifier: &'a str,
-    #[serde(rename = "totalSize")]
-    len: usize,
-    filename: &'a str,
-}
-
-#[cfg(feature = "multipart")]
 impl UploadArgs {
     /// Create UploadArgs from reader
     pub fn from_reader<R>(mut reader: R, name: String) -> crate::Result<Self>
@@ -332,6 +319,7 @@ impl UploadArgs {
         })
     }
 
+    #[cfg(feature = "multipart")]
     fn build_form(&self, index: usize, data: Vec<u8>) -> Form {
         let current_chunk_size = data.len();
         Form::new()
@@ -356,6 +344,7 @@ impl UploadArgs {
     }
 
     /// Convert to multiple Form iterator
+    #[cfg(feature = "multipart")]
     pub(super) fn chunk_iter<R>(&self, mut reader: R) -> impl Iterator<Item = crate::Result<Form>>
     where
         R: std::io::Read,
@@ -385,26 +374,52 @@ impl UploadArgs {
         })
     }
 
-    pub(super) fn to_merge<'a>(&'a self, name: &'a str) -> MergeArgs<'a> {
+    #[cfg(feature = "multipart")]
+    pub(super) fn to_merge(&self) -> MergeArgs<'_> {
         MergeArgs {
             identifier: &self.identifier,
             len: self.len,
-            filename: name,
+            filename: &self.filename,
         }
     }
 }
 
-/// Upload file response
+/// Merge file arguments
 #[cfg(feature = "multipart")]
+#[derive(Debug, Serialize)]
+pub(super) struct MergeArgs<'a> {
+    identifier: &'a str,
+    #[serde(rename = "totalSize")]
+    len: usize,
+    filename: &'a str,
+}
+
+/// Upload file response
+#[derive(Debug, Deserialize)]
 pub struct UploadRes {
     /// File ID
     pub id: String,
     /// File name
+    #[serde(rename = "fileName")]
     pub name: String,
+    /// File size
+    #[serde(rename = "fileSize")]
+    pub size: String,
+    /// File MD5
+    pub md5: String,
 }
 
-#[cfg(feature = "multipart")]
 impl UploadRes {
+    // 怎么这么恶心啊, check 就包一层 data 需要用这个, merge 就不需要
+    pub(crate) fn from_json(bytes: &[u8]) -> serde_json::Result<Option<Self>> {
+        #[derive(Deserialize)]
+        struct I {
+            data: Option<UploadRes>,
+        }
+        let res: I = serde_json::from_slice(bytes)?;
+        Ok(res.data)
+    }
+
     /// Convert to download URL
     pub fn as_url(&self) -> String {
         format!(

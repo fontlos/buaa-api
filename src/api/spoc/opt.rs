@@ -3,10 +3,9 @@ use reqwest::Method;
 #[cfg(feature = "multipart")]
 use crate::{Error, utils};
 
-use super::{Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, Week};
-
-#[cfg(feature = "multipart")]
-use super::{UploadArgs, UploadRes};
+use super::{
+    Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadRes, Week,
+};
 
 impl super::SpocApi {
     /// Get current week
@@ -78,12 +77,12 @@ impl super::SpocApi {
             ("ytjcs", "2"),
             ("tjfs", "5"),
             ("tjlx", "5"),
-            ("scwjid_name", &file.name),
             ("sskcid", &hw.course_id),
             ("kczyid", &hw.id),
+            ("scwjid_name", &file.name),
             ("scwjid", &file.id),
         ];
-        // 虽然也行但改成form
+        // 原则上是 form, 不过既然能用就不增加复杂度了
         let payload = Payload::Query(&form);
         let bytes = self.universal_request(url, Method::POST, payload).await?;
         // 能写出这种返回值的家里请高人了, msg_en 是给你这么用的吗
@@ -100,6 +99,8 @@ impl super::SpocApi {
     // 查看提交情况, 包括文件 ID 什么的
     // https://spoc.buaa.edu.cn/spocnewht/kczy/queryXsSubmitKczyInfo?kczyid=
 
+    // 上传文件相关
+    //
     // 这甚至不需要授权就可以上传下载,
     // 似乎是不限制大小, 不限制类型. 我们可以在内部用 PDF 后缀骗骗文件系统.
     // 有一个问题是一旦上传出错了, 几乎是不可修改的, 因为 MD5 值已经传上去了, 再上传会触发已经匹配.
@@ -114,8 +115,54 @@ impl super::SpocApi {
     // 简单来说, 你想要得到正确的文件, 需要访问同一个 URL 两次并丢弃第一次的内容.
     // 这似乎是难以修复的, 因为即使在 Spoc 网页端它们也是通过两次访问同一个 URL 并丢弃第一个来获取正确文件的.
     // 不过好消息是经过几分钟后, 服务器能处理好这种情况.
-    //
+
+    /// # Upload fast
+    ///
+    /// **Note**: If hash match, returns `Some(UploadRes)`, otherwise returns `None`.
+    /// You need [super::SpocApi::upload_file()] for final upload which need enable `multipart` feature.
+    ///
+    /// **Note**: This can rename files by same file but with new name.
+    pub async fn upload_fast(&self, args: &UploadArgs) -> crate::Result<Option<UploadRes>> {
+        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
+        let res = self.client.get(url).query(args).send().await?;
+        let bytes = res.bytes().await?;
+        // 注意这里有一层 data 包裹
+        let res = UploadRes::from_json(&bytes)?;
+        Ok(res)
+    }
+
     /// # Upload file
+    ///
+    /// The real upload when hash not match, need enable `multipart` feature.
+    ///
+    /// **Note**: This function only upload and merge the file, does not check hash match.
+    /// Use [super::SpocApi::upload_fast()] first. Otherwise, the upload is invalid.
+    #[cfg(feature = "multipart")]
+    pub async fn upload_file<R>(&self, args: &UploadArgs, data: R) -> crate::Result<UploadRes>
+    where
+        R: std::io::Read,
+    {
+        // 分块上传
+        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
+        for form in args.chunk_iter(data) {
+            // 一些无用的 {"data":null,"mc":false}
+            // TODO: 但是为空时也是出错
+            let _ = self.client.post(url).multipart(form?).send().await?;
+        }
+
+        // 合并上传的块
+        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
+        let query = args.to_merge();
+        let res = self.client.post(url).query(&query).send().await?;
+        let bytes = res.bytes().await?;
+        // 注意直接解析
+        let res: UploadRes = serde_json::from_slice(&bytes)?;
+        Ok(res)
+    }
+
+    /// # Upload
+    ///
+    /// Combined function of [super::SpocApi::upload_fast()] and [super::SpocApi::upload_file()].
     ///
     /// **Note**: When file hash not match, `data()` will be called for the second time,
     /// so it should return a full reader of the file to upload.
@@ -136,35 +183,14 @@ impl super::SpocApi {
         .map_err(|_| Error::server("Oneshot canceled"))??;
 
         // 检查是否匹配
-        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
-        let res = self.client.get(url).query(&args).send().await?;
-        let bytes = res.bytes().await?;
-        let id = crate::utils::parse_by_tag(&bytes, "id\":\"", "\"");
-        if let Some(id) = id {
-            let res = UploadRes {
-                id: id.to_string(),
-                name: args.filename,
-            };
+        let res = self.upload_fast(&args).await?;
+        if let Some(res) = res {
             return Ok(res);
         }
 
-        // 不存在则分块上传
-        for form in args.chunk_iter(data()) {
-            // 一些无用的 {"data":null,"mc":false}
-            // TODO: 但是为空时也是出错
-            let _ = self.client.post(url).multipart(form?).send().await?;
-        }
+        println!("Uploading file in chunks...");
 
-        // 合并上传的块
-        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
-        let form = args.to_merge(&args.filename);
-        let res = self.client.post(url).query(&form).send().await?;
-        let bytes = res.bytes().await?;
-        crate::utils::parse_by_tag(&bytes, "id\":\"", "\"")
-            .map(|s| UploadRes {
-                id: s.to_string(),
-                name: args.filename,
-            })
-            .ok_or_else(|| Error::server("No file id").with_label("Spoc"))
+        // 不存在则分块上传
+        self.upload_file(&args, data()).await
     }
 }
