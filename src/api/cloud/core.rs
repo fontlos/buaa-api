@@ -5,6 +5,7 @@ use serde::Serialize;
 use crate::api::{Cloud, Sso};
 use crate::error::Error;
 use crate::store::cookies::Cookie;
+use crate::utils;
 
 use super::data::Payload;
 
@@ -135,12 +136,11 @@ impl super::CloudApi {
         let res = req.send().await?;
 
         let status = res.status();
+        // 参数层错误如果造成状态码错误会在这里发生
         if !status.is_success() {
             let bytes = res.bytes().await?;
-            let res = serde_json::from_slice::<serde_json::Value>(&bytes).unwrap_or_default();
-            let cause = res
-                .get("cause")
-                .and_then(|m| m.as_str())
+            println!("Error Response: {}", String::from_utf8_lossy(&bytes));
+            let cause = utils::parse_by_tag(&bytes, "\"cause\":\"", "\"")
                 .unwrap_or("Unknown error");
             return Err(Error::server("Operation failed")
                 .with_label("Cloud")
