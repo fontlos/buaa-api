@@ -12,19 +12,19 @@ use super::data::{
 };
 
 impl super::CloudApi {
-    // 这种返回数组类型的如果参数错误都会在上层直接触发 400 错误,
-    // 而不是详细的 Json 错误, 所以不能用 Res<T> 包裹
-    /// Get root directory by [Root]
+    /// # Get root directory by [Root]
     pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
         let payload = Payload::Query(&query);
         let bytes = self.universal_request(Method::GET, url, &payload).await?;
+        // 参数错误都会在通用请求层直接触发 400 错误, 形如 {"cause":"...","code":400000000,"message":"..."}
+        // 纯数组无法放进 Res 结构体
         let res = serde_json::from_slice::<Vec<RootDir>>(&bytes)?;
         Ok(res)
     }
 
-    /// Return User Root directory ID
+    /// # Get User Root directory ID
     pub async fn get_user_dir_id(&self) -> crate::Result<String> {
         let res = self.get_root_dir(Root::User).await?;
         let id = res
@@ -45,8 +45,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = serde_json::from_slice::<Res<Dir>>(&bytes)?;
-        res.unpack_with(|r| r, "Can not get dir list")
+        // 参数错误都会在通用请求层直接触发 400 错误, 形如 {"cause":"DocID 格式错误"}
+        let res: Dir = Res::parse(&bytes, "Can not get dir list")?;
+        Ok(res)
     }
 
     /// Get the size of a file or directory by its ID. [Item::id]
@@ -58,8 +59,8 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = serde_json::from_slice::<Res<SizeRes>>(&bytes)?;
-        res.unpack_with(|r| r, "Can not get item size")
+        let res: SizeRes = Res::parse(&bytes, "Can not get item size")?;
+        Ok(res)
     }
 
     /// Get a suggested name for an item from given name in given parent directory. [Item::id]
@@ -73,10 +74,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = utils::parse_by_tag(&bytes, ":\"", "\"")
-            .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?
-            .to_string();
-        Ok(res)
+        let res = utils::parse_by_tag(&bytes, "\"name\":\"", "\"")
+            .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?;
+        Ok(res.to_string())
     }
 
     /// Create directory in given parent directory with name. [Item::id]
@@ -89,8 +89,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = serde_json::from_slice::<Res<CreateRes>>(&bytes)?;
-        res.unpack_with(|r| r, "Can not create dir")
+        println!("Create Dir Response: {}", String::from_utf8_lossy(&bytes));
+        let res: CreateRes = Res::parse(&bytes, "Can not create dir")?;
+        Ok(res)
     }
 
     // 重命名不存在的文件会在上层触发 400 错误
@@ -119,8 +120,8 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = serde_json::from_slice::<Res<MoveRes>>(&bytes)?;
-        res.unpack_with(|r| r.id, "Can not move item")
+        let res: MoveRes = Res::parse(&bytes, "Can not move item")?;
+        Ok(res.id)
     }
 
     /// Copy a file or directory by its ID. [Item::id]
@@ -135,8 +136,8 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = serde_json::from_slice::<Res<MoveRes>>(&bytes)?;
-        res.unpack_with(|r| r.id, "Can not copy item")
+        let res: MoveRes = Res::parse(&bytes, "Can not copy item")?;
+        Ok(res.id)
     }
 
     // 重复删掉文件也不会报错
@@ -164,8 +165,8 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let res = self.universal_request(Method::POST, url, &payload).await?;
-        let res = serde_json::from_slice::<Res<RecycleDir>>(&res)?;
-        res.unpack_with(|r| r, "Can not get recycle dir")
+        let res: RecycleDir = Res::parse(&res, "Can not get recycle dir")?;
+        Ok(res)
     }
 
     /// Delete a file or directory forever by its ID. [RecycleItem::id]
@@ -199,8 +200,8 @@ impl super::CloudApi {
             id: String,
         }
 
-        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-        res.unpack_with(|r| r.id, "Can not restore recycle item")
+        let res: _Res = Res::parse(&bytes, "Can not restore recycle item")?;
+        Ok(res.id)
     }
 
     // 传入不存在的 id 会在上层触发 400 错误
@@ -230,8 +231,8 @@ impl super::CloudApi {
             id: String,
         }
 
-        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-        res.unpack_with(|r| r.id, "Can not create share link")
+        let res: _Res = Res::parse(&bytes, "Can not create share link")?;
+        Ok(res.id)
     }
 
     /// Update share link by Share ID and new [Share]
@@ -346,8 +347,8 @@ impl super::CloudApi {
             status: bool,
         }
 
-        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-        res.unpack_with(|r| r.status, "Can not check hash")
+        let res: _Res = Res::parse(&bytes, "Can not check hash")?;
+        Ok(res.status)
     }
 
     /// Fast upload file if hash exists
@@ -379,8 +380,8 @@ impl super::CloudApi {
             status: bool,
         }
 
-        let res = serde_json::from_slice::<Res<_Res>>(&bytes)?;
-        res.unpack_with(|r| r.status, "Can not fast upload")
+        let res: _Res = Res::parse(&bytes, "Can not fast upload")?;
+        Ok(res.status)
     }
 
     /// Get upload authorization
@@ -404,8 +405,8 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = serde_json::from_slice::<Res<UploadArgs>>(&bytes)?;
-        res.unpack_with(|r| r, "Can not get upload auth")
+        let res: UploadArgs = Res::parse(&bytes, "Can not get upload auth")?;
+        Ok(res)
     }
 
     /// Upload file with given [UploadArgs] and file part
@@ -442,18 +443,8 @@ impl super::CloudApi {
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         // editor, modified 字段没有任何用, 暂时不解析
-        let res = serde_json::from_slice::<Res<()>>(&bytes)?;
+        let _: () = Res::parse(&bytes, "Can not finalize upload")?;
 
-        if res.cause.is_some() {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                res.cause.unwrap_or_default(),
-                res.message.unwrap_or_default()
-            );
-            return Err(Error::server("Can not finalize upload")
-                .with_label("Cloud")
-                .with_source(source));
-        }
         Ok(())
     }
 }

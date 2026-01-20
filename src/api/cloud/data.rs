@@ -1,11 +1,14 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::error::Error;
+
 pub(super) enum Payload<'a, P: Serialize + ?Sized> {
     Query(&'a P),
     Json(&'a P),
     Empty,
 }
 
+// 这不是一般的 Res 结构, 当响应正确时只有目标字段
 #[derive(Debug, Deserialize)]
 pub(super) struct Res<T> {
     #[serde(flatten)]
@@ -14,20 +17,23 @@ pub(super) struct Res<T> {
     pub message: Option<String>,
 }
 
-impl<T> Res<T> {
-    pub(crate) fn unpack_with<U, F>(self, map: F, errmsg: &'static str) -> crate::Result<U>
-    where
-        F: FnOnce(T) -> U,
-    {
-        self.res.map(map).ok_or_else(|| {
+impl<'de, T: Deserialize<'de>> Res<T> {
+    pub(crate) fn parse(v: &'de [u8], err: &'static str) -> crate::Result<T> {
+        let res: Res<T> = serde_json::from_slice(&v)?;
+        if let Some(cause) = res.cause {
             let source = format!(
                 "Server err: {}, msg: {}",
-                self.cause.unwrap_or_default(),
-                self.message.unwrap_or_default()
+                cause,
+                res.message.unwrap_or_default()
             );
-            crate::Error::server(errmsg)
+            return Err(Error::server(err)
                 .with_label("Cloud")
-                .with_source(source)
+                .with_source(source))
+        }
+        res.res.ok_or_else(|| {
+            Error::server(err)
+                .with_label("Cloud")
+                .with_source("Missing response field")
         })
     }
 }
