@@ -1,6 +1,10 @@
 //! # BUAA Academic Affairs System API
 
 mod core;
+mod data;
+mod opt;
+
+pub use data::*;
 
 /// # BUAA Academic Affairs System API Group
 ///
