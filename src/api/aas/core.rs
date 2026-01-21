@@ -7,16 +7,20 @@ use crate::error::Error;
 impl super::AasApi {
     /// # Login to AasApi
     pub async fn login(&self) -> crate::Result<()> {
-        if self.cred.load().is_expired::<Sso>() {
+        let cred = self.cred.load();
+        if cred.is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
         }
 
         let login_url = "https://sso.buaa.edu.cn/login?service=https%3A%2F%2Fbyxt.buaa.edu.cn%2Fjwapp%2Fsys%2Fhomeapp%2Findex.do%3FcontextPath%3D%2Fjwapp";
+        // 或者有 &ticket=xxx
         let verify_url = "https://byxt.buaa.edu.cn/jwapp/sys/homeapp/index.do?contextPath=/jwapp";
         let res = self.client.get(login_url).send().await?;
-        if res.url().as_str() != verify_url {
+        if !res.url().as_str().starts_with(verify_url) {
             return Err(Error::server("Login failed").with_label("Aas"));
         }
+        cred.refresh::<Sso>();
+        cred.refresh::<Aas>();
         Ok(())
     }
 
