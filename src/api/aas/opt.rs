@@ -25,4 +25,18 @@ impl super::AasApi {
         let res: Schedules = Res::parse(&bytes, "Failed to get week schedule")?;
         Ok(res)
     }
+
+    /// # Query term schedule
+    pub async fn query_term_schedule(&self, config: &Config) -> crate::Result<Schedules> {
+        let url =
+            "https://byxt.buaa.edu.cn/jwapp/sys/homeapp/api/home/student/getMyScheduleDetail.do";
+        let query = [
+            ("termCode", config.term.as_str()),
+            ("campusCode", ""),
+            ("type", "term"),
+        ];
+        let bytes = self.universal_request(url, Method::POST, &query).await?;
+        let res: Schedules = Res::parse(&bytes, "Failed to get term schedule")?;
+        Ok(res)
+    }
 }
