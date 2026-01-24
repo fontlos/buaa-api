@@ -12,9 +12,9 @@ pub(super) enum Payload<'a, P: Serialize + ?Sized> {
 #[derive(Debug, Deserialize)]
 pub(super) struct Res<T> {
     #[serde(flatten)]
-    pub res: Option<T>,
-    pub cause: Option<String>,
-    pub message: Option<String>,
+    res: Option<T>,
+    cause: Option<String>,
+    message: Option<String>,
 }
 
 impl<'de, T: Deserialize<'de>> Res<T> {
@@ -26,9 +26,7 @@ impl<'de, T: Deserialize<'de>> Res<T> {
                 cause,
                 res.message.unwrap_or_default()
             );
-            return Err(Error::server(err)
-                .with_label("Cloud")
-                .with_source(source))
+            return Err(Error::server(err).with_label("Cloud").with_source(source));
         }
         res.res.ok_or_else(|| {
             Error::server(err)
