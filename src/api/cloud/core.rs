@@ -140,8 +140,8 @@ impl super::CloudApi {
         if !status.is_success() {
             let bytes = res.bytes().await?;
             println!("Error Response: {}", String::from_utf8_lossy(&bytes));
-            let cause = utils::parse_by_tag(&bytes, "\"cause\":\"", "\"")
-                .unwrap_or("Unknown error");
+            let cause =
+                utils::parse_by_tag(&bytes, "\"cause\":\"", "\"").unwrap_or("Unknown error");
             return Err(Error::server("Operation failed")
                 .with_label("Cloud")
                 .with_source(format!("Status Code: {status}, Cause: {cause}")));

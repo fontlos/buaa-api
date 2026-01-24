@@ -111,8 +111,8 @@ fn deserialize_weekday<'de, D>(deserializer: D) -> Result<Weekday, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value: String = Deserialize::deserialize(deserializer)?;
-    match value.as_str() {
+    let value: &str = Deserialize::deserialize(deserializer)?;
+    match value {
         "monday" => Ok(Weekday::Monday),
         "tuesday" => Ok(Weekday::Tuesday),
         "wednesday" => Ok(Weekday::Wednesday),
