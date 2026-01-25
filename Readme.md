@@ -6,6 +6,10 @@
 >
 > Tips: This project is only for learning and sharing, please delete within 24 hours after downloading, all problems caused by the use are borne by the user, if there is any infringement I will delete this repository and software
 
+# MSRV
+
+> 1.93.0
+
 ## TodoList
 
 - [x] BUAA SSO: `sso`
