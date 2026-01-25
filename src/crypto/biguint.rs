@@ -609,17 +609,14 @@ mod sub {
     #[cfg(target_arch = "x86_64")]
     #[inline]
     fn sbb(borrow: u8, a: u64, b: u64, out: &mut u64) -> u8 {
-        // Safety: There are absolutely no safety concerns with calling `_subborrow_u64`.
-        // It's just unsafe for API consistency with other intrinsics.
-        unsafe { core::arch::x86_64::_subborrow_u64(borrow, a, b, out) }
+        // 在 Stable 1.93 版本中已经不再是 unsafe 了.
+        core::arch::x86_64::_subborrow_u64(borrow, a, b, out)
     }
 
     #[cfg(target_arch = "x86")]
     #[inline]
     fn sbb(borrow: u8, a: u32, b: u32, out: &mut u32) -> u8 {
-        // Safety: There are absolutely no safety concerns with calling `_subborrow_u32`.
-        // It's just unsafe for API consistency with other intrinsics.
-        unsafe { core::arch::x86::_subborrow_u32(borrow, a, b, out) }
+        core::arch::x86::_subborrow_u32(borrow, a, b, out)
     }
 
     // fallback for environments where we don't have a subborrow intrinsic
