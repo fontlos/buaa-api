@@ -1,4 +1,6 @@
 use reqwest::Method;
+#[cfg(feature = "multipart")]
+use tokio::sync::{mpsc, oneshot};
 
 #[cfg(feature = "multipart")]
 use crate::{Error, utils};
@@ -6,6 +8,8 @@ use crate::{Error, utils};
 use super::{
     Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadRes, Week,
 };
+#[cfg(feature = "multipart")]
+use super::{UploadHandle, UploadProgress};
 
 impl super::SpocApi {
     /// Get current week
@@ -119,7 +123,8 @@ impl super::SpocApi {
     /// # Upload fast
     ///
     /// **Note**: If hash match, returns `Some(UploadRes)`, otherwise returns `None`.
-    /// You need [super::SpocApi::upload_file()] for final upload which need enable `multipart` feature.
+    /// You need [super::SpocApi::upload_file()] or [super::SpocApi::upload_progress()] for final upload
+    /// which need enable `multipart` feature.
     ///
     /// **Note**: This can rename files by same file but with new name.
     pub async fn upload_fast(&self, args: &UploadArgs) -> crate::Result<Option<UploadRes>> {
@@ -127,6 +132,7 @@ impl super::SpocApi {
         let res = self.client.get(url).query(args).send().await?;
         let bytes = res.bytes().await?;
         // 注意这里有一层 data 包裹
+        // TODO: 断点续传时可能返回 {"data":[1],"mc":false}
         let res = UploadRes::from_json(&bytes)?;
         Ok(res)
     }
@@ -142,22 +148,79 @@ impl super::SpocApi {
     where
         R: std::io::Read,
     {
+        let upload_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
+        let merge_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
+
         // 分块上传
-        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
         for form in args.chunk_iter(data) {
             // 一些无用的 {"data":null,"mc":false}
             // TODO: 但是为空时也是出错
-            let _ = self.client.post(url).multipart(form?).send().await?;
+            let _ = self.client.post(upload_url).multipart(form?).send().await?;
         }
 
         // 合并上传的块
-        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
         let query = args.to_merge();
-        let res = self.client.post(url).query(&query).send().await?;
+        let res = self.client.post(merge_url).query(&query).send().await?;
         let bytes = res.bytes().await?;
         // 注意直接解析
         let res: UploadRes = serde_json::from_slice(&bytes)?;
         Ok(res)
+    }
+
+    /// # Upload file with progress
+    ///
+    /// The real upload when hash not match, need enable `multipart` feature.
+    ///
+    /// **Note**: This function only upload and merge the file, does not check hash match.
+    /// Use [super::SpocApi::upload_fast()] first. Otherwise, the upload is invalid.
+    #[cfg(feature = "multipart")]
+    pub fn upload_progress<R>(&self, args: UploadArgs, data: R) -> UploadHandle
+    where
+        R: std::io::Read + Send + 'static,
+    {
+        let upload_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
+        let merge_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
+
+        // futures channel
+        // let (progress_tx, progress_rx) = mpsc::unbounded();
+        let (progress_tx, progress_rx) = mpsc::unbounded_channel();
+        let (result_tx, result_rx) = oneshot::channel();
+        let client = self.client.clone();
+
+        let upload = async move {
+            let mut done = 0;
+            let total = args.total_chunks();
+            for form in args.chunk_iter(data) {
+                let form = form?;
+                let _ = client.post(upload_url).multipart(form).send().await?;
+                done += 1;
+                // futures channel
+                // let _ = progress_tx.unbounded_send(UploadProgress { done, total });
+                let _ = progress_tx.send(UploadProgress { done, total });
+            }
+
+            let query = args.to_merge();
+            let res = client.post(merge_url).query(&query).send().await?;
+            let bytes = res.bytes().await?;
+            let res: UploadRes = serde_json::from_slice(&bytes)?;
+            Ok(res)
+        };
+
+        // futures channel
+        // std::thread::spawn(move || {
+        //     let result = futures::executor::block_on(upload);
+        //     let _ = result_tx.send(result);
+        // });
+        tokio::spawn(async move {
+            // crate::Result<UploadRes>
+            let result = upload.await;
+            let _ = result_tx.send(result);
+        });
+
+        UploadHandle {
+            result_rx,
+            progress_rx,
+        }
     }
 
     /// # Upload
@@ -187,8 +250,6 @@ impl super::SpocApi {
         if let Some(res) = res {
             return Ok(res);
         }
-
-        println!("Uploading file in chunks...");
 
         // 不存在则分块上传
         self.upload_file(&args, data()).await

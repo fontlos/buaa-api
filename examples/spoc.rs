@@ -38,6 +38,45 @@ mod tests {
 
         context.save_auth("./data").unwrap();
     }
+
+    #[ignore]
+    #[tokio::test]
+    async fn test_spoc_upload_with_progress() {
+        use buaa_api::api::spoc::UploadArgs;
+
+        let file_path = "data/file.zip";
+
+        let file = std::fs::File::open(file_path).unwrap();
+        let args = tokio::task::spawn_blocking(|| UploadArgs::from_reader(file, "file.zip".into()))
+            .await
+            .unwrap()
+            .unwrap();
+
+        let context = Context::with_auth("./data").unwrap();
+        let spoc = context.spoc();
+
+        let res = spoc.upload_fast(&args).await.unwrap();
+        if let Some(res) = res {
+            println!("Fast upload hit cache, URL: {}", res.as_url());
+        } else {
+            let data = std::fs::File::open(file_path).unwrap();
+            let mut handle = spoc.upload_progress(args, data);
+
+            tokio::spawn(async move {
+                while let Some(progress) = handle.progress_rx.recv().await {
+                    println!("Progress: {}/{}", progress.done, progress.total);
+                }
+            });
+
+            match handle.result_rx.await {
+                Ok(Ok(res)) => println!("URL: {}", res.as_url()),
+                Ok(Err(e)) => println!("Upload Error: {}", e),
+                Err(_) => println!("Channel Err"),
+            }
+        }
+
+        context.save_auth("./data").unwrap();
+    }
 }
 
 fn main() {}
