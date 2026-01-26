@@ -3,6 +3,7 @@ use reqwest::multipart::{Form, Part};
 use serde::{Deserialize, Deserializer, Serialize};
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
+use tokio::sync::{mpsc, oneshot};
 
 use crate::{Error, crypto};
 
@@ -319,6 +320,11 @@ impl UploadArgs {
         })
     }
 
+    /// Get total chunks
+    pub fn total_chunks(&self) -> usize {
+        self.total_chunks
+    }
+
     #[cfg(feature = "multipart")]
     fn build_form(&self, index: usize, data: Vec<u8>) -> Form {
         let current_chunk_size = data.len();
@@ -392,6 +398,22 @@ pub(super) struct MergeArgs<'a> {
     #[serde(rename = "totalSize")]
     len: usize,
     filename: &'a str,
+}
+
+/// Upload handle
+pub struct UploadHandle {
+    /// Upload result receiver
+    pub result_rx: oneshot::Receiver<crate::Result<UploadRes>>,
+    /// Upload progress receiver
+    pub progress_rx: mpsc::UnboundedReceiver<UploadProgress>,
+}
+
+/// Upload progress stream. Chunk/2MB
+pub struct UploadProgress {
+    /// Chunks done
+    pub done: usize,
+    /// Total chunks
+    pub total: usize,
 }
 
 /// Upload file response
