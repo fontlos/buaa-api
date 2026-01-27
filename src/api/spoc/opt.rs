@@ -2,9 +2,6 @@ use reqwest::Method;
 #[cfg(feature = "multipart")]
 use tokio::sync::{mpsc, oneshot};
 
-#[cfg(feature = "multipart")]
-use crate::{Error, utils};
-
 use super::{
     Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadRes, Week,
 };
@@ -106,7 +103,8 @@ impl super::SpocApi {
     // 上传文件相关
     //
     // 这甚至不需要授权就可以上传下载,
-    // 似乎是不限制大小, 不限制类型. 我们可以在内部用 PDF 后缀骗骗文件系统.
+    // 似乎是不限制大小, 类型限制不严格, 常见文件可上传, 对于 DLL, PDB, EXE 等特殊类型可以通过修改后缀或使用压缩包来绕过.
+    // 我们在内部实际是使用 PDF 后缀骗骗文件系统. 但依然无法上传特殊后缀的文件也许是为了避免注入攻击
     // 有一个问题是一旦上传出错了, 几乎是不可修改的, 因为 MD5 值已经传上去了, 再上传会触发已经匹配.
     // Check 和 Merge ID 是不同的, 但是对应的文件是相同的
     //
@@ -133,7 +131,7 @@ impl super::SpocApi {
         let bytes = res.bytes().await?;
         // 注意这里有一层 data 包裹
         // TODO: 断点续传时可能返回 {"data":[1],"mc":false}
-        let res = UploadRes::from_json(&bytes)?;
+        let res = UploadRes::for_fast(&bytes)?;
         Ok(res)
     }
 
@@ -143,6 +141,9 @@ impl super::SpocApi {
     ///
     /// **Note**: This function only upload and merge the file, does not check hash match.
     /// Use [super::SpocApi::upload_fast()] first. Otherwise, the upload is invalid.
+    ///
+    /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
+    /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
     #[cfg(feature = "multipart")]
     pub async fn upload_file<R>(&self, args: &UploadArgs, data: R) -> crate::Result<UploadRes>
     where
@@ -155,15 +156,14 @@ impl super::SpocApi {
         for form in args.chunk_iter(data) {
             // 一些无用的 {"data":null,"mc":false}
             // TODO: 但是为空时也是出错
-            let _ = self.client.post(upload_url).multipart(form?).send().await?;
+            let _res = self.client.post(upload_url).multipart(form?).send().await?;
         }
 
         // 合并上传的块
         let query = args.to_merge();
         let res = self.client.post(merge_url).query(&query).send().await?;
         let bytes = res.bytes().await?;
-        // 注意直接解析
-        let res: UploadRes = serde_json::from_slice(&bytes)?;
+        let res = UploadRes::for_merge(&bytes)?;
         Ok(res)
     }
 
@@ -173,6 +173,9 @@ impl super::SpocApi {
     ///
     /// **Note**: This function only upload and merge the file, does not check hash match.
     /// Use [super::SpocApi::upload_fast()] first. Otherwise, the upload is invalid.
+    ///
+    /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
+    /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
     #[cfg(feature = "multipart")]
     pub fn upload_progress<R>(&self, args: UploadArgs, data: R) -> UploadHandle
     where
@@ -202,7 +205,7 @@ impl super::SpocApi {
             let query = args.to_merge();
             let res = client.post(merge_url).query(&query).send().await?;
             let bytes = res.bytes().await?;
-            let res: UploadRes = serde_json::from_slice(&bytes)?;
+            let res = UploadRes::for_merge(&bytes)?;
             Ok(res)
         };
 
@@ -223,27 +226,39 @@ impl super::SpocApi {
         }
     }
 
-    /// # Upload
+    /// # An easy Upload
     ///
     /// Combined function of [super::SpocApi::upload_fast()] and [super::SpocApi::upload_file()].
     ///
-    /// **Note**: When file hash not match, `data()` will be called for the second time,
-    /// so it should return a full reader of the file to upload.
+    /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
+    /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
     #[cfg(feature = "multipart")]
-    pub async fn upload<D, R, N>(&self, data: D, name: N) -> crate::Result<UploadRes>
+    pub async fn upload<R, N>(&self, mut reader: R, name: N) -> crate::Result<UploadRes>
     where
-        D: Fn() -> R + Send + Sync + Clone + 'static,
-        R: std::io::Read,
+        R: std::io::Read + std::io::Seek + Send + 'static,
         N: Into<String>,
     {
-        let data_for_hash = data.clone();
         let name = name.into();
-        let args = utils::blocking_compute(move || {
-            let reader = data_for_hash();
-            UploadArgs::from_reader(reader, name)
+
+        // let args = blocking_compute(move || {
+        //     let reader = data_for_hash();
+        //     UploadArgs::from_reader(reader, name)
+        // })
+        // .await
+        // .map_err(|_| Error::io("Oneshot canceled"))??;
+
+        let (args, reader) = tokio::task::spawn_blocking(move || {
+            let start = reader
+                .stream_position()
+                .map_err(|_| crate::Error::io("Failed to get stream position"))?;
+            let args = UploadArgs::from_reader(&mut reader, name)?;
+            reader
+                .seek(std::io::SeekFrom::Start(start))
+                .map_err(|_| crate::Error::io("Failed to seek back"))?;
+            crate::Result::Ok((args, reader))
         })
         .await
-        .map_err(|_| Error::server("Oneshot canceled"))??;
+        .map_err(|e| crate::Error::io("Task error").with_source(e))??;
 
         // 检查是否匹配
         let res = self.upload_fast(&args).await?;
@@ -252,6 +267,24 @@ impl super::SpocApi {
         }
 
         // 不存在则分块上传
-        self.upload_file(&args, data()).await
+        self.upload_file(&args, reader).await
     }
 }
+
+// use futures::channel::oneshot;
+
+// /// Run a blocking computation in a separate thread and return a Future for its result.
+// pub fn blocking_compute<F, T>(compute: F) -> oneshot::Receiver<T>
+// where
+//     F: FnOnce() -> T + Send + 'static,
+//     T: Send + 'static,
+// {
+//     let (tx, rx) = oneshot::channel();
+//
+//     std::thread::spawn(move || {
+//         let result = compute();
+//         let _ = tx.send(result);
+//     });
+//
+//     rx
+// }
