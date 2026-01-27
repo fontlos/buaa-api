@@ -23,7 +23,7 @@ mod tests {
 
         let spoc = context.spoc();
 
-        let file = || std::fs::File::open("data/file.pdf").unwrap();
+        let file = std::fs::File::open("data/file.pdf").unwrap();
         let upload = spoc.upload(file, "file.pdf").await.unwrap();
         println!("URL: {}", upload.as_url());
 
@@ -46,11 +46,12 @@ mod tests {
 
         let file_path = "data/file.zip";
 
-        let file = std::fs::File::open(file_path).unwrap();
-        let args = tokio::task::spawn_blocking(|| UploadArgs::from_reader(file, "file.zip".into()))
-            .await
-            .unwrap()
-            .unwrap();
+        let mut file = std::fs::File::open(file_path).unwrap();
+        let args = tokio::task::spawn_blocking(move || {
+            UploadArgs::from_reader(&mut file, "file.zip".into()).unwrap()
+        })
+        .await
+        .unwrap();
 
         let context = Context::with_auth("./data").unwrap();
         let spoc = context.spoc();

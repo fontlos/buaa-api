@@ -279,7 +279,7 @@ pub struct UploadArgs {
 
 impl UploadArgs {
     /// Create UploadArgs from reader
-    pub fn from_reader<R>(mut reader: R, name: String) -> crate::Result<Self>
+    pub fn from_reader<R>(reader: &mut R, name: String) -> crate::Result<Self>
     where
         R: std::io::Read,
     {
@@ -432,14 +432,25 @@ pub struct UploadRes {
 }
 
 impl UploadRes {
-    // 怎么这么恶心啊, check 就包一层 data 需要用这个, merge 就不需要
-    pub(crate) fn from_json(bytes: &[u8]) -> serde_json::Result<Option<Self>> {
+    // 怎么这么恶心啊, 快速上传 check 时就包一层 data 需要用这个, merge 就不需要
+    pub(crate) fn for_fast(bytes: &[u8]) -> crate::Result<Option<Self>> {
         #[derive(Deserialize)]
         struct I {
             data: Option<UploadRes>,
         }
         let res: I = serde_json::from_slice(bytes)?;
         Ok(res.data)
+    }
+
+    // 特殊类型, 如 dll, pdb, exe 等不支持直接 merge, 需要打包成 zip 等上传
+    pub(crate) fn for_merge(bytes: &[u8]) -> crate::Result<Self> {
+        if bytes.is_empty() {
+            return Err(
+                Error::server("Unsupported file type, use '.zip' instead").with_label("Spoc")
+            );
+        }
+        let res = serde_json::from_slice(bytes)?;
+        Ok(res)
     }
 
     /// Convert to download URL
