@@ -88,12 +88,7 @@ impl super::SpocApi {
         let bytes = self.universal_request(url, Method::POST, payload).await?;
         // 能写出这种返回值的家里请高人了, msg_en 是给你这么用的吗
         // {"code":200,"msg":"操作成功","msg_en":"操作时间xxx","content":null}
-        // TODO: 这里需要交给 Res 结构处理
-        if let Some(code) = crate::utils::parse_by_tag(&bytes, "\"code\":", ",") {
-            if code == "200" {
-                return Ok(());
-            }
-        }
+        let _res: Option<()> = Res::parse(&bytes)?;
         Ok(())
     }
 
