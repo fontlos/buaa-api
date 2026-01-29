@@ -130,6 +130,44 @@ impl super::SpocApi {
         Ok(res)
     }
 
+    /// Internal upload function
+    #[cfg(feature = "multipart")]
+    async fn upload_internal<R, F>(
+        client: &reqwest::Client,
+        args: &UploadArgs,
+        data: R,
+        progress: F,
+    ) -> crate::Result<UploadRes>
+    where
+        R: std::io::Read,
+        F: Fn(UploadProgress),
+    {
+        let upload_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
+        let merge_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
+
+        let mut done = 0;
+        let total = args.total_chunks();
+
+        // 分块上传
+        for form in args.chunk_iter(data) {
+            let form = form?;
+            // 一些无用的 {"data":null,"mc":false}
+            // TODO: 但是为空时也是出错
+            let _res = client.post(upload_url).multipart(form).send().await?;
+
+            done += 1;
+            progress(UploadProgress { done, total });
+        }
+
+        // 合并上传的块
+        let query = args.to_merge();
+        let res = client.post(merge_url).query(&query).send().await?;
+        let bytes = res.bytes().await?;
+        let res = UploadRes::for_merge(&bytes)?;
+
+        Ok(res)
+    }
+
     /// # Upload file
     ///
     /// The real upload when hash not match, need enable `multipart` feature.
@@ -144,22 +182,7 @@ impl super::SpocApi {
     where
         R: std::io::Read,
     {
-        let upload_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
-        let merge_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
-
-        // 分块上传
-        for form in args.chunk_iter(data) {
-            // 一些无用的 {"data":null,"mc":false}
-            // TODO: 但是为空时也是出错
-            let _res = self.client.post(upload_url).multipart(form?).send().await?;
-        }
-
-        // 合并上传的块
-        let query = args.to_merge();
-        let res = self.client.post(merge_url).query(&query).send().await?;
-        let bytes = res.bytes().await?;
-        let res = UploadRes::for_merge(&bytes)?;
-        Ok(res)
+        Self::upload_internal(&self.client, args, data, |_| {}).await
     }
 
     /// # Upload file with progress
@@ -176,39 +199,16 @@ impl super::SpocApi {
     where
         R: std::io::Read + Send + 'static,
     {
-        let upload_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
-        let merge_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
-
-        // futures channel
-        // let (progress_tx, progress_rx) = mpsc::unbounded();
         let (progress_tx, progress_rx) = mpsc::unbounded_channel();
         let (result_tx, result_rx) = oneshot::channel();
         let client = self.client.clone();
 
         let upload = async move {
-            let mut done = 0;
-            let total = args.total_chunks();
-            for form in args.chunk_iter(data) {
-                let form = form?;
-                let _ = client.post(upload_url).multipart(form).send().await?;
-                done += 1;
-                // futures channel
-                // let _ = progress_tx.unbounded_send(UploadProgress { done, total });
-                let _ = progress_tx.send(UploadProgress { done, total });
-            }
-
-            let query = args.to_merge();
-            let res = client.post(merge_url).query(&query).send().await?;
-            let bytes = res.bytes().await?;
-            let res = UploadRes::for_merge(&bytes)?;
-            Ok(res)
+            Self::upload_internal(&client, &args, data, |progress| {
+                let _ = progress_tx.send(progress);
+            }).await
         };
 
-        // futures channel
-        // std::thread::spawn(move || {
-        //     let result = futures::executor::block_on(upload);
-        //     let _ = result_tx.send(result);
-        // });
         tokio::spawn(async move {
             // crate::Result<UploadRes>
             let result = upload.await;
@@ -235,13 +235,6 @@ impl super::SpocApi {
     {
         let name = name.into();
 
-        // let args = blocking_compute(move || {
-        //     let reader = data_for_hash();
-        //     UploadArgs::from_reader(reader, name)
-        // })
-        // .await
-        // .map_err(|_| Error::io("Oneshot canceled"))??;
-
         let (args, reader) = tokio::task::spawn_blocking(move || {
             let start = reader
                 .stream_position()
@@ -265,21 +258,3 @@ impl super::SpocApi {
         self.upload_file(&args, reader).await
     }
 }
-
-// use futures::channel::oneshot;
-
-// /// Run a blocking computation in a separate thread and return a Future for its result.
-// pub fn blocking_compute<F, T>(compute: F) -> oneshot::Receiver<T>
-// where
-//     F: FnOnce() -> T + Send + 'static,
-//     T: Send + 'static,
-// {
-//     let (tx, rx) = oneshot::channel();
-//
-//     std::thread::spawn(move || {
-//         let result = compute();
-//         let _ = tx.send(result);
-//     });
-//
-//     rx
-// }
