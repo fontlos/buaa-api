@@ -1,6 +1,8 @@
 #[cfg(feature = "multipart")]
 use reqwest::multipart::{Form, Part};
 use serde::{Deserialize, Deserializer, Serialize};
+#[cfg(feature = "multipart")]
+use serde_json::Value;
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
 use tokio::sync::{mpsc, oneshot};
@@ -281,7 +283,9 @@ pub struct UploadArgs {
 }
 
 impl UploadArgs {
-    /// Create UploadArgs from reader
+    /// # Create UploadArgs from reader.
+    ///
+    /// **Note**: CPU intensive (MD5), please run in blocking task.
     pub fn from_reader<R>(reader: &mut R, name: String) -> crate::Result<Self>
     where
         R: std::io::Read,
@@ -354,7 +358,10 @@ impl UploadArgs {
 
     /// Convert to multiple Form iterator
     #[cfg(feature = "multipart")]
-    pub(super) fn chunk_iter<R>(&self, mut reader: R) -> impl Iterator<Item = crate::Result<Form>>
+    pub(super) fn chunk_iter<R>(
+        &self,
+        mut reader: R,
+    ) -> impl Iterator<Item = crate::Result<(usize, Form)>>
     where
         R: std::io::Read,
     {
@@ -371,9 +378,9 @@ impl UploadArgs {
             match reader.read_exact(&mut buffer) {
                 Ok(()) => {
                     remaining -= to_read;
-                    let form = self.build_form(chunk_index, buffer);
+                    let chunk = (chunk_index, self.build_form(chunk_index, buffer));
                     chunk_index += 1;
-                    Some(Ok(form))
+                    Some(Ok(chunk))
                 }
                 Err(e) => Some(Err(Error::io(format!(
                     "Failed to read chunk {}: {}",
@@ -419,6 +426,37 @@ pub struct UploadProgress {
     pub total: usize,
 }
 
+/// Upload file status
+#[cfg(feature = "multipart")]
+pub(super) enum UploadStatus {
+    Partial(Vec<usize>),
+    Complete(UploadRes),
+}
+
+#[cfg(feature = "multipart")]
+impl UploadStatus {
+    // 怎么这么恶心啊, 快速上传 check 时就包一层 data 需要用这个, merge 就不需要
+    pub(super) fn from_json(bytes: &[u8]) -> crate::Result<Self> {
+        #[derive(Deserialize)]
+        struct I {
+            data: Value,
+        }
+        let I { data } = serde_json::from_slice(bytes)?;
+        match data {
+            Value::Object(_) => {
+                let res = serde_json::from_value(data)?;
+                Ok(Self::Complete(res))
+            }
+            Value::Array(_) => {
+                let res = serde_json::from_value(data)?;
+                Ok(Self::Partial(res))
+            }
+            Value::Null => Ok(Self::Partial(Vec::new())),
+            _ => Err(Error::server("Bad Upload").with_label("Spoc")),
+        }
+    }
+}
+
 /// Upload file response
 #[derive(Debug, Deserialize)]
 pub struct UploadRes {
@@ -435,27 +473,6 @@ pub struct UploadRes {
 }
 
 impl UploadRes {
-    // 怎么这么恶心啊, 快速上传 check 时就包一层 data 需要用这个, merge 就不需要
-    pub(crate) fn for_fast(bytes: &[u8]) -> crate::Result<Option<Self>> {
-        #[derive(Deserialize)]
-        struct I {
-            data: Option<UploadRes>,
-        }
-        let res: I = serde_json::from_slice(bytes)?;
-        Ok(res.data)
-    }
-
-    // 特殊类型, 如 dll, pdb, exe 等不支持直接 merge, 需要打包成 zip 等上传
-    pub(crate) fn for_merge(bytes: &[u8]) -> crate::Result<Self> {
-        if bytes.is_empty() {
-            return Err(
-                Error::server("Unsupported file type, use '.zip' instead").with_label("Spoc")
-            );
-        }
-        let res = serde_json::from_slice(bytes)?;
-        Ok(res)
-    }
-
     /// Convert to download URL
     pub fn as_url(&self) -> String {
         format!(

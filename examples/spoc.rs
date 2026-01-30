@@ -23,8 +23,8 @@ mod tests {
 
         let spoc = context.spoc();
 
-        let file = std::fs::File::open("data/file.pdf").unwrap();
-        let upload = spoc.upload(file, "file.pdf").await.unwrap();
+        let file = std::fs::File::open("data/file.zip").unwrap();
+        let upload = spoc.upload(file, "file.zip").await.unwrap();
         println!("URL: {}", upload.as_url());
 
         // let courses = spoc.query_courses("2025-20261").await.unwrap();
@@ -43,37 +43,37 @@ mod tests {
     #[tokio::test]
     async fn test_spoc_upload_with_progress() {
         use buaa_api::api::spoc::UploadArgs;
-
-        let file_path = "data/file.zip";
-
-        let mut file = std::fs::File::open(file_path).unwrap();
-        let args = tokio::task::spawn_blocking(move || {
-            UploadArgs::from_reader(&mut file, "file.zip".into()).unwrap()
-        })
-        .await
-        .unwrap();
+        use std::fs::File;
+        use std::io::Seek;
 
         let context = Context::with_auth("./data").unwrap();
         let spoc = context.spoc();
 
-        let res = spoc.upload_fast(&args).await.unwrap();
-        if let Some(res) = res {
-            println!("Fast upload hit cache, URL: {}", res.as_url());
-        } else {
-            let data = std::fs::File::open(file_path).unwrap();
-            let mut handle = spoc.upload_progress(args, data);
+        let file_path = "data/file.zip";
+        let file_name = "file.zip";
 
-            tokio::spawn(async move {
-                while let Some(progress) = handle.progress_rx.recv().await {
-                    println!("Progress: {}/{}", progress.done, progress.total);
-                }
-            });
+        let mut reader = File::open(file_path).unwrap();
+        // 重定向到开始位置
+        let (args, reader) = tokio::task::spawn_blocking(move || {
+            let start = reader.stream_position().unwrap();
+            let args = UploadArgs::from_reader(&mut reader, file_name.into()).unwrap();
+            reader.seek(std::io::SeekFrom::Start(start)).unwrap();
+            (args, reader)
+        })
+        .await
+        .unwrap();
 
-            match handle.result_rx.await {
-                Ok(Ok(res)) => println!("URL: {}", res.as_url()),
-                Ok(Err(e)) => println!("Upload Error: {}", e),
-                Err(_) => println!("Channel Err"),
+        let mut handle = spoc.upload_progress(args, reader);
+
+        tokio::spawn(async move {
+            while let Some(progress) = handle.progress_rx.recv().await {
+                println!("Progress: {}/{}", progress.done, progress.total);
             }
+        });
+        match handle.result_rx.await {
+            Ok(Ok(res)) => println!("URL: {}", res.as_url()),
+            Ok(Err(e)) => println!("Upload Error: {}", e),
+            Err(_) => println!("Channel Err"),
         }
 
         context.save_auth("./data").unwrap();
