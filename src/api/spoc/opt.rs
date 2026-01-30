@@ -2,11 +2,9 @@ use reqwest::Method;
 #[cfg(feature = "multipart")]
 use tokio::sync::{mpsc, oneshot};
 
-use super::{
-    Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadRes, Week,
-};
+use super::{Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadRes, Week};
 #[cfg(feature = "multipart")]
-use super::{UploadHandle, UploadProgress};
+use super::{UploadArgs, UploadHandle, UploadProgress, UploadStatus};
 
 impl super::SpocApi {
     /// Get current week
@@ -113,29 +111,12 @@ impl super::SpocApi {
     // 这似乎是难以修复的, 因为即使在 Spoc 网页端它们也是通过两次访问同一个 URL 并丢弃第一个来获取正确文件的.
     // 不过好消息是经过几分钟后, 服务器能处理好这种情况.
 
-    /// # Upload fast
-    ///
-    /// **Note**: If hash match, returns `Some(UploadRes)`, otherwise returns `None`.
-    /// You need [super::SpocApi::upload_file()] or [super::SpocApi::upload_progress()] for final upload
-    /// which need enable `multipart` feature.
-    ///
-    /// **Note**: This can rename files by same file but with new name.
-    pub async fn upload_fast(&self, args: &UploadArgs) -> crate::Result<Option<UploadRes>> {
-        let url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
-        let res = self.client.get(url).query(args).send().await?;
-        let bytes = res.bytes().await?;
-        // 注意这里有一层 data 包裹
-        // TODO: 断点续传时可能返回 {"data":[1],"mc":false}
-        let res = UploadRes::for_fast(&bytes)?;
-        Ok(res)
-    }
-
     /// Internal upload function
     #[cfg(feature = "multipart")]
     async fn upload_internal<R, F>(
         client: &reqwest::Client,
         args: &UploadArgs,
-        data: R,
+        reader: R,
         progress: F,
     ) -> crate::Result<UploadRes>
     where
@@ -145,57 +126,72 @@ impl super::SpocApi {
         let upload_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/uploadFile";
         let merge_url = "https://spoc.buaa.edu.cn/inco-filesystem/fileManagerSystem/mergeFile";
 
-        let mut done = 0;
-        let total = args.total_chunks();
-
-        // 分块上传
-        for form in args.chunk_iter(data) {
-            let form = form?;
-            // 一些无用的 {"data":null,"mc":false}
-            // TODO: 但是为空时也是出错
-            let _res = client.post(upload_url).multipart(form).send().await?;
-
-            done += 1;
-            progress(UploadProgress { done, total });
-        }
-
-        // 合并上传的块
-        let query = args.to_merge();
-        let res = client.post(merge_url).query(&query).send().await?;
+        // 检查上传状态, 是否已经存在或者断点续传
+        let res = client.get(upload_url).query(args).send().await?;
         let bytes = res.bytes().await?;
-        let res = UploadRes::for_merge(&bytes)?;
+        let status = UploadStatus::from_json(&bytes)?;
+        match status {
+            UploadStatus::Complete(c) => Ok(c),
+            UploadStatus::Partial(partial) => {
+                let mut done = partial.len();
+                let total = args.total_chunks();
 
-        Ok(res)
+                // 分块上传, 可以乱序, 并且 partial 保序, 如果重复上传会导致合并失败
+                for chunk in args.chunk_iter(reader) {
+                    let (index, form) = chunk?;
+                    // 已经上传过的跳过
+                    if partial.binary_search(&index).is_ok() {
+                        continue;
+                    }
+                    // 一些无用的 {"data":null,"mc":false}
+                    // TODO: 但是为空时也是出错
+                    let _res = client.post(upload_url).multipart(form).send().await?;
+
+                    done += 1;
+                    // 进度回调, 空闭包理应被优化掉
+                    progress(UploadProgress { done, total });
+                }
+
+                // 合并上传的块
+                let query = args.to_merge();
+                let res = client.post(merge_url).query(&query).send().await?;
+                let bytes = res.bytes().await?;
+                // 特殊类型, 如 dll, pdb, exe 等不支持直接 merge, 需要打包成 zip 等上传
+                if bytes.is_empty() {
+                    return Err(
+                        crate::Error::server("Unsupported file type, use '.zip' instead")
+                            .with_label("Spoc"),
+                    );
+                }
+                let res = serde_json::from_slice(&bytes)?;
+
+                Ok(res)
+            }
+        }
     }
 
     /// # Upload file
     ///
-    /// The real upload when hash not match, need enable `multipart` feature.
-    ///
-    /// **Note**: This function only upload and merge the file, does not check hash match.
-    /// Use [super::SpocApi::upload_fast()] first. Otherwise, the upload is invalid.
+    /// **Note**: Only upload when hash matched, supports resume. And can rename file by same file with new name.
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
     #[cfg(feature = "multipart")]
-    pub async fn upload_file<R>(&self, args: &UploadArgs, data: R) -> crate::Result<UploadRes>
+    pub async fn upload_file<R>(&self, args: &UploadArgs, reader: R) -> crate::Result<UploadRes>
     where
         R: std::io::Read,
     {
-        Self::upload_internal(&self.client, args, data, |_| {}).await
+        Self::upload_internal(&self.client, args, reader, |_| {}).await
     }
 
     /// # Upload file with progress
     ///
-    /// The real upload when hash not match, need enable `multipart` feature.
-    ///
-    /// **Note**: This function only upload and merge the file, does not check hash match.
-    /// Use [super::SpocApi::upload_fast()] first. Otherwise, the upload is invalid.
+    /// **Note**: Only upload when hash matched, supports resume. And can rename file by same file with new name.
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
     #[cfg(feature = "multipart")]
-    pub fn upload_progress<R>(&self, args: UploadArgs, data: R) -> UploadHandle
+    pub fn upload_progress<R>(&self, args: UploadArgs, reader: R) -> UploadHandle
     where
         R: std::io::Read + Send + 'static,
     {
@@ -204,9 +200,10 @@ impl super::SpocApi {
         let client = self.client.clone();
 
         let upload = async move {
-            Self::upload_internal(&client, &args, data, |progress| {
+            Self::upload_internal(&client, &args, reader, |progress| {
                 let _ = progress_tx.send(progress);
-            }).await
+            })
+            .await
         };
 
         tokio::spawn(async move {
@@ -223,7 +220,7 @@ impl super::SpocApi {
 
     /// # An easy Upload
     ///
-    /// Combined function of [super::SpocApi::upload_fast()] and [super::SpocApi::upload_file()].
+    /// **Note**: Only upload when hash matched, supports resume. And can rename file by same file with new name.
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
@@ -248,13 +245,6 @@ impl super::SpocApi {
         .await
         .map_err(|e| crate::Error::io("Task error").with_source(e))??;
 
-        // 检查是否匹配
-        let res = self.upload_fast(&args).await?;
-        if let Some(res) = res {
-            return Ok(res);
-        }
-
-        // 不存在则分块上传
-        self.upload_file(&args, reader).await
+        Self::upload_internal(&self.client, &args, reader, |_| {}).await
     }
 }
