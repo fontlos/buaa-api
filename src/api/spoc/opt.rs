@@ -137,6 +137,7 @@ impl super::SpocApi {
                 let total = args.total_chunks();
 
                 // 分块上传, 可以乱序, 并且 partial 保序, 如果重复上传会导致合并失败
+                // TODO: 并发上传?
                 for chunk in args.chunk_iter(reader) {
                     let (index, form) = chunk?;
                     // 已经上传过的跳过
@@ -172,7 +173,7 @@ impl super::SpocApi {
 
     /// # Upload file
     ///
-    /// **Note**: Only upload when hash matched, supports resume. And can rename file by same file with new name.
+    /// **Note**: Only upload when hash not matched, support resume. And can rename file by same file with new name.
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
@@ -186,7 +187,7 @@ impl super::SpocApi {
 
     /// # Upload file with progress
     ///
-    /// **Note**: Only upload when hash matched, supports resume. And can rename file by same file with new name.
+    /// **Note**: Only upload when hash not matched, support resume. And can rename file by same file with new name.
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
@@ -220,7 +221,7 @@ impl super::SpocApi {
 
     /// # An easy Upload
     ///
-    /// **Note**: Only upload when hash matched, supports resume. And can rename file by same file with new name.
+    /// **Note**: Only upload when hash not matched, support resume. And can rename file by same file with new name.
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.

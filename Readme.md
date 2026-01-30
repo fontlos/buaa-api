@@ -74,9 +74,7 @@
     - [x] Query list
     - [x] Query detail
     - [x] Submit
-  - [ ] Upload
-    - [x] Upload fast
-    - [x] Upload file
+  - [x] Upload file (Optional with progress)
   - [x] A universal request API for extensions
 - [x] BUAA Undergraduate & Graduate Student Course Registration System: `srs`
   - [x] Login
