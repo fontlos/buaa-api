@@ -1,15 +1,15 @@
-//! Error handling for `buaa-api`
+//! Error handling
 
 use std::borrow::Cow;
 use std::error::Error as StdError;
 use std::fmt::Display;
 
-/// A `Result` alias where the `Err` case is `buaa_api::Error`.
+/// A Result alias
 pub type Result<T> = std::result::Result<T, Error>;
 
 type BoxError = Box<dyn StdError + Send + Sync>;
 
-/// The Error type for `buaa-api`
+/// The Error type
 #[derive(Debug)]
 pub struct Error {
     kind: Kind,
@@ -17,6 +17,12 @@ pub struct Error {
     label: Option<&'static str>,
     code: Option<Code>,
     source: Option<BoxError>,
+}
+
+impl StdError for Error {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        self.source.as_ref().map(|e| &**e as _)
+    }
 }
 
 impl Error {
