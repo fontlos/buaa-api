@@ -1,662 +1,272 @@
 //! Self-implemented BigUint for RSA should not be used anywhere else.
 
-// num_bigint::BigUint 与我的 BigUint 性能对比
-// 小型数据我的占优, 中大型数据基本持平
-
-// rsa_encrypt_16bytes/encrypt
-//                         time:   [46.569 µs 46.975 µs 47.443 µs]
-//                         thrpt:  [329.34 KiB/s 332.62 KiB/s 335.53 KiB/s]
-//                  change:
-//                         time:   [+16.952% +18.188% +19.482%] (p = 0.00 < 0.05)
-//                         thrpt:  [−16.305% −15.389% −14.495%]
-//                         Performance has regressed.
-// Found 11 outliers among 100 measurements (11.00%)
-//   2 (2.00%) high mild
-//   9 (9.00%) high severe
-
-// rsa_encrypt_32bytes/encrypt
-//                         time:   [38.876 µs 39.109 µs 39.378 µs]
-//                         thrpt:  [793.58 KiB/s 799.06 KiB/s 803.84 KiB/s]
-//                  change:
-//                         time:   [−4.4245% −3.5393% −2.6351%] (p = 0.00 < 0.05)
-//                         thrpt:  [+2.7064% +3.6692% +4.6293%]
-//                         Performance has improved.
-// Found 6 outliers among 100 measurements (6.00%)
-//   3 (3.00%) high mild
-//   3 (3.00%) high severe
-
-// rsa_encrypt_64bytes/encrypt
-//                         time:   [38.866 µs 39.135 µs 39.462 µs]
-//                         thrpt:  [1.5467 MiB/s 1.5596 MiB/s 1.5704 MiB/s]
-//                  change:
-//                         time:   [+0.5766% +1.5085% +2.5610%] (p = 0.00 < 0.05)
-//                         thrpt:  [−2.4970% −1.4861% −0.5733%]
-//                         Change within noise threshold.
-// Found 3 outliers among 100 measurements (3.00%)
-//   3 (3.00%) high mild
-
 type BigDigit = u64;
-type DoubleBigDigit = u128;
-const BITS: u8 = 64;
+const BITS: u64 = 64;
 
 /// The BigUint implementation for RSA should not be used anywhere else.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BigUint {
+    // 数据以小端序存储: data[0] 是最低 64 位
     data: Vec<BigDigit>,
 }
 
 impl BigUint {
-    /// 从大端字节序创建 BigUint (内部存储为小端)
-    pub fn from_bytes_be(bytes: &[u8]) -> BigUint {
-        if bytes.is_empty() {
-            return BigUint { data: Vec::new() };
-        }
-        // 反转字节，变为小端
-        let mut bytes = bytes.to_vec();
-        bytes.reverse();
+    // === Constructors ===
 
-        // 下面开始从小端字节序列创建
-        let mut data = Vec::new();
-        let mut i = 0;
-        while i < bytes.len() {
-            let mut chunk = [0u8; 8];
-            let chunk_len = std::cmp::min(8, bytes.len() - i);
-            chunk[..chunk_len].copy_from_slice(&bytes[i..i + chunk_len]);
-            data.push(u64::from_le_bytes(chunk));
-            i += chunk_len;
-        }
-        // 去除高位的前导零
-        while let Some(&last) = data.last() {
-            if last == 0 {
-                data.pop();
-            } else {
-                break;
-            }
-        }
-        BigUint { data }
+    /// Create zero BigUint
+    pub fn zero() -> Self {
+        Self { data: vec![0] }
     }
 
-    /// 转换为大端字节序
+    /// Create one BigUint
+    pub fn one() -> Self {
+        Self { data: vec![1] }
+    }
+
+    /// 从大端序字节数组创建 (解析 PEM)
+    pub fn from_bytes_be(bytes: &[u8]) -> Self {
+        let mut data = Vec::with_capacity((bytes.len() + 7) / 8);
+        for chunk in bytes.rchunks(8) {
+            let mut word = 0u64;
+            for byte in chunk {
+                word = (word << 8) | (*byte as u64);
+            }
+            data.push(word);
+        }
+        let mut res = Self { data };
+        res.normalize();
+        res
+    }
+
+    /// 转换为大端序字节数组 (输出密文)
     pub fn to_bytes_be(&self) -> Vec<u8> {
-        // 先转换为小端字节序列
+        let mut bytes = Vec::new();
         if self.data.is_empty() {
             return vec![0];
         }
-        let mut bytes = Vec::new();
-        for &digit in &self.data {
-            bytes.extend_from_slice(&digit.to_le_bytes());
-        }
-        // 去除高位的前导零字节
-        while let Some(&last) = bytes.last() {
-            if last == 0 {
-                bytes.pop();
-            } else {
-                break;
-            }
+        // 既然要转成字节流, 我们先提取所有完整字节, 最后再处理可能的前导零
+        // 但为了简单, 我们直接生成所有字节, 然后去除前导零
+        for &word in self.data.iter().rev() {
+            bytes.extend_from_slice(&word.to_be_bytes());
         }
 
-        // 反转为大端
-        bytes.reverse();
-        bytes
+        // 去除结果中的前导零 (大端序的开头)
+        let first_nonzero = bytes
+            .iter()
+            .position(|&x| x != 0)
+            .unwrap_or(bytes.len() - 1);
+        bytes[first_nonzero..].to_vec()
     }
 
-    /// 返回所需的位数
+    /// 返回比特数 (用于 RSA 填充计算)
     pub fn bits(&self) -> u64 {
         if self.data.is_empty() {
             return 0;
         }
-        let last = *self.data.last().unwrap();
-        64 * (self.data.len() as u64 - 1) + (64 - last.leading_zeros() as u64)
+        let last_idx = self.data.len() - 1;
+        let last_word = self.data[last_idx];
+        let last_bits = BITS - last_word.leading_zeros() as u64;
+        (last_idx as u64 * BITS) + last_bits
     }
 
-    /// 幂模运算 self^exp mod modulus
-    pub fn modpow(&self, exp: &BigUint, modulus: &BigUint) -> BigUint {
-        monty::monty_modpow(self, exp, modulus)
-    }
-}
+    // === Internal Helpers ===
 
-// 基本方法
-impl BigUint {
-    const ZERO: BigUint = BigUint { data: Vec::new() };
-
-    fn one() -> Self {
-        BigUint { data: vec![1] }
-    }
-
-    #[inline]
+    // 去除高位零
     fn normalize(&mut self) {
-        if let Some(&0) = self.data.last() {
-            let len = self.data.iter().rposition(|&d| d != 0).map_or(0, |i| i + 1);
-            self.data.truncate(len);
-        }
-        if self.data.len() < self.data.capacity() / 4 {
-            self.data.shrink_to_fit();
+        while self.data.len() > 1 && self.data.last() == Some(&0) {
+            self.data.pop();
         }
     }
 
-    #[inline]
-    fn normalized(mut self) -> BigUint {
+    // 判断 self >= other
+    fn ge(&self, other: &Self) -> bool {
+        if self.data.len() != other.data.len() {
+            return self.data.len() > other.data.len();
+        }
+        for (a, b) in self.data.iter().rev().zip(other.data.iter().rev()) {
+            if a != b {
+                return a > b;
+            }
+        }
+        true // equal
+    }
+
+    // === Basic Operations (only for Montgomery algorithm) ===
+
+    // self = self - other. 假设 self >= other.
+    fn sub_assign(&mut self, other: &Self) {
+        let mut borrow = 0u64;
+        for i in 0..self.data.len() {
+            let lhs = self.data[i];
+            let rhs = if i < other.data.len() {
+                other.data[i]
+            } else {
+                0
+            };
+
+            let (diff, b1) = lhs.overflowing_sub(rhs);
+            let (diff, b2) = diff.overflowing_sub(borrow);
+            self.data[i] = diff;
+            borrow = (if b1 { 1 } else { 0 }) + (if b2 { 1 } else { 0 });
+        }
         self.normalize();
-        self
     }
 
-    // 左移位运算
-    fn shl(&self, bits: u64) -> Self {
-        if self.data.is_empty() {
-            return BigUint::ZERO;
+    // self = self << 1
+    fn shl1_assign(&mut self) {
+        let mut carry = 0;
+        for word in self.data.iter_mut() {
+            let next_carry = *word >> 63;
+            *word = (*word << 1) | carry;
+            carry = next_carry;
         }
-
-        let word_shift = (bits / 64) as usize;
-        let bit_shift = (bits % 64) as u32;
-
-        let mut data = vec![0; word_shift];
-        data.extend_from_slice(&self.data);
-
-        if bit_shift > 0 {
-            let mut carry = 0;
-            for digit in &mut data[word_shift..] {
-                let new_carry = *digit >> (64 - bit_shift);
-                *digit = (*digit << bit_shift) | carry;
-                carry = new_carry;
-            }
-            if carry != 0 {
-                data.push(carry);
-            }
+        if carry > 0 {
+            self.data.push(carry);
         }
-
-        BigUint { data }
     }
 
-    // 右移位运算
-    fn shr(&self, bits: u64) -> BigUint {
-        if self.data.is_empty() {
-            return BigUint::ZERO;
+    // 蒙哥马利核心算法
+    // 计算 n0', 使得 (n0 * n0') = -1 mod 2^64
+    fn mont_inv_digit(n0: u64) -> u64 {
+        let mut inv = 1u64;
+        for _ in 0..63 {
+            // Newton-Raphson 迭代
+            inv = inv.wrapping_mul(2u64.wrapping_sub(n0.wrapping_mul(inv)));
+        }
+        inv.wrapping_neg()
+    }
+
+    // 蒙哥马利乘法: res = x * y * R^-1 mod m
+    // 这里 R = 2^(64 * num_words)
+    fn mont_mul(x: &Self, y: &Self, m: &Self, inv: u64, num_words: usize) -> Self {
+        // 结果缓冲区，大小为 2*n + 1 以防溢出
+        let mut t = vec![0u64; num_words * 2 + 1];
+
+        // 标准乘法 x * y
+        for (i, &xi) in x.data.iter().enumerate() {
+            let mut carry = 0u64;
+            for (j, &yj) in y.data.iter().enumerate() {
+                let product = (xi as u128 * yj as u128) + (t[i + j] as u128) + (carry as u128);
+                t[i + j] = product as u64;
+                carry = (product >> 64) as u64;
+            }
+            let mut k = i + y.data.len();
+            while carry > 0 {
+                let sum = (t[k] as u128) + (carry as u128);
+                t[k] = sum as u64;
+                carry = (sum >> 64) as u64;
+                k += 1;
+            }
         }
 
-        let word_shift = (bits / 64) as usize;
-        let bit_shift = (bits % 64) as u32;
+        // 蒙哥马利约减 (Reduction)
+        // 使得 t 变为 t * R^-1 mod m
+        for i in 0..num_words {
+            // u = t[i] * inv mod 2^64
+            let u = t[i].wrapping_mul(inv);
 
-        if word_shift >= self.data.len() {
-            return BigUint::ZERO;
+            // t = t + u * m * 2^(i*64)
+            // 实际上只需要处理 m 的 word，加到 t[i...] 上
+            let mut carry = 0u64;
+            for (j, &mj) in m.data.iter().enumerate() {
+                let product = (u as u128 * mj as u128) + (t[i + j] as u128) + (carry as u128);
+                t[i + j] = product as u64;
+                carry = (product >> 64) as u64;
+            }
+
+            // 处理 m 长度之外的进位
+            let mut k = i + num_words;
+            while carry > 0 {
+                let sum = (t[k] as u128) + (carry as u128);
+                t[k] = sum as u64;
+                carry = (sum >> 64) as u64;
+                k += 1;
+            }
         }
 
-        let mut data = if word_shift > 0 {
-            self.data[word_shift..].to_vec()
-        } else {
-            self.data.clone()
+        // 结果是 t[num_words..]
+        // 理论上 t[0..num_words] 现在应该全是 0
+        let mut res = BigUint {
+            data: t[num_words..].to_vec(),
         };
+        res.normalize();
 
-        if bit_shift > 0 {
-            let mut carry = 0;
-            for digit in data.iter_mut().rev() {
-                let new_carry = *digit << (64 - bit_shift);
-                *digit = (*digit >> bit_shift) | carry;
-                carry = new_carry;
-            }
+        // 最后的条件减法: if res >= m { res -= m }
+        if res.ge(m) {
+            res.sub_assign(m);
         }
-
-        BigUint { data }.normalized()
-    }
-}
-
-mod monty {
-    //! 来自 num_bigint crate
-
-    use super::{BITS, BigDigit, BigUint, DoubleBigDigit};
-
-    struct MontyReducer {
-        n0inv: BigDigit,
+        res
     }
 
-    impl MontyReducer {
-        fn new(n: &BigUint) -> Self {
-            let n0inv = Self::inv_mod_alt(n.data[0]);
-            MontyReducer { n0inv }
+    /// res = base^exp mod m
+    pub fn modpow(&self, exp: &Self, modulus: &Self) -> Self {
+        // TODO: 边界检查, 或应 panic
+        if modulus.data.is_empty() {
+            return Self::zero();
         }
 
-        // k0 = -m**-1 mod 2**BITS. Algorithm from: Dumas, J.G. "On Newton–Raphson
-        // Iteration for Multiplicative Inverses Modulo Prime Powers".
-        fn inv_mod_alt(b: BigDigit) -> BigDigit {
-            assert_ne!(b & 1, 0);
+        let num_words = modulus.data.len();
 
-            let mut k0 = BigDigit::wrapping_sub(2, b);
-            let mut t = b - 1;
-            let mut i = 1;
-            while i < BITS {
-                t = t.wrapping_mul(t);
-                k0 = k0.wrapping_mul(t + 1);
+        // 计算 Montgomery 参数
+        // inv = -m[0]^-1 mod 2^64
+        let inv = Self::mont_inv_digit(modulus.data[0]);
 
-                i <<= 1;
-            }
-            debug_assert_eq!(k0.wrapping_mul(b), 1);
-            k0.wrapping_neg()
-        }
-    }
-
-    // 取模运算只发生在对 RSA 模数取模上, 这个数通常很大, 无需考虑边界情况直接对大数取模即可
-    pub(super) fn monty_modpow(x: &BigUint, y: &BigUint, m: &BigUint) -> BigUint {
-        assert!(m.data[0] & 1 == 1);
-        let mr = MontyReducer::new(m);
-        let num_words = m.data.len();
-
-        let mut x = x.clone();
-
-        // We want the lengths of x and m to be equal.
-        // It is OK if x >= m as long as len(x) == len(m).
-        if x.data.len() > num_words {
-            x %= m;
-            // Note: now len(x) <= numWords, not guaranteed ==.
-        }
-        if x.data.len() < num_words {
-            x.data.resize(num_words, 0);
-        }
-
-        // rr = 2**(2*_W*len(m)) mod m
+        // 预计算 R^2 mod m
+        // 左移-减法, 避免除法
+        // R = 2^(num_words * 64)
+        // 初始 rr = 1
         let mut rr = BigUint::one();
-        rr = (rr.shl(2 * num_words as u64 * u64::from(BITS))) % m;
-        if rr.data.len() < num_words {
-            rr.data.resize(num_words, 0);
-        }
-        // one = 1, with equal length to that of m
-        let mut one = BigUint::one();
-        one.data.resize(num_words, 0);
 
-        let n = 4;
-        // powers[i] contains x^i
-        let mut powers = Vec::with_capacity(1 << n);
-        powers.push(montgomery(&one, &rr, m, mr.n0inv, num_words));
-        powers.push(montgomery(&x, &rr, m, mr.n0inv, num_words));
-        for i in 2..1 << n {
-            let r = montgomery(&powers[i - 1], &powers[1], m, mr.n0inv, num_words);
-            powers.push(r);
-        }
+        // 我们需要左移 2 * num_words * 64 次
+        // 每次左移后, 如果 >= modulus, 就减去 modulus
+        let target_bits = (num_words as u64) * 64 * 2;
 
-        // initialize z = 1 (Montgomery 1)
-        let mut z = powers[0].clone();
-        z.data.resize(num_words, 0);
-        let mut zz = BigUint::ZERO;
-        zz.data.resize(num_words, 0);
-
-        // same windowed exponent, but with Montgomery multiplications
-        for i in (0..y.data.len()).rev() {
-            let mut yi = y.data[i];
-            let mut j = 0;
-            while j < BITS {
-                if i != y.data.len() - 1 || j != 0 {
-                    zz = montgomery(&z, &z, m, mr.n0inv, num_words);
-                    z = montgomery(&zz, &zz, m, mr.n0inv, num_words);
-                    zz = montgomery(&z, &z, m, mr.n0inv, num_words);
-                    z = montgomery(&zz, &zz, m, mr.n0inv, num_words);
-                }
-                zz = montgomery(
-                    &z,
-                    &powers[(yi >> (BITS - n)) as usize],
-                    m,
-                    mr.n0inv,
-                    num_words,
-                );
-                core::mem::swap(&mut z, &mut zz);
-                yi <<= n;
-                j += n;
+        // TODO: 优化: R (即 1 << num_words*64) 肯定是比 m 大的
+        // 先快速左移到 m 的最高位附近, 减少循环次数
+        // 不过为了绝对安全, 这里先使用全循环
+        // 或者是: 先 shift 到 modulus.bits() - 1, 再做循环
+        // 为保持代码极简且正确, 这里用朴素的逐位 shift. 对于 RSA 2048, 仅几千次循环
+        for _ in 0..target_bits {
+            rr.shl1_assign();
+            if rr.ge(modulus) {
+                rr.sub_assign(modulus);
             }
         }
 
-        // convert to regular number
-        zz = montgomery(&z, &one, m, mr.n0inv, num_words);
+        // 将 base 转换到蒙哥马利域: base_mont = base * R mod m
+        // mont_mul(base, R^2, m) = base * R^2 * R^-1 = base * R
+        let base_mont = Self::mont_mul(self, &rr, modulus, inv, num_words);
 
-        zz.normalize();
-        // One last reduction, just in case.
-        // See golang.org/issue/13907.
-        if zz >= *m {
-            // Common case is m has high bit set; in that case,
-            // since zz is the same length as m, there can be just
-            // one multiple of m to remove. Just subtract.
-            // We think that the subtract should be sufficient in general,
-            // so do that unconditionally, but double-check,
-            // in case our beliefs are wrong.
-            // The div is not expected to be reached.
-            zz -= m;
-            if zz >= *m {
-                zz %= m;
+        // 初始化结果为 1 的蒙哥马利形式: res_mont = 1 * R mod m
+        // 即 rr 的第一部分: mont_mul(1, R^2, m)
+        let one = BigUint::one();
+        let mut res_mont = Self::mont_mul(&one, &rr, modulus, inv, num_words);
+
+        // 滑动窗口或简单的二进制指数法
+        // 这里使用简单的二进制位遍历 (从高位到低位)
+        // 为了方便, 先找到最高有效位
+        let exp_bits = exp.bits();
+        if exp_bits == 0 {
+            return BigUint::one(); // m^0 = 1
+        }
+
+        for i in (0..exp_bits).rev() {
+            // 平方: res = res * res
+            res_mont = Self::mont_mul(&res_mont, &res_mont, modulus, inv, num_words);
+
+            // 如果该位是 1, 乘法: res = res * base
+            // 获取 exp 的第 i 位
+            let word_idx = (i / 64) as usize;
+            let bit_idx = (i % 64) as u8;
+            if (exp.data[word_idx] >> bit_idx) & 1 == 1 {
+                res_mont = Self::mont_mul(&res_mont, &base_mont, modulus, inv, num_words);
             }
         }
 
-        zz.normalize();
-        zz
-    }
+        // 转回普通域: res = res_mont * R^-1 mod m
+        // mont_mul(res_mont, 1, m) = res * R * 1 * R^-1 = res
+        let final_res = Self::mont_mul(&res_mont, &one, modulus, inv, num_words);
 
-    fn montgomery(x: &BigUint, y: &BigUint, m: &BigUint, k: BigDigit, n: usize) -> BigUint {
-        // This code assumes x, y, m are all the same length, n.
-        // (required by addMulVVW and the for loop).
-        // It also assumes that x, y are already reduced mod m,
-        // or else the result will not be properly reduced.
-        assert!(
-            x.data.len() == n && y.data.len() == n && m.data.len() == n,
-            "{:?} {:?} {:?} {}",
-            x,
-            y,
-            m,
-            n
-        );
-
-        let mut z = BigUint::ZERO;
-        z.data.resize(n * 2, 0);
-
-        let mut c: BigDigit = 0;
-        for i in 0..n {
-            let c2 = add_mul_vvw(&mut z.data[i..n + i], &x.data, y.data[i]);
-            let t = z.data[i].wrapping_mul(k);
-            let c3 = add_mul_vvw(&mut z.data[i..n + i], &m.data, t);
-            let cx = c.wrapping_add(c2);
-            let cy = cx.wrapping_add(c3);
-            z.data[n + i] = cy;
-            if cx < c2 || cy < c3 {
-                c = 1;
-            } else {
-                c = 0;
-            }
-        }
-
-        if c == 0 {
-            z.data = z.data[n..].to_vec();
-        } else {
-            {
-                let (first, second) = z.data.split_at_mut(n);
-                sub_vv(first, second, &m.data);
-            }
-            z.data = z.data[..n].to_vec();
-        }
-
-        z
-    }
-
-    /// The resulting carry c is either 0 or 1.
-    #[inline(always)]
-    fn sub_vv(z: &mut [BigDigit], x: &[BigDigit], y: &[BigDigit]) -> BigDigit {
-        let mut c = 0;
-        for (i, (xi, yi)) in x.iter().zip(y.iter()).enumerate().take(z.len()) {
-            let zi = xi.wrapping_sub(*yi).wrapping_sub(c);
-            z[i] = zi;
-            // see "Hacker's Delight", section 2-12 (overflow detection)
-            c = ((yi & !xi) | ((yi | !xi) & zi)) >> (BITS - 1)
-        }
-
-        c
-    }
-
-    #[inline(always)]
-    fn add_mul_vvw(z: &mut [BigDigit], x: &[BigDigit], y: BigDigit) -> BigDigit {
-        let mut c = 0;
-        for (zi, xi) in z.iter_mut().zip(x.iter()) {
-            let (z1, z0) = mul_add_www(*xi, y, *zi);
-            let (c_, zi_) = add_ww(z0, c, 0);
-            *zi = zi_;
-            c = c_ + z1;
-        }
-
-        c
-    }
-
-    /// z1<<_W + z0 = x+y+c, with c == 0 or 1
-    #[inline(always)]
-    fn add_ww(x: BigDigit, y: BigDigit, c: BigDigit) -> (BigDigit, BigDigit) {
-        let yc = y.wrapping_add(c);
-        let z0 = x.wrapping_add(yc);
-        let z1 = if z0 < x || yc < y { 1 } else { 0 };
-
-        (z1, z0)
-    }
-
-    /// z1 << _W + z0 = x * y + c
-    #[inline(always)]
-    fn mul_add_www(x: BigDigit, y: BigDigit, c: BigDigit) -> (BigDigit, BigDigit) {
-        let z = x as DoubleBigDigit * y as DoubleBigDigit + c as DoubleBigDigit;
-        ((z >> BITS) as BigDigit, z as BigDigit)
-    }
-}
-
-mod rem {
-    //! 针对 RSA 的模运算, 使用长除法.
-    //! 做了部分假设, 默认两数不为零且被除数大于等于除数.
-    //! 仅在 monty_modpow 函数中使用
-    use super::{BigDigit, BigUint};
-    use core::ops::{Rem, RemAssign};
-
-    impl Rem<&BigUint> for &BigUint {
-        type Output = BigUint;
-
-        fn rem(self, other: &BigUint) -> BigUint {
-            let m = self.data.len();
-            let n = other.data.len();
-
-            debug_assert!(!other.data.is_empty());
-            debug_assert!(!self.data.is_empty());
-            debug_assert!(m >= n);
-
-            // 标准化除数，使得最高位 >= BASE/2
-            let shift = other.data.last().unwrap().leading_zeros();
-            let divisor = if shift > 0 {
-                other.shl(shift as u64)
-            } else {
-                other.clone()
-            };
-
-            let dividend = if shift > 0 {
-                self.shl(shift as u64)
-            } else {
-                self.clone()
-            };
-
-            let mut remainder = dividend;
-
-            for j in (0..=m - n).rev() {
-                // 估算商的一位
-                let r_high = *remainder.data.get(j + n).unwrap_or(&0);
-                let r_mid = remainder.data[j + n - 1];
-                let r_low = remainder.data.get(j + n - 2).copied().unwrap_or(0);
-
-                let divisor_high = divisor.data[n - 1];
-                let divisor_mid = divisor.data.get(n - 2).copied().unwrap_or(0);
-
-                // 估算商
-                let mut q_hat = if r_high == divisor_high {
-                    BigDigit::MAX
-                } else {
-                    let num = ((r_high as u128) << 64) | (r_mid as u128);
-                    (num / divisor_high as u128) as u64
-                };
-
-                // 调整商
-                while q_hat > 0 {
-                    let product_high = (q_hat as u128) * (divisor_mid as u128);
-                    let num_high = ((r_high as u128) << 64) | (r_mid as u128);
-                    let num_low = ((r_mid as u128) << 64) | (r_low as u128);
-
-                    if product_high > num_high {
-                        q_hat -= 1;
-                        continue;
-                    }
-
-                    if product_high == num_high {
-                        let product_low = (q_hat as u128) * (divisor_mid as u128);
-                        if product_low > num_low {
-                            q_hat -= 1;
-                            continue;
-                        }
-                    }
-                    break;
-                }
-
-                // 乘法和减法
-                let mut borrow: u64 = 0;
-                for i in 0..n {
-                    let product = (q_hat as u128) * (divisor.data[i] as u128);
-                    let product_high = (product >> 64) as u64;
-                    let product_low = product as u64;
-
-                    // 先加上之前的借位
-                    let (sum1, carry1) = product_low.overflowing_add(borrow);
-
-                    // 然后从被除数中减去
-                    let (diff, borrow1) = remainder.data[j + i].overflowing_sub(sum1);
-                    remainder.data[j + i] = diff;
-
-                    // 计算新的借位
-                    borrow =
-                        product_high + if carry1 { 1 } else { 0 } + if borrow1 { 1 } else { 0 };
-                }
-
-                // 处理最高位的借位
-                if j + n < remainder.data.len() {
-                    let (diff, borrow1) = remainder.data[j + n].overflowing_sub(borrow);
-                    remainder.data[j + n] = diff;
-                    borrow = if borrow1 { 1 } else { 0 };
-                }
-
-                // 如果减法导致借位, 调整商
-                if borrow > 0 {
-                    // 加回除数
-                    let mut carry: u64 = 0;
-                    for i in 0..n {
-                        let sum = (remainder.data[j + i] as u128)
-                            + (divisor.data[i] as u128)
-                            + (carry as u128);
-                        remainder.data[j + i] = sum as u64;
-                        carry = (sum >> 64) as u64;
-                    }
-
-                    if j + n < remainder.data.len() {
-                        remainder.data[j + n] = remainder.data[j + n].wrapping_add(carry);
-                    }
-                }
-            }
-
-            // 反标准化余数
-            let remainder = if shift > 0 {
-                let mut rem = BigUint {
-                    data: remainder.data,
-                };
-                rem.normalize();
-                rem.shr(shift as u64)
-            } else {
-                BigUint {
-                    data: remainder.data,
-                }
-                .normalized()
-            };
-            remainder
-        }
-    }
-
-    impl Rem<&BigUint> for BigUint {
-        type Output = BigUint;
-
-        #[inline]
-        fn rem(self, other: &BigUint) -> BigUint {
-            Rem::rem(&self, other)
-        }
-    }
-
-    impl RemAssign<&BigUint> for BigUint {
-        #[inline]
-        fn rem_assign(&mut self, other: &BigUint) {
-            *self = &*self % other;
-        }
-    }
-}
-
-mod sub {
-    //! 来自 num_bigint crate
-
-    use super::{BigDigit, BigUint};
-    use core::ops::SubAssign;
-
-    impl SubAssign<&BigUint> for BigUint {
-        fn sub_assign(&mut self, other: &BigUint) {
-            sub(&mut self.data[..], &other.data[..]);
-            self.normalize();
-        }
-    }
-
-    pub(super) fn sub(a: &mut [BigDigit], b: &[BigDigit]) {
-        let mut borrow = 0;
-
-        let len = Ord::min(a.len(), b.len());
-        let (a_lo, a_hi) = a.split_at_mut(len);
-        let (b_lo, b_hi) = b.split_at(len);
-
-        for (a, b) in a_lo.iter_mut().zip(b_lo) {
-            borrow = sbb(borrow, *a, *b, a);
-        }
-
-        if borrow != 0 {
-            for a in a_hi {
-                borrow = sbb(borrow, *a, 0, a);
-                if borrow == 0 {
-                    break;
-                }
-            }
-        }
-
-        // note: we're _required_ to fail on underflow
-        assert!(
-            borrow == 0 && b_hi.iter().all(|x| *x == 0),
-            "Cannot subtract b from a because b is larger than a."
-        );
-    }
-
-    // Subtract with borrow:
-    #[cfg(target_arch = "x86_64")]
-    #[inline]
-    fn sbb(borrow: u8, a: u64, b: u64, out: &mut u64) -> u8 {
-        // 在 Stable 1.93 版本中已经不再是 unsafe 了.
-        core::arch::x86_64::_subborrow_u64(borrow, a, b, out)
-    }
-
-    #[cfg(target_arch = "x86")]
-    #[inline]
-    fn sbb(borrow: u8, a: u32, b: u32, out: &mut u32) -> u8 {
-        core::arch::x86::_subborrow_u32(borrow, a, b, out)
-    }
-
-    // fallback for environments where we don't have a subborrow intrinsic
-    // (copied from the standard library's `borrowing_sub`)
-    #[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
-    #[inline]
-    fn sbb(borrow: u8, lhs: BigDigit, rhs: BigDigit, out: &mut BigDigit) -> u8 {
-        let (a, b) = lhs.overflowing_sub(rhs);
-        let (c, d) = a.overflowing_sub(borrow as BigDigit);
-        *out = c;
-        u8::from(b || d)
-    }
-}
-
-mod cmp {
-    use super::{BigDigit, BigUint};
-    use core::cmp::Ordering;
-
-    impl PartialOrd for BigUint {
-        #[inline]
-        fn partial_cmp(&self, other: &BigUint) -> Option<Ordering> {
-            Some(self.cmp(other))
-        }
-    }
-
-    impl Ord for BigUint {
-        #[inline]
-        fn cmp(&self, other: &BigUint) -> Ordering {
-            cmp_slice(&self.data[..], &other.data[..])
-        }
-    }
-
-    #[inline]
-    fn cmp_slice(a: &[BigDigit], b: &[BigDigit]) -> Ordering {
-        debug_assert!(a.last() != Some(&0));
-        debug_assert!(b.last() != Some(&0));
-
-        match Ord::cmp(&a.len(), &b.len()) {
-            Ordering::Equal => Iterator::cmp(a.iter().rev(), b.iter().rev()),
-            other => other,
-        }
+        final_res
     }
 }
