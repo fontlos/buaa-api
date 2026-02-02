@@ -1,6 +1,11 @@
 //! Self-implemented BigUint for RSA should not be used anywhere else.
+//! In the case of only targeting the common RSA public exponent (65537), this implementation is about 50% faster than num_bigint
+//! **Warning**: Not constant-time, may become a side-channel attack vector. Use only in trusted environments.
+//! Example for use in transmitting doubly-encrypted Token over HTTPS
 
 // 在仅针对 RSA 常见公钥指数 (65537) 的情况下, 该实现比 num_bigint 快约 50%
+// 警告: 非常数时间, 可能成为一个侧信道攻击向量. 仅在受信任环境中使用.
+// 如仅用于在 HTTPS 中传输 二次加密的 Token
 
 type BigDigit = u64;
 const BITS: u64 = 64;
