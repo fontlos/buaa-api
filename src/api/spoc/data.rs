@@ -25,7 +25,6 @@ pub struct Res<T> {
 }
 
 impl<'de, T: Deserialize<'de>> Res<T> {
-    // TODO: 记录日志
     pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
         // 由于状态码不是 200 时 content 字段可能填充了错误信息导致类型不匹配反序列化失败, 例如
         // {"code":0,"msg":"xxx","content":"xxx"}
@@ -33,8 +32,13 @@ impl<'de, T: Deserialize<'de>> Res<T> {
         let code = utils::parse_by_tag(v, "\"code\":", ",");
         // 凭据过期 code 也是 200, 那你这 code 有什么用啊
         if Some("200") == code {
-            let res: Res<T> = serde_json::from_slice(v)
-                .map_err(|_| Error::server("Bad content").with_label("Spoc"))?;
+            let res: Res<T> = serde_json::from_slice(v).map_err(|e| {
+                if log::log_enabled!(log::Level::Error) {
+                    let raw = String::from_utf8_lossy(v);
+                    log::error!("Parse Error: {}. Raw: {}", e, raw);
+                }
+                Error::server("Bad content").with_label("Spoc")
+            })?;
             return Ok(res.content);
         }
         let msg = utils::parse_by_tag(v, "\"msg\":\"", "\"");
