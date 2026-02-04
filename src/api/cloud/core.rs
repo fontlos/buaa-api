@@ -5,12 +5,11 @@ use serde::Serialize;
 use crate::api::{Cloud, Sso};
 use crate::error::Error;
 use crate::store::cookies::Cookie;
-use crate::utils;
 
-use super::data::Payload;
+use super::data::{Payload, ResError};
 
 // 手动登录用 RSA 密钥, 但我们使用 SSO 登录
-// From https://bhpan.buaa.edu.cn/oauth2/_next/static/chunks/pages/signin-2a57b4f57ddbb54dc27e.js
+// From https://bhpan.buaa.edu.cn/anyshare/static/js/main.xxx.chunk.js
 // Changed since v7 (2023.08)
 // 2025.04.22
 // const CLOUD_RSA_KEY: &str = "-----BEGIN PUBLIC KEY-----
@@ -139,16 +138,11 @@ impl super::CloudApi {
         // 参数层错误如果造成状态码错误会在这里发生
         if !status.is_success() {
             let bytes = res.bytes().await?;
-            println!("Error Response: {}", String::from_utf8_lossy(&bytes));
-            let cause =
-                utils::parse_by_tag(&bytes, "\"cause\":\"", "\"").unwrap_or("Unknown error");
-            return Err(Error::server("Operation failed")
-                .with_label("Cloud")
-                .with_source(format!("Status Code: {status}, Cause: {cause}")));
+            let err = ResError::to_error("Operation failed", &bytes, Some(status));
+            return Err(err);
         }
 
         cred.refresh::<Cloud>();
-
         Ok(res.bytes().await?)
     }
 }

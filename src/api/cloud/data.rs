@@ -12,27 +12,49 @@ pub(super) enum Payload<'a, P: Serialize + ?Sized> {
 #[derive(Debug, Deserialize)]
 pub(super) struct Res<T> {
     #[serde(flatten)]
-    res: Option<T>,
-    cause: Option<String>,
-    message: Option<String>,
+    res: T,
 }
 
 impl<'de, T: Deserialize<'de>> Res<T> {
-    pub(crate) fn parse(v: &'de [u8], err: &'static str) -> crate::Result<T> {
-        let res: Res<T> = serde_json::from_slice(&v)?;
-        if let Some(cause) = res.cause {
-            let source = format!(
-                "Server err: {}, msg: {}",
-                cause,
-                res.message.unwrap_or_default()
+    pub(super) fn parse(v: &'de [u8], err: &'static str) -> crate::Result<T> {
+        let res: Res<T> =
+            serde_json::from_slice(&v).map_err(|e| ResError::to_error(err, v, Some(e)))?;
+        Ok(res.res)
+    }
+}
+
+/// 服务器抛出的异常 JSON 结构
+#[derive(Debug, Deserialize)]
+pub(super) struct ResError {
+    // 前三位标准 HTTP 状态码, 后三位自定义状态码
+    pub code: u32,
+    pub cause: String,
+    // 重复 cause 的内容, 也不够详细
+    // pub message: String,
+}
+
+impl ResError {
+    #[cold]
+    pub fn to_error(err: &'static str, raw: &[u8], source: Option<impl ToString>) -> Error {
+        if log::log_enabled!(log::Level::Error) {
+            log::error!(
+                "Source: {}",
+                source
+                    .map(|s| s.to_string())
+                    .unwrap_or("Unknown".to_string())
             );
-            return Err(Error::server(err).with_label("Cloud").with_source(source));
+            // 尝试结构化错误
+            match serde_json::from_slice::<ResError>(&raw) {
+                Ok(ce) => {
+                    log::error!("Server Code: {}, Cause: {}", ce.code, ce.cause);
+                }
+                Err(_) => {
+                    let raw = String::from_utf8_lossy(&raw);
+                    log::info!("Raw Response: {}", raw);
+                }
+            }
         }
-        res.res.ok_or_else(|| {
-            Error::server(err)
-                .with_label("Cloud")
-                .with_source("Missing response field")
-        })
+        Error::server(err).with_label("Cloud")
     }
 }
 

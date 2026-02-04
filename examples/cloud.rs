@@ -2,8 +2,24 @@
 mod tests {
     use buaa_api::Context;
 
+    fn init_log() {
+        use logforth::append;
+        use logforth::layout::TextLayout;
+        use logforth::record::Level;
+        use logforth::record::LevelFilter;
+
+        logforth::starter_log::builder()
+            .dispatch(|d| {
+                d.filter(LevelFilter::MoreSevereEqual(Level::Info))
+                    .append(append::Stdout::default().with_layout(TextLayout::default()))
+            })
+            .apply();
+    }
+
     #[tokio::test]
     async fn test_dir() {
+        init_log();
+
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
