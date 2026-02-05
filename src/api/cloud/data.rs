@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::error::Error;
+use crate::utils;
 
 pub(super) enum Payload<'a, P: Serialize + ?Sized> {
     Query(&'a P),
@@ -8,54 +9,39 @@ pub(super) enum Payload<'a, P: Serialize + ?Sized> {
     Empty,
 }
 
-// 这不是一般的 Res 结构, 当响应正确时只有目标字段
 #[derive(Debug, Deserialize)]
-pub(super) struct Res<T> {
-    #[serde(flatten)]
-    res: T,
-}
+#[serde(transparent)]
+pub(super) struct Res<T>(T);
 
 impl<'de, T: Deserialize<'de>> Res<T> {
+    /// 当响应正确时只有目标字段
     pub(super) fn parse(v: &'de [u8], err: &'static str) -> crate::Result<T> {
         let res: Res<T> =
-            serde_json::from_slice(&v).map_err(|e| ResError::to_error(err, v, Some(e)))?;
-        Ok(res.res)
+            serde_json::from_slice(&v).map_err(|e| res_error(err, v, Some(e)))?;
+        Ok(res.0)
     }
 }
 
-/// 服务器抛出的异常 JSON 结构
-#[derive(Debug, Deserialize)]
-pub(super) struct ResError {
-    // 前三位标准 HTTP 状态码, 后三位自定义状态码
-    pub code: u32,
-    pub cause: String,
-    // 重复 cause 的内容, 也不够详细
-    // pub message: String,
-}
-
-impl ResError {
-    #[cold]
-    pub fn to_error(err: &'static str, raw: &[u8], source: Option<impl ToString>) -> Error {
-        if log::log_enabled!(log::Level::Error) {
-            log::error!(
-                "Source: {}",
-                source
-                    .map(|s| s.to_string())
-                    .unwrap_or("Unknown".to_string())
-            );
-            // 尝试结构化错误
-            match serde_json::from_slice::<ResError>(&raw) {
-                Ok(ce) => {
-                    log::error!("Server Code: {}, Cause: {}", ce.code, ce.cause);
-                }
-                Err(_) => {
-                    let raw = String::from_utf8_lossy(&raw);
-                    log::info!("Raw Response: {}", raw);
-                }
-            }
+/// 尝试从来自服务器的异常响应 JSON 解析错误. 设计好的 API 理应不会再触发这个函数
+#[cold]
+pub(super) fn res_error(err: &'static str, raw: &[u8], source: Option<impl std::fmt::Display>) -> Error {
+    if log::log_enabled!(log::Level::Error) {
+        if let Some(source) = source {
+            log::error!("Error Source: {}", source);
         }
-        Error::server(err).with_label("Cloud")
+        // 尝试结构化错误
+        // code 字段即使返回错误码, 也没什么查阅 Anyshare 文档的意义, 应该由我自己排查
+        // message 字段基本就是 cause 字段的省略版
+        // 只有第一句话是有用的, 后面的是服务器内部报错行数与我们无关
+        let cause = utils::parse_by_tag(&raw, "\"cause\":\"", "。");
+        if let Some(cause) = cause {
+            log::info!("Server Cause: {}", cause);
+        } else {
+            let raw = String::from_utf8_lossy(&raw);
+            log::info!("Raw Response: {}", raw);
+        }
     }
+    Error::server(err).with_label("Cloud")
 }
 
 /// Root directory type
