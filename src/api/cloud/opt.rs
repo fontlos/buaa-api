@@ -1,6 +1,4 @@
 use reqwest::Method;
-#[cfg(feature = "multipart")]
-use reqwest::multipart::{Form, Part};
 use serde_json::Value;
 
 use crate::error::Error;
@@ -8,11 +6,11 @@ use crate::utils;
 
 use super::data::{
     CreateRes, Dir, Item, MoveRes, Payload, RecycleDir, Res, Root, RootDir, Share, SizeRes,
-    UploadArgs,
+    UploadArgs, UploadAuth, res_error,
 };
 
 impl super::CloudApi {
-    /// # Get root directory by [Root]
+    /// # Get root directory
     pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
@@ -24,7 +22,7 @@ impl super::CloudApi {
         Ok(res)
     }
 
-    /// # Get User Root directory ID
+    /// # Get User Root directory [RootDir::id]
     pub async fn get_user_dir_id(&self) -> crate::Result<String> {
         let res = self.get_root_dir(Root::User).await?;
         let id = res
@@ -35,7 +33,9 @@ impl super::CloudApi {
         Ok(id)
     }
 
-    /// List the contents of a directory by its ID. Contain [Item::id] and [RootDir::id].
+    /// # List the contents of a directory
+    ///
+    /// - Input: Directory [Item::id] or [RootDir::id]
     pub async fn list_dir(&self, id: &str) -> crate::Result<Dir> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/list";
         let json = serde_json::json!({
@@ -50,7 +50,9 @@ impl super::CloudApi {
         Ok(res)
     }
 
-    /// Get the size of a file or directory by its ID. [Item::id]
+    /// # Get the size of an item
+    ///
+    /// - Input: [Item::id]
     pub async fn get_item_size(&self, id: &str) -> crate::Result<SizeRes> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/size";
         let json = serde_json::json!({
@@ -63,9 +65,13 @@ impl super::CloudApi {
         Ok(res)
     }
 
-    /// Get a suggested name for an item from given name in given parent directory. [Item::id]
+    /// # Get a suggested name when name conflict
     ///
-    /// Usually for [super::CloudApi::create_dir]
+    /// - Input:
+    ///     - dir: Parent directory [Item::id]
+    ///     - name: Desired name
+    ///
+    /// **Note**: For [super::CloudApi::create_dir] etc.
     pub async fn get_suggest_name(&self, dir: &str, name: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
         let json = serde_json::json!({
@@ -79,7 +85,11 @@ impl super::CloudApi {
         Ok(res.to_string())
     }
 
-    /// Create directory in given parent directory with name. [Item::id]
+    /// # Create directory
+    ///
+    /// - Input:
+    ///     - dir: Parent directory [Item::id]
+    ///     - name: Desired directory name
     pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<CreateRes> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
         let json = serde_json::json!({
@@ -95,7 +105,11 @@ impl super::CloudApi {
     }
 
     // 重命名不存在的文件会在上层触发 400 错误
-    /// Rename a file or directory by its ID. [Item::id]
+    /// # Rename an item
+    ///
+    /// - Input:
+    ///     - id: Item [Item::id]
+    ///     - new: New name
     pub async fn rename_item(&self, id: &str, new: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/rename";
         let json = serde_json::json!({
@@ -108,7 +122,11 @@ impl super::CloudApi {
         Ok(())
     }
 
-    /// Move a file or directory by its ID. [Item::id]
+    /// # Move an item [Item::id]
+    ///
+    /// - Input:
+    ///    - dir: Destination directory [Item::id]
+    ///    - id: Item [Item::id]
     ///
     /// **Note**: Move multiple files need call multiple times.
     pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<String> {
@@ -124,7 +142,11 @@ impl super::CloudApi {
         Ok(res.id)
     }
 
-    /// Copy a file or directory by its ID. [Item::id]
+    /// # Copy an item [Item::id]
+    ///
+    /// - Input:
+    ///    - dir: Destination directory [Item::id]
+    ///    - id: Item [Item::id]
     ///
     /// **Note**: Copy multiple files need call multiple times.
     pub async fn copy_item(&self, dir: &str, id: &str) -> crate::Result<String> {
@@ -141,7 +163,9 @@ impl super::CloudApi {
     }
 
     // 重复删掉文件也不会报错
-    /// Delete a file or directory to recycle bin by its ID. [Item::id]
+    /// # Delete an item to recycle bin
+    ///
+    /// - Input: [Item::id]
     ///
     /// **Note**: Delete multiple files need call multiple times.
     pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
@@ -154,7 +178,7 @@ impl super::CloudApi {
         Ok(())
     }
 
-    /// List recycle bin contents of user's personal directory
+    /// # List recycle bin contents of user's personal directory
     pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
         let id = self.get_user_dir_id().await?;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
@@ -169,7 +193,9 @@ impl super::CloudApi {
         Ok(res)
     }
 
-    /// Delete a file or directory forever by its ID. [RecycleItem::id]
+    /// # Delete an item forever in recycle bin
+    ///
+    /// - Input: [RecycleItem::id]
     ///
     /// **Note**: Delete multiple files need call multiple times.
     pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
@@ -182,7 +208,9 @@ impl super::CloudApi {
         Ok(())
     }
 
-    /// Restore a file or directory from recycle bin by its ID. [RecycleItem::id]
+    /// # Restore an item from recycle bin
+    ///
+    /// - Input: [RecycleItem::id]
     ///
     /// **Note**: Restore multiple files need call multiple times.
     pub async fn restore_recycle_item(&self, id: &str) -> crate::Result<String> {
@@ -205,7 +233,9 @@ impl super::CloudApi {
     }
 
     // 传入不存在的 id 会在上层触发 400 错误
-    /// Get share record by [Item::id]
+    /// # Get item share record
+    ///
+    /// - Input: [Item::id]
     pub async fn share_record(&self, id: &str) -> crate::Result<Vec<Share>> {
         let url = format!(
             "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/folder/{}?type=anonymous",
@@ -217,7 +247,10 @@ impl super::CloudApi {
         Ok(res)
     }
 
-    /// Create a share ID for given [Share]. Call [Item::to_share()] to get a [Share] from [Item].
+    /// # Share an item
+    ///
+    /// - Input: [Share] from [Item::to_share()]
+    /// - Output: Share ID
     ///
     /// **Note**: The share link can be formed as `https://bhpan.buaa.edu.cn/link/{ID}`.
     pub async fn share_item(&self, share: &Share) -> crate::Result<String> {
@@ -235,7 +268,11 @@ impl super::CloudApi {
         Ok(res.id)
     }
 
-    /// Update share link by Share ID and new [Share]
+    /// # Update share
+    ///
+    /// - Input:
+    ///     - id: Share ID
+    ///     - share: Updated [Share]
     pub async fn share_update(&self, id: &str, share: &Share) -> crate::Result<()> {
         let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
         let payload = Payload::Json(&share);
@@ -243,7 +280,9 @@ impl super::CloudApi {
         Ok(())
     }
 
-    /// Delete share link by Share ID
+    /// # Delete share
+    ///
+    /// - Input: Share ID
     pub async fn share_delete(&self, id: &str) -> crate::Result<()> {
         let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
         let payload = Payload::<'_, ()>::Empty;
@@ -303,7 +342,7 @@ impl super::CloudApi {
         Ok(url)
     }
 
-    /// Get a download URL with the indexes of items.
+    /// # Get a download URL with the indexes of items.
     ///
     /// **Note**: If indexes is empty, it means all items.
     pub async fn get_download_url(
@@ -331,119 +370,98 @@ impl super::CloudApi {
         }
     }
 
-    /// Check hash before upload
-    pub async fn check_hash(&self, md5: &str, length: u64) -> crate::Result<bool> {
+    /// # Check whether can upload fast
+    #[cfg(feature = "multipart")]
+    pub async fn upload_fast_check(&self, args: &UploadArgs) -> crate::Result<bool> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/predupload";
         let json = serde_json::json!({
-            "slice_md5": md5,
-            "length": length
+            "slice_md5": args.slice_md5,
+            "length": args.length
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-
-        #[derive(serde::Deserialize)]
-        struct _Res {
-            #[serde(rename = "match")]
-            status: bool,
-        }
-
-        let res: _Res = Res::parse(&bytes, "Can not check hash")?;
-        Ok(res.status)
+        let matched = utils::parse_by_tag(&bytes, "\"match\":", "}")
+            .ok_or_else(|| res_error("Can not check hash", &bytes, None))?;
+        Ok(matched == "true")
     }
 
-    /// Fast upload file if hash exists
-    pub async fn fast_upload(
-        &self,
-        dir: &str,
-        name: &str,
-        length: u64,
-        md5: &str,
-        crc32: &str,
-    ) -> crate::Result<bool> {
+    /// # Upload file fast
+    ///
+    /// - Input:
+    ///     - id: Destination directory [Item::id]
+    #[cfg(feature = "multipart")]
+    pub async fn upload_fast(&self, args: &UploadArgs, dir: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/dupload";
         let json = serde_json::json!({
             "client_mtime": utils::get_time_millis(),
-            "crc32": crc32,
-            "csflevel": 0,
+            "crc32": args.crc32,
             "docid": dir,
-            "length": length,
-            "md5": md5,
-            "name": name,
+            "length": args.length,
+            "md5": args.md5,
+            "name": args.name,
+            // 文件名冲突则抛出异常
             "ondup": 1
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-
-        #[derive(serde::Deserialize)]
-        struct _Res {
-            #[serde(rename = "success")]
-            status: bool,
+        let success = utils::parse_by_tag(&bytes, "\"success\":", ",")
+            .ok_or_else(|| res_error("Can not upload fast", &bytes, Some(&"No 'success' field")))?;
+        if success != "true" {
+            return Err(res_error("Can not upload fast", &bytes, None));
         }
-
-        let res: _Res = Res::parse(&bytes, "Can not fast upload")?;
-        Ok(res.status)
+        Ok(())
     }
 
-    /// Get upload authorization
+    /// # Upload small file
     ///
-    /// **Note**: You need [super::CloudApi::upload()] for final upload which need enable `multipart` feature.
-    pub async fn upload_auth(
+    /// - Input:
+    ///     - id: Destination directory [Item::id]
+    ///
+    /// **Note**: File size should be less than 5 GiB. Recommended for files smaller than 100 MiB.
+    #[cfg(feature = "multipart")]
+    pub async fn upload_small(
         &self,
+        args: &UploadArgs,
         dir: &str,
-        name: &str,
-        length: u64,
-    ) -> crate::Result<UploadArgs> {
+        body: Vec<u8>,
+    ) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osbeginupload";
         let json = serde_json::json!({
             "client_mtime": utils::get_time_millis(),
             "docid": dir,
-            "length": length,
-            "name": name,
+            "length": args.length,
+            "name": args.name,
             "ondup": 1,
-            "reqmethod": "POST",
-            "usehttps": true,
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res: UploadArgs = Res::parse(&bytes, "Can not get upload auth")?;
-        Ok(res)
-    }
-
-    /// Upload file with given [UploadArgs] and file part
-    ///
-    /// **Note**: MIME of `part` is allready set internally.
-    #[cfg(feature = "multipart")]
-    pub async fn upload(&self, args: UploadArgs, part: Part) -> crate::Result<()> {
-        let auth = args.auth;
-        let part = part.mime_str("application/octet-stream")?;
-        let form = Form::new()
-            .text("AWSAccessKeyId", "bhtenant")
-            // 似乎只在 part 中设置即可
-            // .text("Content-Type", "application/octet-stream")
-            .text("Policy", auth.policy)
-            .text("Signature", auth.signature)
-            .text("key", auth.key)
-            .part("file", part);
-        let res = self.client.post(auth.url).multipart(form).send().await?;
-
-        let status = res.status().as_u16();
-        if status != 204 {
+        let auth: UploadAuth = Res::parse(&bytes, "Can not get upload auth")?;
+        let req = self.client.put(&auth.authrequest[1]);
+        // 0 号是方法, 1 号是 URL, 剩余的是 Header
+        let req = auth.authrequest.iter().skip(2).fold(req, |req, header| {
+            if let Some((key, value)) = header.split_once(": ") {
+                req.header(key, value)
+            } else {
+                req
+            }
+        });
+        let res = req.body(body).send().await?;
+        let status = res.status();
+        if !status.is_success() {
             return Err(Error::server("Upload failed")
                 .with_label("Cloud")
-                .with_source(format!("HTTP status: {}", status)));
+                .with_source(format!("HTTP status: {}", status.as_u16())));
         }
-
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osendupload";
         let json = serde_json::json!({
-            "csflevel": 0,
-            "docid": args.id,
-            "rev": args.hash,
+            "docid": auth.docid,
+            "rev": auth.rev,
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-
-        // editor, modified 字段没有任何用, 暂时不解析
-        let _: () = Res::parse(&bytes, "Can not finalize upload")?;
+        // TODO: 这些字段没有用, 但暂时无法在不解析的情况下检查是否错误
+        let _ = utils::parse_by_tag(&bytes, "\"editor\":\"", "\"")
+            .ok_or_else(|| res_error("Can not finalize upload", &bytes, None))?;
 
         Ok(())
     }

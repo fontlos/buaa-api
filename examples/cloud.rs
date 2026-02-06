@@ -164,25 +164,23 @@ mod tests {
 
     #[tokio::test]
     async fn test_fast_upload() {
-        use buaa_api::crypto;
-        let file = std::fs::read("./data/c.bat").unwrap();
-        let length = file.len() as u64;
-        let md5 = crypto::bytes2hex(&crypto::md5::Md5::digest(&file));
-        let crc32 = format!("{:08x}", crypto::crc::Crc32::digest(&file));
+        use buaa_api::api::cloud::UploadArgs;
+        use std::fs::File;
+
+        init_log();
+
+        let mut reader = File::open("./data/file.zip").unwrap();
+        let args = UploadArgs::from_reader(&mut reader, "file.zip".into()).unwrap();
 
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
 
-        let res = cloud.check_hash(&md5, length).await.unwrap();
-        println!("Hash exists: {}", res);
+        let res = cloud.upload_fast_check(&args).await.unwrap();
+        println!("Can upload fast: {}", res);
         if res {
-            let res = cloud
-                .fast_upload(&user_dir, "c.bat", length, &md5, &crc32)
-                .await
-                .unwrap();
-            println!("Fast upload success: {}", res);
+            cloud.upload_fast(&args, &user_dir).await.unwrap();
         }
 
         context.save_auth("./data").unwrap();
@@ -190,27 +188,22 @@ mod tests {
 
     #[tokio::test]
     async fn test_upload() {
-        let file = std::fs::read("./data/c.bat").unwrap();
-        let length = file.len() as u64;
+        use buaa_api::api::cloud::UploadArgs;
+        use std::fs::File;
+
+        init_log();
+
+        let mut reader = File::open("./data/file.zip").unwrap();
+        let args = UploadArgs::from_reader(&mut reader, "file.zip".into()).unwrap();
 
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
 
-        let filename = "c.bat";
-        let res = cloud
-            .upload_auth(&user_dir, filename, length)
-            .await
-            .unwrap();
+        let file = std::fs::read("./data/file.zip").unwrap();
 
-        println!("Upload Args: {:?}", &res);
-
-        #[cfg(feature = "multipart")]
-        {
-            let part = buaa_api::exports::Part::bytes(file);
-            cloud.upload(res, part).await.unwrap();
-        }
+        cloud.upload_small(&args, &user_dir, file).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
