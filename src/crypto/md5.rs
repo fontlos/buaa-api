@@ -120,7 +120,7 @@ impl Md5 {
     }
 
     /// Finalize the MD5 hash computation and return the digest
-    pub fn finalize(mut self) -> [u8; 16] {
+    pub fn finalize(&mut self) -> [u8; 16] {
         let mut bits = [0u8; 8];
         bits.copy_from_slice(&(self.count[0].to_le_bytes()));
 

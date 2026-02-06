@@ -96,7 +96,7 @@ impl Sha1 {
     }
 
     /// Finalize the SHA1 hash computation and return the digest
-    pub fn finalize(mut self) -> [u8; 20] {
+    pub fn finalize(&mut self) -> [u8; 20] {
         let mut bits = [0u8; 8];
         bits.copy_from_slice(&(self.count[0].to_be_bytes()));
 

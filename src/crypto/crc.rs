@@ -45,7 +45,7 @@ impl Crc32 {
     }
 
     /// Finalize the CRC32 computation and return the digest.
-    pub fn finalize(self) -> u32 {
+    pub fn finalize(&self) -> u32 {
         !self.value
     }
 
