@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use std::fmt::Display;
+use std::io::{Read, Seek, SeekFrom};
 
 use crate::crypto::{self, crc, md5};
 use crate::error::Error;
@@ -31,11 +32,10 @@ pub(super) fn res_error(err: &'static str, raw: &[u8], source: Option<&dyn Displ
         if let Some(source) = source {
             log::error!("Error Source: {}", source);
         }
+        // TODO: Server 错误必然发生在 universal_request 阶段, 这里只可能发生解析错误
         // 尝试结构化错误
-        // code 字段即使返回错误码, 也没什么查阅 Anyshare 文档的意义, 应该由我自己排查
+        // code 前三位标准 HTTP 状态码, 后三位自定义错误码, 用户不应该去看 Anyshare 的文档而应由我排查
         // message 字段基本就是 cause 字段的省略版
-        // 只有第一句话是有用的, 后面的是服务器内部报错行数与我们无关
-        // TODO: 截取是不靠谱的
         let cause = utils::parse_by_tag(&raw, "\"cause\":\"", "\"");
         if let Some(cause) = cause {
             log::info!("Server Cause: {}", cause);
@@ -375,7 +375,10 @@ impl Serialize for Permission {
 }
 
 /// Upload arguments
+#[derive(Debug)]
 pub struct UploadArgs {
+    /// Target directory
+    pub dir: String,
     /// File name
     pub name: String,
     /// File length
@@ -389,20 +392,83 @@ pub struct UploadArgs {
 }
 
 impl UploadArgs {
+    /// # Create empty UploadArgs
+    pub fn new(dir: &str, name: &str) -> Self {
+        Self {
+            dir: dir.to_string(),
+            name: name.to_string(),
+            length: 0,
+            slice_md5: String::new(),
+            md5: String::new(),
+            crc32: String::new(),
+        }
+    }
+
+    // 对于普通上传, 尽管不需要校验段 MD5, 这 200KB 的计算空转也无伤大雅
     /// # Create UploadArgs from reader.
     ///
-    /// **Note**: CPU intensive (MD5), please run in blocking task.
-    pub fn from_reader<R>(reader: &mut R, name: String) -> crate::Result<Self>
+    /// **Note**: CPU intensive task (MD5). But only first 200KiB
+    pub fn compute_mini<R>(&mut self, reader: &mut R) -> crate::Result<()>
     where
-        R: std::io::Read,
+        R: Read + Seek,
     {
+        // 先获取总长度
+        let length = reader
+            .seek(SeekFrom::End(0))
+            .map_err(|_| Error::io("Failed to get length"))?;
+        // 回退到文件开头
+        reader
+            .seek(SeekFrom::Start(0))
+            .map_err(|_| Error::io("Failed rewind reader"))?;
+        let mut md5_hasher = md5::Md5::new();
+        let mut buffer = [0u8; 8192];
+
+        // 取前 200KB 计算检验段 MD5
+        const SLICE_SIZE: u64 = 200 * 1024; // 204800 bytes
+        let mut len = 0u64;
+        loop {
+            let n = reader
+                .read(&mut buffer)
+                .map_err(|_| Error::io("Read Failed"))?;
+            if n == 0 {
+                break;
+            }
+            md5_hasher.update(&buffer[..n]);
+            len += n as u64;
+            if len >= SLICE_SIZE {
+                break;
+            }
+        }
+        let md5_hash = md5_hasher.finalize();
+        let slice_md5 = crypto::bytes2hex(&md5_hash);
+        self.length = length;
+        self.slice_md5 = slice_md5;
+        // 回退到文件开头
+        reader
+            .seek(SeekFrom::Start(0))
+            .map_err(|_| Error::io("Failed rewind reader"))?;
+        Ok(())
+    }
+
+    /// # Create UploadArgs from reader.
+    ///
+    /// **Note**: CPU intensive task (MD5)
+    pub fn compute_full<R>(&mut self, reader: &mut R) -> crate::Result<()>
+    where
+        R: Read + Seek,
+    {
+        // 先获取总长度
+        let length = reader
+            .seek(SeekFrom::End(0))
+            .map_err(|_| Error::io("Failed to get length"))?;
+        // 回退到文件开头
+        reader
+            .seek(SeekFrom::Start(0))
+            .map_err(|_| Error::io("Failed rewind reader"))?;
         let mut md5_hasher = md5::Md5::new();
         let mut crc32_hasher = crc::Crc32::new();
         let mut buffer = [0u8; 8192];
 
-        let mut length = 0u64;
-        // 取前 200KB 计算检验段 MD5
-        let mut slice_md5 = String::new();
         loop {
             let n = reader
                 .read(&mut buffer)
@@ -412,26 +478,20 @@ impl UploadArgs {
             }
             md5_hasher.update(&buffer[..n]);
             crc32_hasher.update(&buffer[..n]);
-            if length == 200 * 1024 {
-                let slice_hash = md5_hasher.finalize();
-                slice_md5 = crypto::bytes2hex(&slice_hash);
-            }
-            length += n as u64;
         }
+
         let md5_hash = md5_hasher.finalize();
         let crc32_hash = crc32_hasher.finalize();
         let md5 = crypto::bytes2hex(&md5_hash);
         let crc32 = format!("{:08x}", crc32_hash);
-        if slice_md5.is_empty() {
-            slice_md5 = crypto::bytes2hex(&md5_hash);
-        }
-        Ok(UploadArgs {
-            name,
-            length,
-            slice_md5,
-            md5,
-            crc32,
-        })
+        self.length = length;
+        self.md5 = md5;
+        self.crc32 = crc32;
+        // 回退到文件开头
+        reader
+            .seek(SeekFrom::Start(0))
+            .map_err(|_| Error::io("Failed rewind reader"))?;
+        Ok(())
     }
 }
 
