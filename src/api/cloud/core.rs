@@ -138,7 +138,7 @@ impl super::CloudApi {
         // 参数层错误如果造成状态码错误会在这里发生
         if !status.is_success() {
             let bytes = res.bytes().await?;
-            let err = res_error("Operation failed", &bytes, Some(status));
+            let err = res_error("Operation failed", &bytes, Some(&status));
             return Err(err);
         }
 

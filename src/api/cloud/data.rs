@@ -1,5 +1,8 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
+use std::fmt::Display;
+
+use crate::crypto::{self, crc, md5};
 use crate::error::Error;
 use crate::utils;
 
@@ -16,15 +19,14 @@ pub(super) struct Res<T>(T);
 impl<'de, T: Deserialize<'de>> Res<T> {
     /// 当响应正确时只有目标字段
     pub(super) fn parse(v: &'de [u8], err: &'static str) -> crate::Result<T> {
-        let res: Res<T> =
-            serde_json::from_slice(&v).map_err(|e| res_error(err, v, Some(e)))?;
+        let res: Res<T> = serde_json::from_slice(&v).map_err(|e| res_error(err, v, Some(&e)))?;
         Ok(res.0)
     }
 }
 
 /// 尝试从来自服务器的异常响应 JSON 解析错误. 设计好的 API 理应不会再触发这个函数
 #[cold]
-pub(super) fn res_error(err: &'static str, raw: &[u8], source: Option<impl std::fmt::Display>) -> Error {
+pub(super) fn res_error(err: &'static str, raw: &[u8], source: Option<&dyn Display>) -> Error {
     if log::log_enabled!(log::Level::Error) {
         if let Some(source) = source {
             log::error!("Error Source: {}", source);
@@ -33,7 +35,8 @@ pub(super) fn res_error(err: &'static str, raw: &[u8], source: Option<impl std::
         // code 字段即使返回错误码, 也没什么查阅 Anyshare 文档的意义, 应该由我自己排查
         // message 字段基本就是 cause 字段的省略版
         // 只有第一句话是有用的, 后面的是服务器内部报错行数与我们无关
-        let cause = utils::parse_by_tag(&raw, "\"cause\":\"", "。");
+        // TODO: 截取是不靠谱的
+        let cause = utils::parse_by_tag(&raw, "\"cause\":\"", "\"");
         if let Some(cause) = cause {
             log::info!("Server Cause: {}", cause);
         } else {
@@ -371,66 +374,70 @@ impl Serialize for Permission {
     }
 }
 
-/// Args for real upload
-#[derive(Debug, Deserialize)]
+/// Upload arguments
 pub struct UploadArgs {
-    /// Upload request authorization
-    #[serde(deserialize_with = "deserialize_upload_args")]
-    #[serde(rename = "authrequest")]
-    pub auth: UploadAuth,
-    /// Uploaded item ID
-    #[serde(rename = "docid")]
-    pub id: String,
-    /// Uploaded item hash
-    #[serde(rename = "rev")]
-    pub hash: String,
-    // name没有解析的必要
+    /// File name
+    pub name: String,
+    /// File length
+    pub length: u64,
+    /// Slice MD5 (first 200KB)
+    pub slice_md5: String,
+    /// Full MD5
+    pub md5: String,
+    /// Full CRC32
+    pub crc32: String,
 }
 
-/// Upload request authorization
-#[derive(Debug, Deserialize)]
-pub struct UploadAuth {
-    /// URL
-    pub url: String,
-    /// Policy
-    pub policy: String,
-    /// Signature
-    pub signature: String,
-    /// Key
-    pub key: String,
-}
+impl UploadArgs {
+    /// # Create UploadArgs from reader.
+    ///
+    /// **Note**: CPU intensive (MD5), please run in blocking task.
+    pub fn from_reader<R>(reader: &mut R, name: String) -> crate::Result<Self>
+    where
+        R: std::io::Read,
+    {
+        let mut md5_hasher = md5::Md5::new();
+        let mut crc32_hasher = crc::Crc32::new();
+        let mut buffer = [0u8; 8192];
 
-fn deserialize_upload_args<'de, D>(deserializer: D) -> Result<UploadAuth, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let value: Vec<String> = Deserialize::deserialize(deserializer)?;
-    if value.len() != 7 {
-        return Err(serde::de::Error::custom("Invalid upload args format"));
+        let mut length = 0u64;
+        // 取前 200KB 计算检验段 MD5
+        let mut slice_md5 = String::new();
+        loop {
+            let n = reader
+                .read(&mut buffer)
+                .map_err(|_| Error::io("Read Failed"))?;
+            if n == 0 {
+                break;
+            }
+            md5_hasher.update(&buffer[..n]);
+            crc32_hasher.update(&buffer[..n]);
+            if length == 200 * 1024 {
+                let slice_hash = md5_hasher.finalize();
+                slice_md5 = crypto::bytes2hex(&slice_hash);
+            }
+            length += n as u64;
+        }
+        let md5_hash = md5_hasher.finalize();
+        let crc32_hash = crc32_hasher.finalize();
+        let md5 = crypto::bytes2hex(&md5_hash);
+        let crc32 = format!("{:08x}", crc32_hash);
+        if slice_md5.is_empty() {
+            slice_md5 = crypto::bytes2hex(&md5_hash);
+        }
+        Ok(UploadArgs {
+            name,
+            length,
+            slice_md5,
+            md5,
+            crc32,
+        })
     }
-    let url = value
-        .get(1)
-        .ok_or_else(|| serde::de::Error::custom("missing field `url`"))?
-        .to_string();
-    let policy = value
-        .get(4)
-        .and_then(|s| s.split_once(": ").map(|(_, v)| v))
-        .ok_or_else(|| serde::de::Error::custom("missing field `policy`"))?
-        .to_string();
-    let signature = value
-        .get(5)
-        .and_then(|s| s.split_once(": ").map(|(_, v)| v))
-        .ok_or_else(|| serde::de::Error::custom("missing field `signature`"))?
-        .to_string();
-    let key = value
-        .get(6)
-        .and_then(|s| s.split_once(": ").map(|(_, v)| v))
-        .ok_or_else(|| serde::de::Error::custom("missing field `key`"))?
-        .to_string();
-    Ok(UploadAuth {
-        url,
-        policy,
-        signature,
-        key,
-    })
+}
+
+#[derive(Debug, Deserialize)]
+pub(super) struct UploadAuth {
+    pub authrequest: Vec<String>,
+    pub docid: String,
+    pub rev: String,
 }
