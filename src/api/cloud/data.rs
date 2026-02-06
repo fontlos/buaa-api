@@ -107,9 +107,8 @@ pub struct Item {
     pub id: String,
     /// Item name
     pub name: String,
-    /// Item hash
-    #[serde(rename = "rev")]
-    pub hash: String,
+    /// Item revision
+    pub rev: String,
     /// Item size (in bytes, -1 for directories)
     pub size: i64,
 }
@@ -124,16 +123,17 @@ impl Item {
     pub fn to_share(&self) -> Share {
         let kind = if self.is_dir() { "folder" } else { "file" };
         Share {
-            id: None,
+            // 只在反序列化时用到, 所以永远不会被赋值
+            id: String::new(),
             item: ShareItem {
                 id: Some(self.id.clone()),
                 kind: Some(kind),
                 permission: Permission::new(),
             },
             title: self.name.clone(),
-            expires_at: "1970-01-01T08:00:00+08:00".to_string(),
+            expiration: "1970-01-01T08:00:00+08:00".to_string(),
             password: "".to_string(),
-            limited_times: -1,
+            limit: -1,
         }
     }
 }
@@ -164,9 +164,8 @@ pub struct CreateRes {
     /// Item ID
     #[serde(rename = "docid")]
     pub id: String,
-    /// Item hash
-    #[serde(rename = "rev")]
-    pub hash: String,
+    /// Item revision
+    pub rev: String,
 }
 
 /// Response for move operation
@@ -208,44 +207,23 @@ pub struct RecycleItem {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Share {
     // 只在反序列化时用到的字段
-    #[serde(skip_serializing_if = "Option::is_none")]
-    id: Option<String>,
+    /// Share ID. For share link
+    #[serde(skip_serializing)]
+    pub id: String,
     item: ShareItem,
-    title: String,
-    expires_at: String,
-    password: String,
-    limited_times: i64,
+    /// Share link title
+    pub title: String,
+    /// Share link expiration time, "1970-01-01T08:00:00+08:00" for never expire
+    #[serde(rename = "expires_at")]
+    pub expiration: String,
+    /// Share link password.
+    pub password: String,
+    /// Share link limited times, -1 for unlimited
+    #[serde(rename = "limited_times")]
+    pub limit: i64,
 }
 
 impl Share {
-    /// Set share link title
-    pub fn set_title(mut self, title: &str) -> Self {
-        self.title = title.to_string();
-        self
-    }
-
-    /// Set share link password. Four characters.
-    pub fn set_password(mut self, password: &str) -> Self {
-        self.password = password.to_string();
-        self
-    }
-
-    /// Set share link expiration time
-    ///
-    /// Format: "YYYY-MM-DDTHH:MM:SS+08:00"
-    ///
-    /// Default is "1970-01-01T08:00:00+08:00" (never expire)
-    pub fn set_expire_time(mut self, expire: &str) -> Self {
-        self.expires_at = expire.to_string();
-        self
-    }
-
-    /// Set share link limited times
-    pub fn set_limited_times(mut self, times: i64) -> Self {
-        self.limited_times = times;
-        self
-    }
-
     /// Enable preview permission
     pub fn enable_preview(mut self) -> Self {
         self.item.permission.0 |= Permission::PREVIEW;
