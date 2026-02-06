@@ -99,7 +99,6 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        println!("Create Dir Response: {}", String::from_utf8_lossy(&bytes));
         let res: CreateRes = Res::parse(&bytes, "Can not create dir")?;
         Ok(res)
     }
@@ -371,6 +370,8 @@ impl super::CloudApi {
     }
 
     /// # Check whether can upload fast
+    ///
+    /// - Input: Need call [UploadArgs::compute_mini]
     #[cfg(feature = "multipart")]
     pub async fn upload_fast_check(&self, args: &UploadArgs) -> crate::Result<bool> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/predupload";
@@ -387,15 +388,14 @@ impl super::CloudApi {
 
     /// # Upload file fast
     ///
-    /// - Input:
-    ///     - id: Destination directory [Item::id]
+    /// - Input: Need call [UploadArgs::compute_full]
     #[cfg(feature = "multipart")]
-    pub async fn upload_fast(&self, args: &UploadArgs, dir: &str) -> crate::Result<()> {
+    pub async fn upload_fast(&self, args: &UploadArgs) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/dupload";
         let json = serde_json::json!({
             "client_mtime": utils::get_time_millis(),
             "crc32": args.crc32,
-            "docid": dir,
+            "docid": args.dir,
             "length": args.length,
             "md5": args.md5,
             "name": args.name,
@@ -404,7 +404,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let success = utils::parse_by_tag(&bytes, "\"success\":", ",")
+        let success = utils::parse_by_tag(&bytes, "\"success\":", "}")
             .ok_or_else(|| res_error("Can not upload fast", &bytes, Some(&"No 'success' field")))?;
         if success != "true" {
             return Err(res_error("Can not upload fast", &bytes, None));
@@ -414,21 +414,15 @@ impl super::CloudApi {
 
     /// # Upload small file
     ///
-    /// - Input:
-    ///     - id: Destination directory [Item::id]
+    /// - Input: Need call [UploadArgs::compute_mini]
     ///
     /// **Note**: File size should be less than 5 GiB. Recommended for files smaller than 100 MiB.
     #[cfg(feature = "multipart")]
-    pub async fn upload_small(
-        &self,
-        args: &UploadArgs,
-        dir: &str,
-        body: Vec<u8>,
-    ) -> crate::Result<()> {
+    pub async fn upload_small(&self, args: &UploadArgs, body: Vec<u8>) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osbeginupload";
         let json = serde_json::json!({
             "client_mtime": utils::get_time_millis(),
-            "docid": dir,
+            "docid": args.dir,
             "length": args.length,
             "name": args.name,
             "ondup": 1,

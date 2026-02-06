@@ -169,18 +169,20 @@ mod tests {
 
         init_log();
 
-        let mut reader = File::open("./data/file.zip").unwrap();
-        let args = UploadArgs::from_reader(&mut reader, "file.zip".into()).unwrap();
-
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
 
+        let mut reader = File::open("./data/file.zip").unwrap();
+        let mut args = UploadArgs::new(&user_dir, "file.zip");
+        args.compute_mini(&mut reader).unwrap();
+
         let res = cloud.upload_fast_check(&args).await.unwrap();
         println!("Can upload fast: {}", res);
         if res {
-            cloud.upload_fast(&args, &user_dir).await.unwrap();
+            args.compute_full(&mut reader).unwrap();
+            cloud.upload_fast(&args).await.unwrap();
         }
 
         context.save_auth("./data").unwrap();
@@ -190,20 +192,25 @@ mod tests {
     async fn test_upload() {
         use buaa_api::api::cloud::UploadArgs;
         use std::fs::File;
+        use std::io::Read;
 
         init_log();
-
-        let mut reader = File::open("./data/file.zip").unwrap();
-        let args = UploadArgs::from_reader(&mut reader, "file.zip".into()).unwrap();
 
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir_id().await.unwrap();
 
-        let file = std::fs::read("./data/file.zip").unwrap();
+        let mut args = UploadArgs::new(&user_dir, "file.zip");
+        let mut reader = File::open("./data/file.zip").unwrap();
+        args.compute_mini(&mut reader).unwrap();
 
-        cloud.upload_small(&args, &user_dir, file).await.unwrap();
+        println!("Upload Args: {args:#?}");
+
+        let mut body = Vec::new();
+        reader.read_to_end(&mut body).unwrap();
+
+        cloud.upload_small(&args, body).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
