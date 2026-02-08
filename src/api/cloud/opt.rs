@@ -6,7 +6,7 @@ use crate::utils;
 
 use super::data::{
     CreateRes, Dir, Item, MoveRes, Payload, RecycleDir, Res, Root, RootDir, Share, SizeRes,
-    UploadArgs, UploadAuth, res_error,
+    UploadArgs, UploadAuth, parse_error,
 };
 
 impl super::CloudApi {
@@ -16,9 +16,9 @@ impl super::CloudApi {
         let query = root.as_query();
         let payload = Payload::Query(&query);
         let bytes = self.universal_request(Method::GET, url, &payload).await?;
-        // 参数错误都会在通用请求层直接触发 400 错误, 形如 {"cause":"...","code":400000000,"message":"..."}
         // 纯数组无法放进 Res 结构体
-        let res = serde_json::from_slice::<Vec<RootDir>>(&bytes)?;
+        let res = serde_json::from_slice::<Vec<RootDir>>(&bytes)
+            .map_err(|e| parse_error("Can not get root dir", &bytes, &e))?;
         Ok(res)
     }
 
@@ -29,7 +29,7 @@ impl super::CloudApi {
             .into_iter()
             .next()
             .map(|item| item.id)
-            .ok_or_else(|| crate::Error::server("No user dir found").with_label("Cloud"))?;
+            .ok_or_else(|| Error::server("No user dir found").with_label("Cloud"))?;
         Ok(id)
     }
 
@@ -45,7 +45,6 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        // 参数错误都会在通用请求层直接触发 400 错误, 形如 {"cause":"DocID 格式错误"}
         let res: Dir = Res::parse(&bytes, "Can not get dir list")?;
         Ok(res)
     }
@@ -81,7 +80,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, "\"name\":\"", "\"")
-            .ok_or_else(|| Error::server("Can not get suggest name").with_label("Cloud"))?;
+            .ok_or_else(|| parse_error("Can not get suggest name", &bytes, &"No 'name' field"))?;
         Ok(res.to_string())
     }
 
@@ -99,6 +98,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        // TODO: 移除这个结构仅保留 ID
         let res: CreateRes = Res::parse(&bytes, "Can not create dir")?;
         Ok(res)
     }
@@ -137,6 +137,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        // TODO: 移除这个结构仅保留 ID
         let res: MoveRes = Res::parse(&bytes, "Can not move item")?;
         Ok(res.id)
     }
@@ -303,8 +304,10 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = utils::parse_by_tag(&bytes, ",\"", "\"")
-            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
+        // 这是 authrequest 数组中的第二个元素
+        let res = utils::parse_by_tag(&bytes, ",\"", "\"").ok_or_else(|| {
+            parse_error("Can not get download url", &bytes, &"No valid URL found")
+        })?;
         Ok(res.to_string())
     }
 
@@ -332,8 +335,14 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let raw_url = utils::parse_by_tag(&bytes, "package_address\":\"", "\"")
-            .ok_or_else(|| Error::server("Can not get download url").with_label("Cloud"))?;
+        let raw_url =
+            utils::parse_by_tag(&bytes, "\"package_address\":\"", "\"").ok_or_else(|| {
+                parse_error(
+                    "Can not get download url",
+                    &bytes,
+                    &"No 'package_address' field",
+                )
+            })?;
 
         // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
         let token = self.cred.load().value::<crate::api::Cloud>()?;
@@ -382,7 +391,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let matched = utils::parse_by_tag(&bytes, "\"match\":", "}")
-            .ok_or_else(|| res_error("Can not check hash", &bytes, None))?;
+            .ok_or_else(|| parse_error("Can not check hash", &bytes, &"No 'match' field"))?;
         Ok(matched == "true")
     }
 
@@ -405,9 +414,9 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let success = utils::parse_by_tag(&bytes, "\"success\":", "}")
-            .ok_or_else(|| res_error("Can not upload fast", &bytes, Some(&"No 'success' field")))?;
+            .ok_or_else(|| parse_error("Can not upload fast", &bytes, &"No 'success' field"))?;
         if success != "true" {
-            return Err(res_error("Can not upload fast", &bytes, None));
+            return Err(Error::server("Can not upload fast").with_label("Cloud"));
         }
         Ok(())
     }
@@ -452,10 +461,8 @@ impl super::CloudApi {
             "rev": auth.rev,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        // TODO: 这些字段没有用, 但暂时无法在不解析的情况下检查是否错误
-        let _ = utils::parse_by_tag(&bytes, "\"editor\":\"", "\"")
-            .ok_or_else(|| res_error("Can not finalize upload", &bytes, None))?;
+        // editor 等无用字段
+        let _bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         Ok(())
     }

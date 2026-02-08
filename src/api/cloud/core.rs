@@ -5,8 +5,9 @@ use serde::Serialize;
 use crate::api::{Cloud, Sso};
 use crate::error::Error;
 use crate::store::cookies::Cookie;
+use crate::utils;
 
-use super::data::{Payload, res_error};
+use super::data::Payload;
 
 // 手动登录用 RSA 密钥, 但我们使用 SSO 登录
 // From https://bhpan.buaa.edu.cn/anyshare/static/js/main.xxx.chunk.js
@@ -135,11 +136,24 @@ impl super::CloudApi {
         let res = req.send().await?;
 
         let status = res.status();
-        // 参数层错误如果造成状态码错误会在这里发生
+        // 状态码非 200 系异常 JSON 必然在这里产生
         if !status.is_success() {
             let bytes = res.bytes().await?;
-            let err = res_error("Operation failed", &bytes, Some(&status));
-            return Err(err);
+            if log::log_enabled!(log::Level::Error) {
+                log::info!("Status Code: {}", status);
+                // 尝试结构化错误
+                // code 字段没有查看 Anyshare 文档的必要性
+                // message 字段基本就是 cause 字段的省略版
+                let cause = utils::parse_by_tag(&bytes, "\"cause\":\"", "\"");
+                if let Some(cause) = cause {
+                    log::info!("Server Cause: {}", cause);
+                } else {
+                    // 这几乎不会发生
+                    let raw = String::from_utf8_lossy(&bytes);
+                    log::info!("Raw Response: {}", raw);
+                }
+            }
+            return Err(Error::server("Operation failed").with_label("Cloud"));
         }
 
         cred.refresh::<Cloud>();
