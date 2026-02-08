@@ -5,7 +5,6 @@ use std::io::{Read, Seek, SeekFrom};
 
 use crate::crypto::{self, crc, md5};
 use crate::error::Error;
-use crate::utils;
 
 pub(super) enum Payload<'a, P: Serialize + ?Sized> {
     Query(&'a P),
@@ -20,31 +19,20 @@ pub(super) struct Res<T>(T);
 impl<'de, T: Deserialize<'de>> Res<T> {
     /// 当响应正确时只有目标字段
     pub(super) fn parse(v: &'de [u8], err: &'static str) -> crate::Result<T> {
-        let res: Res<T> = serde_json::from_slice(&v).map_err(|e| res_error(err, v, Some(&e)))?;
+        let res: Res<T> = serde_json::from_slice(&v).map_err(|e| parse_error(err, v, &e))?;
         Ok(res.0)
     }
 }
 
 /// 尝试从来自服务器的异常响应 JSON 解析错误. 设计好的 API 理应不会再触发这个函数
 #[cold]
-pub(super) fn res_error(err: &'static str, raw: &[u8], source: Option<&dyn Display>) -> Error {
+pub(super) fn parse_error(err: &'static str, raw: &[u8], source: &dyn Display) -> Error {
     if log::log_enabled!(log::Level::Error) {
-        if let Some(source) = source {
-            log::error!("Error Source: {}", source);
-        }
-        // TODO: Server 错误必然发生在 universal_request 阶段, 这里只可能发生解析错误
-        // 尝试结构化错误
-        // code 前三位标准 HTTP 状态码, 后三位自定义错误码, 用户不应该去看 Anyshare 的文档而应由我排查
-        // message 字段基本就是 cause 字段的省略版
-        let cause = utils::parse_by_tag(&raw, "\"cause\":\"", "\"");
-        if let Some(cause) = cause {
-            log::info!("Server Cause: {}", cause);
-        } else {
-            let raw = String::from_utf8_lossy(&raw);
-            log::info!("Raw Response: {}", raw);
-        }
+        let raw = String::from_utf8_lossy(&raw);
+        log::error!("Error Source: {}", source);
+        log::info!("Raw Response: {}", raw);
     }
-    Error::server(err).with_label("Cloud")
+    Error::parse(err).with_label("Cloud")
 }
 
 /// Root directory type

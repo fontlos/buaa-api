@@ -127,6 +127,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_share() {
+        init_log();
+
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
