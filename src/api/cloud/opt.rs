@@ -5,7 +5,7 @@ use crate::error::Error;
 use crate::utils;
 
 use super::data::{
-    Dir, Item, Payload, RecycleDir, Res, Root, RootDir, Share, SizeRes, UploadArgs, UploadAuth,
+    Dir, Item, Payload, Res, Root, RootDir, Share, SizeRes, UploadArgs, UploadAuth,
     parse_error,
 };
 
@@ -180,23 +180,25 @@ impl super::CloudApi {
     }
 
     /// # List recycle bin contents of user's personal directory
-    pub async fn list_recycle(&self) -> crate::Result<RecycleDir> {
+    pub async fn list_recycle(&self) -> crate::Result<Dir> {
         let id = self.get_user_dir_id().await?;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
         let json = serde_json::json!({
             "by": "time", // name/size
             "docid": id,
-            "sort": "desc" // asc
+            "limit": 100,
+            "sort": "desc", // asc
+            "start": 0
         });
         let payload = Payload::Json(&json);
         let res = self.universal_request(Method::POST, url, &payload).await?;
-        let res: RecycleDir = Res::parse(&res, "Can not get recycle dir")?;
+        let res: Dir = Res::parse(&res, "Can not get recycle dir")?;
         Ok(res)
     }
 
     /// # Delete an item forever in recycle bin
     ///
-    /// - Input: [RecycleItem::id]
+    /// - Input: [Item::id]
     ///
     /// **Note**: Delete multiple files need call multiple times.
     pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
@@ -211,7 +213,7 @@ impl super::CloudApi {
 
     /// # Restore an item from recycle bin
     ///
-    /// - Input: [RecycleItem::id]
+    /// - Input: [Item::id]
     ///
     /// **Note**: Restore multiple files need call multiple times.
     pub async fn restore_recycle_item(&self, id: &str) -> crate::Result<String> {

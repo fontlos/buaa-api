@@ -84,7 +84,9 @@ pub struct Dir {
 /// File or Directory info
 #[derive(Debug, Deserialize)]
 pub struct Item {
-    /// Creation time (timestamp)
+    // 对于回收站, 这个字段不存在
+    /// Creation time (timestamp). For recycle item, this field is missing
+    #[serde(default)]
     #[serde(rename = "create_time")]
     pub create: u64,
     /// Modification time (timestamp)
@@ -95,8 +97,13 @@ pub struct Item {
     pub id: String,
     /// Item name
     pub name: String,
-    /// Item revision
-    pub rev: String,
+    // 我们不信任文件版本信息, 理应每次获取最新. 而且这个字段几乎没有用处. 服务器本身并不能返回文件版本列表.
+    // 即使使用其来回退或者预览历史版本, 也需要客户端手动缓存版本信息, 而这过于复杂, 需要单个字段仅新增,
+    // 而其他字段正常随版本更新而更新
+    // 对于回收站, 这个字段不存在
+    // Item revision, For recycle item, this field is missing
+    // #[serde(default)]
+    // pub rev: String,
     /// Item size (in bytes, -1 for directories)
     pub size: i64,
 }
@@ -137,30 +144,6 @@ pub struct SizeRes {
     pub file: i64,
     /// Item size (in bytes)
     #[serde(rename = "totalsize")]
-    pub size: i64,
-}
-
-/// Recycle Directory info
-#[derive(Debug, Deserialize)]
-pub struct RecycleDir {
-    /// Subdirectories
-    pub dirs: Vec<RecycleItem>,
-    /// Files
-    pub files: Vec<RecycleItem>,
-}
-
-/// Recycle File or Directory info
-#[derive(Debug, Deserialize)]
-pub struct RecycleItem {
-    /// Modification time (timestamp)
-    #[serde(rename = "modified")]
-    pub modify: u64,
-    /// Item ID
-    #[serde(rename = "docid")]
-    pub id: String,
-    /// Item name
-    pub name: String,
-    /// Item size (in bytes, -1 for directories)
     pub size: i64,
 }
 
