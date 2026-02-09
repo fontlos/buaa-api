@@ -5,8 +5,8 @@ use crate::error::Error;
 use crate::utils;
 
 use super::data::{
-    CreateRes, Dir, Item, MoveRes, Payload, RecycleDir, Res, Root, RootDir, Share, SizeRes,
-    UploadArgs, UploadAuth, parse_error,
+    Dir, Item, Payload, RecycleDir, Res, Root, RootDir, Share, SizeRes, UploadArgs, UploadAuth,
+    parse_error,
 };
 
 impl super::CloudApi {
@@ -89,7 +89,7 @@ impl super::CloudApi {
     /// - Input:
     ///     - dir: Parent directory [Item::id]
     ///     - name: Desired directory name
-    pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<CreateRes> {
+    pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
         let json = serde_json::json!({
             "docid": dir,
@@ -98,9 +98,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        // TODO: 移除这个结构仅保留 ID
-        let res: CreateRes = Res::parse(&bytes, "Can not create dir")?;
-        Ok(res)
+        let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
+            .ok_or_else(|| parse_error("Can not create dir", &bytes, &"No 'docid' field"))?;
+        Ok(res.to_string())
     }
 
     // 重命名不存在的文件会在上层触发 400 错误
@@ -137,9 +137,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        // TODO: 移除这个结构仅保留 ID
-        let res: MoveRes = Res::parse(&bytes, "Can not move item")?;
-        Ok(res.id)
+        let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
+            .ok_or_else(|| parse_error("Can not move item", &bytes, &"No 'docid' field"))?;
+        Ok(res.to_string())
     }
 
     /// # Copy an item [Item::id]
@@ -158,8 +158,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res: MoveRes = Res::parse(&bytes, "Can not copy item")?;
-        Ok(res.id)
+        let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
+            .ok_or_else(|| parse_error("Can not copy item", &bytes, &"No 'docid' field"))?;
+        Ok(res.to_string())
     }
 
     // 重复删掉文件也不会报错
@@ -222,14 +223,10 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
-        #[derive(serde::Deserialize)]
-        struct _Res {
-            #[serde(rename = "docid")]
-            id: String,
-        }
-
-        let res: _Res = Res::parse(&bytes, "Can not restore recycle item")?;
-        Ok(res.id)
+        let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"").ok_or_else(|| {
+            parse_error("Can not restore recycle item", &bytes, &"No 'docid' field")
+        })?;
+        Ok(res.to_string())
     }
 
     // 传入不存在的 id 会在上层触发 400 错误
@@ -255,17 +252,11 @@ impl super::CloudApi {
     /// **Note**: The share link can be formed as `https://bhpan.buaa.edu.cn/link/{ID}`.
     pub async fn share_item(&self, share: &Share) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous";
-
         let payload = Payload::Json(&share);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-
-        #[derive(serde::Deserialize)]
-        struct _Res {
-            id: String,
-        }
-
-        let res: _Res = Res::parse(&bytes, "Can not create share link")?;
-        Ok(res.id)
+        let res = utils::parse_by_tag(&bytes, "\"id\":\"", "\"")
+            .ok_or_else(|| parse_error("Can not create share link", &bytes, &"No 'id' field"))?;
+        Ok(res.to_string())
     }
 
     /// # Update share
@@ -463,7 +454,6 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         // editor 等无用字段
         let _bytes = self.universal_request(Method::POST, url, &payload).await?;
-
         Ok(())
     }
 }

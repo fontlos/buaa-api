@@ -140,30 +140,6 @@ pub struct SizeRes {
     pub size: i64,
 }
 
-/// Response for create directory
-#[derive(Debug, Deserialize)]
-pub struct CreateRes {
-    /// Creation time (timestamp)
-    #[serde(rename = "create_time")]
-    pub create: u64,
-    /// Modification time (timestamp)
-    #[serde(rename = "modified")]
-    pub modify: u64,
-    /// Item ID
-    #[serde(rename = "docid")]
-    pub id: String,
-    /// Item revision
-    pub rev: String,
-}
-
-/// Response for move operation
-#[derive(Debug, Deserialize)]
-pub(crate) struct MoveRes {
-    /// Moved item ID
-    #[serde(rename = "docid")]
-    pub id: String,
-}
-
 /// Recycle Directory info
 #[derive(Debug, Deserialize)]
 pub struct RecycleDir {
