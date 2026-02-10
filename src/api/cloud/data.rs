@@ -72,6 +72,19 @@ pub struct RootDir {
     pub name: String,
 }
 
+impl RootDir {
+    /// Convert to [Item] with size -1 (indicating a directory)
+    pub fn into_item(self) -> Item {
+        Item {
+            create: 0,
+            modify: 0,
+            id: self.id,
+            name: self.name,
+            size: -1,
+        }
+    }
+}
+
 /// Directory info
 #[derive(Debug, Deserialize)]
 pub struct Dir {
@@ -135,7 +148,7 @@ impl Item {
 
 /// Response for item size
 #[derive(Debug, Deserialize)]
-pub struct SizeRes {
+pub struct Size {
     /// Number of directories
     #[serde(rename = "dirnum")]
     pub dir: i64,
@@ -318,9 +331,9 @@ pub struct UploadArgs {
 
 impl UploadArgs {
     /// # Create empty UploadArgs
-    pub fn new(dir: &str, name: &str) -> Self {
+    pub fn new(dir: &Item, name: &str) -> Self {
         Self {
-            dir: dir.to_string(),
+            dir: dir.id.clone(),
             name: name.to_string(),
             length: 0,
             slice_md5: String::new(),
