@@ -24,7 +24,7 @@ mod tests {
 
         let cloud = context.cloud();
 
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
         println!("List: {list:#?}");
         let size = cloud.get_item_size(&user_dir).await.unwrap();
@@ -38,7 +38,7 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let name = cloud
             .get_suggest_name(&user_dir, "新建文件夹")
             .await
@@ -53,10 +53,10 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        cloud.rename_item(&list.dirs[0].id, "dir").await.unwrap();
+        cloud.rename_item(&list.dirs[0], "dir").await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
@@ -66,12 +66,12 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
         let dir = &list.dirs[0];
         let file = &list.files[0];
 
-        let res = cloud.move_item(&dir.id, &file.id).await.unwrap();
+        let res = cloud.move_item(&file, &dir).await.unwrap();
 
         println!("Moved item id: {}", res);
 
@@ -83,12 +83,12 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
         let dir = &list.dirs[0];
         let file = &list.files[0];
 
-        let res = cloud.copy_item(&dir.id, &file.id).await.unwrap();
+        let res = cloud.copy_item(&file, &dir).await.unwrap();
         println!("Moved item id: {}", res);
 
         context.save_auth("./data").unwrap();
@@ -99,10 +99,10 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        cloud.delete_item(&list.files[0].id).await.unwrap();
+        cloud.delete_item(&list.files[0]).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
@@ -117,7 +117,7 @@ mod tests {
         // println!("Recycle: {recycle:#?}");
         // cloud.delete_recycle_item(&recycle.dirs[0].id).await.unwrap();
         let id = cloud
-            .restore_recycle_item(&recycle.files[0].id)
+            .restore_recycle_item(&recycle.files[0])
             .await
             .unwrap();
         println!("Restored: {}", id);
@@ -132,10 +132,10 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        let shares = cloud.share_record(&list.dirs[0].id).await.unwrap();
+        let shares = cloud.share_record(&list.dirs[0]).await.unwrap();
         println!("Shares: {shares:#?}");
 
         let share = list.dirs[0].to_share();
@@ -155,7 +155,7 @@ mod tests {
 
         let cloud = context.cloud();
 
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
         let url = cloud.get_download_url(&list.files, &[0]).await.unwrap();
 
@@ -174,7 +174,7 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
 
         let mut reader = File::open("./data/file.zip").unwrap();
         let mut args = UploadArgs::new(&user_dir, "file.zip");
@@ -201,7 +201,7 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
-        let user_dir = cloud.get_user_dir_id().await.unwrap();
+        let user_dir = cloud.get_user_dir().await.unwrap();
 
         let mut args = UploadArgs::new(&user_dir, "file.zip");
         let mut reader = File::open("./data/file.zip").unwrap();

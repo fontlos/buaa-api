@@ -5,12 +5,12 @@ use crate::error::Error;
 use crate::utils;
 
 use super::data::{
-    Dir, Item, Payload, Res, Root, RootDir, Share, SizeRes, UploadArgs, UploadAuth,
+    Dir, Item, Payload, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth,
     parse_error,
 };
 
 impl super::CloudApi {
-    /// # Get root directory
+    /// # Get root directory. Better call [RootDir::into_item] to use
     pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
@@ -22,25 +22,22 @@ impl super::CloudApi {
         Ok(res)
     }
 
-    /// # Get User Root directory [RootDir::id]
-    pub async fn get_user_dir_id(&self) -> crate::Result<String> {
-        let res = self.get_root_dir(Root::User).await?;
-        let id = res
-            .into_iter()
-            .next()
-            .map(|item| item.id)
-            .ok_or_else(|| Error::server("No user dir found").with_label("Cloud"))?;
-        Ok(id)
+    /// # Get User Root directory
+    pub async fn get_user_dir(&self) -> crate::Result<Item> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/owned-doc-lib";
+        let payload = Payload::<'_, ()>::Empty;
+        let bytes = self.universal_request(Method::GET, url, &payload).await?;
+        let [res]: [RootDir; 1] = serde_json::from_slice(&bytes)
+            .map_err(|e| parse_error("No user dir found", &bytes, &e))?;
+        Ok(res.into_item())
     }
 
     /// # List the contents of a directory
-    ///
-    /// - Input: Directory [Item::id] or [RootDir::id]
-    pub async fn list_dir(&self, id: &str) -> crate::Result<Dir> {
+    pub async fn list_dir(&self, item: &Item) -> crate::Result<Dir> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/list";
         let json = serde_json::json!({
             "by": "name", // time/size
-            "docid": id,
+            "docid": item.id,
             "sort": "asc" // desc
         });
         let payload = Payload::Json(&json);
@@ -50,31 +47,25 @@ impl super::CloudApi {
     }
 
     /// # Get the size of an item
-    ///
-    /// - Input: [Item::id]
-    pub async fn get_item_size(&self, id: &str) -> crate::Result<SizeRes> {
+    pub async fn get_item_size(&self, item: &Item) -> crate::Result<Size> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/size";
         let json = serde_json::json!({
-            "docid": id,
+            "docid": item.id,
             "onlyrecycle": false
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res: SizeRes = Res::parse(&bytes, "Can not get item size")?;
+        let res: Size = Res::parse(&bytes, "Can not get item size")?;
         Ok(res)
     }
 
-    /// # Get a suggested name when name conflict
-    ///
-    /// - Input:
-    ///     - dir: Parent directory [Item::id]
-    ///     - name: Desired name
+    /// # Get a suggested name when name conflict in parent directory
     ///
     /// **Note**: For [super::CloudApi::create_dir] etc.
-    pub async fn get_suggest_name(&self, dir: &str, name: &str) -> crate::Result<String> {
+    pub async fn get_suggest_name(&self, parent: &Item, name: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
         let json = serde_json::json!({
-            "docid": dir,
+            "docid": parent.id,
             "name": name,
         });
         let payload = Payload::Json(&json);
@@ -85,14 +76,10 @@ impl super::CloudApi {
     }
 
     /// # Create directory
-    ///
-    /// - Input:
-    ///     - dir: Parent directory [Item::id]
-    ///     - name: Desired directory name
-    pub async fn create_dir(&self, dir: &str, name: &str) -> crate::Result<String> {
+    pub async fn create_dir(&self, parent: &Item, name: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/create";
         let json = serde_json::json!({
-            "docid": dir,
+            "docid": parent.id,
             "name": name,
             "ondup": 1
         });
@@ -105,15 +92,11 @@ impl super::CloudApi {
 
     // 重命名不存在的文件会在上层触发 400 错误
     /// # Rename an item
-    ///
-    /// - Input:
-    ///     - id: Item [Item::id]
-    ///     - new: New name
-    pub async fn rename_item(&self, id: &str, new: &str) -> crate::Result<()> {
+    pub async fn rename_item(&self, item: &Item, name: &str) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/rename";
         let json = serde_json::json!({
-            "docid": id,
-            "name": new,
+            "docid": item.id,
+            "name": name,
             "ondup": 1
         });
         let payload = Payload::Json(&json);
@@ -121,18 +104,12 @@ impl super::CloudApi {
         Ok(())
     }
 
-    /// # Move an item [Item::id]
-    ///
-    /// - Input:
-    ///    - dir: Destination directory [Item::id]
-    ///    - id: Item [Item::id]
-    ///
-    /// **Note**: Move multiple files need call multiple times.
-    pub async fn move_item(&self, dir: &str, id: &str) -> crate::Result<String> {
+    /// # Move an item
+    pub async fn move_item(&self, from: &Item, to: &Item) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/move";
         let json = serde_json::json!({
-            "destparent": dir,
-            "docid": id,
+            "destparent": to.id,
+            "docid": from.id,
             "ondup": 1
         });
         let payload = Payload::Json(&json);
@@ -142,18 +119,12 @@ impl super::CloudApi {
         Ok(res.to_string())
     }
 
-    /// # Copy an item [Item::id]
-    ///
-    /// - Input:
-    ///    - dir: Destination directory [Item::id]
-    ///    - id: Item [Item::id]
-    ///
-    /// **Note**: Copy multiple files need call multiple times.
-    pub async fn copy_item(&self, dir: &str, id: &str) -> crate::Result<String> {
+    /// # Copy an item
+    pub async fn copy_item(&self, from: &Item, to: &Item) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/copy";
         let json = serde_json::json!({
-            "destparent": dir,
-            "docid": id,
+            "destparent": to.id,
+            "docid": from.id,
             "ondup": 1
         });
         let payload = Payload::Json(&json);
@@ -165,14 +136,10 @@ impl super::CloudApi {
 
     // 重复删掉文件也不会报错
     /// # Delete an item to recycle bin
-    ///
-    /// - Input: [Item::id]
-    ///
-    /// **Note**: Delete multiple files need call multiple times.
-    pub async fn delete_item(&self, id: &str) -> crate::Result<()> {
+    pub async fn delete_item(&self, item: &Item) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/delete";
         let json = serde_json::json!({
-            "docid": id,
+            "docid": item.id,
         });
         let payload = Payload::Json(&json);
         self.universal_request(Method::POST, url, &payload).await?;
@@ -181,7 +148,7 @@ impl super::CloudApi {
 
     /// # List recycle bin contents of user's personal directory
     pub async fn list_recycle(&self) -> crate::Result<Dir> {
-        let id = self.get_user_dir_id().await?;
+        let id = self.get_user_dir().await?.id;
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/list";
         let json = serde_json::json!({
             "by": "time", // name/size
@@ -198,13 +165,11 @@ impl super::CloudApi {
 
     /// # Delete an item forever in recycle bin
     ///
-    /// - Input: [Item::id]
-    ///
     /// **Note**: Delete multiple files need call multiple times.
-    pub async fn delete_recycle_item(&self, id: &str) -> crate::Result<()> {
+    pub async fn delete_recycle_item(&self, item: &Item) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/delete";
         let json = serde_json::json!({
-            "docid": id,
+            "docid": item.id,
         });
         let payload = Payload::Json(&json);
         self.universal_request(Method::POST, url, &payload).await?;
@@ -212,14 +177,10 @@ impl super::CloudApi {
     }
 
     /// # Restore an item from recycle bin
-    ///
-    /// - Input: [Item::id]
-    ///
-    /// **Note**: Restore multiple files need call multiple times.
-    pub async fn restore_recycle_item(&self, id: &str) -> crate::Result<String> {
+    pub async fn restore_recycle_item(&self, item: &Item) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/recycle/restore";
         let json = serde_json::json!({
-            "docid": id,
+            "docid": item.id,
             "ondup": 1
         });
         let payload = Payload::Json(&json);
@@ -233,12 +194,10 @@ impl super::CloudApi {
 
     // 传入不存在的 id 会在上层触发 400 错误
     /// # Get item share record
-    ///
-    /// - Input: [Item::id]
-    pub async fn share_record(&self, id: &str) -> crate::Result<Vec<Share>> {
+    pub async fn share_record(&self, item: &Item) -> crate::Result<Vec<Share>> {
         let url = format!(
             "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/folder/{}?type=anonymous",
-            id.replace(':', "%3A").replace('/', "%2F")
+            item.id.replace(':', "%3A").replace('/', "%2F")
         );
         let payload = Payload::<'_, ()>::Empty;
         let bytes = self.universal_request(Method::GET, &url, &payload).await?;
