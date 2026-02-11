@@ -116,10 +116,7 @@ mod tests {
         let recycle = cloud.list_recycle().await.unwrap();
         // println!("Recycle: {recycle:#?}");
         // cloud.delete_recycle_item(&recycle.dirs[0].id).await.unwrap();
-        let id = cloud
-            .restore_recycle_item(&recycle.files[0])
-            .await
-            .unwrap();
+        let id = cloud.restore_recycle_item(&recycle.files[0]).await.unwrap();
         println!("Restored: {}", id);
 
         context.save_auth("./data").unwrap();
@@ -165,7 +162,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_fast_upload() {
+    async fn test_upload_fast() {
         use buaa_api::api::cloud::UploadArgs;
         use std::fs::File;
 
@@ -191,7 +188,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_upload() {
+    async fn test_upload_small() {
         use buaa_api::api::cloud::UploadArgs;
         use std::fs::File;
         use std::io::Read;
@@ -213,6 +210,29 @@ mod tests {
         reader.read_to_end(&mut body).unwrap();
 
         cloud.upload_small(&args, body).await.unwrap();
+
+        context.save_auth("./data").unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_upload_big() {
+        use buaa_api::api::cloud::UploadArgs;
+        use std::fs::File;
+
+        init_log();
+
+        let context = Context::with_auth("./data").unwrap();
+
+        let cloud = context.cloud();
+        let user_dir = cloud.get_user_dir().await.unwrap();
+
+        let mut args = UploadArgs::new(&user_dir, "file2.zip");
+        let mut reader = File::open("./data/file2.zip").unwrap();
+        args.compute_mini(&mut reader).unwrap();
+
+        println!("Upload Args: {args:#?}");
+
+        cloud.upload_big(&args, reader).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
