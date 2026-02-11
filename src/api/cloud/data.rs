@@ -433,9 +433,36 @@ impl UploadArgs {
     }
 }
 
+// 用于小文件
+/// 开始上传文件协议
 #[derive(Debug, Deserialize)]
 pub(super) struct UploadAuth {
     pub authrequest: Vec<String>,
     pub docid: String,
     pub rev: String,
+}
+
+// 用于大文件
+/// 开始上传大文件协议
+#[derive(Debug, Deserialize, Serialize)]
+pub(super) struct UploadInit {
+    pub docid: String,
+    pub rev: String,
+    pub uploadid: String,
+    #[serde(skip_deserializing)]
+    pub parts: String,
+}
+
+/// 上传大文件的分块协议
+#[derive(Debug, Deserialize)]
+pub(super) struct UploadPart {
+    /// 每个分块的: HTTP 方法 PUT, 上传链接, 授权 Token, Content-Type, 日期
+    pub authrequests: std::collections::BTreeMap<String, [String; 5]>,
+}
+
+/// 上传大文件的分块完成协议
+#[derive(Debug, Deserialize)]
+pub(super) struct UploadComplete {
+    /// HTTP 方法 POST, 上传链接, 授权 Token, Content-Type, 日期
+    pub authrequest: [String; 5],
 }
