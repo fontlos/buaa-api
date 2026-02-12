@@ -431,6 +431,73 @@ impl UploadArgs {
             .map_err(|_| Error::io("Failed rewind reader"))?;
         Ok(())
     }
+
+    // 查看分块支持大小 20 MiB - 5 GiB
+    // https://bhpan.buaa.edu.cn/api/efast/v1/file/osoption POST EMPTY
+    // {"partmaxnum":10000,"partmaxsize":5368709120,"partminsize":20971520}
+    // 用 10 MiB 也没报错, 但为了保险起见用 20 MiB
+    pub(super) const PART_SIZE: u64 = 20 * 1024 * 1024;
+
+    pub(super) fn parse_init(&self, bytes: &[u8]) -> crate::Result<UploadInit> {
+        let part_num = self.length.div_ceil(Self::PART_SIZE);
+        let mut init: UploadInit = serde_json::from_slice(&bytes)
+            .map_err(|e| parse_error("Can not initialize upload", bytes, &e))?;
+        init.parts = format!("1-{}", part_num);
+        Ok(init)
+    }
+
+    pub(super) fn parse_part(&self, bytes: &[u8]) -> crate::Result<Vec<(u32, [String; 5])>> {
+        use std::collections::BTreeMap;
+        /// 上传大文件的分块协议
+        #[derive(Debug, Deserialize)]
+        struct UploadPart {
+            // 每个分块的: HTTP 方法 PUT, 上传链接, 授权 Token, Content-Type, 日期
+            authrequests: BTreeMap<String, [String; 5]>,
+        }
+        let part_num = self.length.div_ceil(Self::PART_SIZE) as usize;
+        let part: UploadPart = serde_json::from_slice(&bytes)
+            .map_err(|e| parse_error("Can not get upload part auth", bytes, &e))?;
+        let mut parts = Vec::with_capacity(part_num);
+        for (k, v) in part.authrequests {
+            // 原则上这必将成功
+            if let Ok(num) = k.parse::<u32>() {
+                parts.push((num, v));
+            }
+        }
+        // 键无重复
+        parts.sort_unstable_by_key(|(num, _)| *num);
+        Ok(parts)
+    }
+
+    /// 解析上传大文件的分块完成协议参数
+    /// 响应体为 multipart/form-data. 一个 XML 作为 Body, 一个 JSON 包含请求参数, 手动解析.
+    pub(super) fn parse_complete(bytes: &[u8]) -> crate::Result<([String; 5], Vec<u8>)> {
+        let form_err = || Error::server("Bad complete upload response").with_label("Cloud");
+        // 查找 XML 开始位置, 搜索 '<'
+        let xml_start = bytes.iter().position(|&b| b == b'<').ok_or_else(form_err)?;
+        // 继续查找 XML 结束位置, 搜索 '-'
+        let xml_end = bytes[xml_start..]
+            .iter()
+            .position(|&b| b == b'-')
+            .ok_or_else(form_err)?;
+        let xml_bytes = &bytes[xml_start..xml_start + xml_end];
+        // 继续查找 JSON 位置, 搜索 '{'
+        let json_start = bytes.iter().position(|&b| b == b'{').ok_or_else(form_err)?;
+        // 继续查找 JSON 结束位置, 搜索 `--`
+        let json_end = bytes[json_start..]
+            .windows(2)
+            .position(|w| w == b"--")
+            .ok_or_else(form_err)?;
+        let json_bytes = &bytes[json_start..json_start + json_end];
+        #[derive(Debug, Deserialize)]
+        struct UploadComplete {
+            // HTTP 方法 POST, 上传链接, 授权 Token, Content-Type, 日期
+            authrequest: [String; 5],
+        }
+        let complete: UploadComplete = serde_json::from_slice(&json_bytes)
+            .map_err(|e| parse_error("Can not get complete upload auth", json_bytes, &e))?;
+        Ok((complete.authrequest, xml_bytes.to_vec()))
+    }
 }
 
 // 用于小文件
@@ -451,18 +518,4 @@ pub(super) struct UploadInit {
     pub uploadid: String,
     #[serde(skip_deserializing)]
     pub parts: String,
-}
-
-/// 上传大文件的分块协议
-#[derive(Debug, Deserialize)]
-pub(super) struct UploadPart {
-    /// 每个分块的: HTTP 方法 PUT, 上传链接, 授权 Token, Content-Type, 日期
-    pub authrequests: std::collections::BTreeMap<String, [String; 5]>,
-}
-
-/// 上传大文件的分块完成协议
-#[derive(Debug, Deserialize)]
-pub(super) struct UploadComplete {
-    /// HTTP 方法 POST, 上传链接, 授权 Token, Content-Type, 日期
-    pub authrequest: [String; 5],
 }
