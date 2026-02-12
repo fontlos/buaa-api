@@ -226,8 +226,8 @@ mod tests {
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir().await.unwrap();
 
-        let mut args = UploadArgs::new(&user_dir, "file2.zip");
-        let mut reader = File::open("./data/file2.zip").unwrap();
+        let mut args = UploadArgs::new(&user_dir, "file.zip");
+        let mut reader = File::open("./data/file.zip").unwrap();
         args.compute_mini(&mut reader).unwrap();
 
         println!("Upload Args: {args:#?}");

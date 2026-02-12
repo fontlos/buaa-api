@@ -8,8 +8,6 @@ use super::data::{
     Dir, Item, Payload, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
 };
 
-use super::data::{UploadPart, UploadInit, UploadComplete};
-
 impl super::CloudApi {
     /// # Get root directory. Better call [RootDir::into_item] to use
     pub async fn get_root_dir(&self, root: Root) -> crate::Result<Vec<RootDir>> {
@@ -427,13 +425,6 @@ impl super::CloudApi {
     where
         R: std::io::Read + Send + 'static,
     {
-        // 查看分块支持大小 20 MiB - 5 GiB
-        // https://bhpan.buaa.edu.cn/api/efast/v1/file/osoption POST EMPTY
-        // {"partmaxnum":10000,"partmaxsize":5368709120,"partminsize":20971520}
-        // 用 10 MiB 也没报错, 但为了保险起见用 20 MiB
-        const PART_SIZE: u64 = 20 * 1024 * 1024;
-        let part_num = args.length.div_ceil(PART_SIZE);
-
         // 开始上传大文件协议, 获取上传 ID 等
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osinitmultiupload";
         let json = serde_json::json!({
@@ -445,30 +436,31 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let mut init: UploadInit = Res::parse(&bytes, "Can not initialize upload")?;
-        init.parts = format!("1-{}", part_num);
+        let init = args.parse_init(&bytes)?;
 
         // 上传大文件的分块协议, 分块上传文件
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osuploadpart";
         let json = Payload::Json(&init);
         // 原始数据不保序, 但上传要求严格保序, 且只有最后一个分块大小可以不为 PART_SIZE
         let bytes = self.universal_request(Method::POST, url, &json).await?;
-        let part: UploadPart = Res::parse(&bytes, "Can not get upload auth")?;
+        let part = args.parse_part(&bytes)?;
 
         let mut part_info = std::collections::BTreeMap::<String, (String, u64)>::new();
         let mut remaining = args.length;
         // 我们手动严格保序查找
-        for key in 1..=part_num {
+        for (index, auth) in part {
             // TODO: 难以维护 etag 状态, 暂不支持断点续传
-            let key = key.to_string();
-            let auth = part.authrequests.get(&key).ok_or_else(|| Error::server("Missing part auth"))?;
+            let key = index.to_string();
 
-            let to_read = std::cmp::min(PART_SIZE, remaining);
+            let to_read = std::cmp::min(UploadArgs::PART_SIZE, remaining);
             let mut buffer = vec![0u8; to_read as usize];
-            reader.read_exact(&mut buffer).map_err(|_| Error::io("Read failed"))?;
+            reader
+                .read_exact(&mut buffer)
+                .map_err(|_| Error::io("Read failed"))?;
             remaining -= to_read;
 
             let req = self.client.put(&auth[1]);
+            // 0 号是方法, 1 号是 URL, 剩余的是 Header
             let req = auth.iter().skip(2).fold(req, |req, header| {
                 if let Some((key, value)) = header.split_once(": ") {
                     req.header(key, value)
@@ -499,27 +491,11 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        // 响应体为 multipart/form-data. 一个 XML, 一个 JSON, 手动解析
-        let form_err = || {
-            Error::server("Bad complete upload response").with_label("Cloud")
-        };
-        // 查找 XML 开始位置, 搜索 '<'
-        let xml_start = bytes.iter().position(|&b| b == b'<').ok_or_else(form_err)?;
-        // 继续查找 XML 结束位置, 搜索 '-'
-        let xml_end = bytes[xml_start..].iter().position(|&b| b == b'-').ok_or_else(form_err)?;
-        let xml_bytes = &bytes[xml_start..xml_start + xml_end];
-        // 继续查找 JSON 位置, 搜索 '{'
-        let json_start = bytes.iter().position(|&b| b == b'{').ok_or_else(form_err)?;
-        // 继续查找 JSON 结束位置, 搜索 `--`
-        let json_end = bytes[json_start..]
-            .windows(2)
-            .position(|w| w == b"--")
-            .ok_or_else(form_err)?;
-        let json_bytes = &bytes[json_start..json_start + json_end];
-        let complete: UploadComplete = Res::parse(&json_bytes, "Can not get complete upload auth")?;
+        // HTTP 方法 POST, 上传链接, 授权 Token, Content-Type, 日期. 和一个 XML Body
+        let (complete, body) = UploadArgs::parse_complete(&bytes)?;
 
-        let req = self.client.post(&complete.authrequest[1]);
-        let req = complete.authrequest.iter().skip(2).fold(req, |req, header| {
+        let req = self.client.post(&complete[1]);
+        let req = complete.iter().skip(2).fold(req, |req, header| {
             if let Some((key, value)) = header.split_once(": ") {
                 req.header(key, value)
             } else {
@@ -528,7 +504,7 @@ impl super::CloudApi {
         });
         // 响应体是 XML 格式的储存桶信息. 无需解析
         // TODO: 日志处理
-        let res = req.body(xml_bytes.to_vec()).send().await?;
+        let res = req.body(body).send().await?;
         if !res.status().is_success() {
             return Err(Error::server("Complete upload failed")
                 .with_label("Cloud")
