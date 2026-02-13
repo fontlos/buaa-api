@@ -110,10 +110,7 @@ pub struct Item {
     pub id: String,
     /// Item name
     pub name: String,
-    // 我们不信任文件版本信息, 理应每次获取最新. 而且这个字段几乎没有用处. 服务器本身并不能返回文件版本列表.
-    // 即使使用其来回退或者预览历史版本, 也需要客户端手动缓存版本信息, 而这过于复杂, 需要单个字段仅新增,
-    // 而其他字段正常随版本更新而更新
-    // 对于回收站, 这个字段不存在
+    // 对于回收站, 这个字段不存在, 并且多数操作默认就是最新版本. 需要这个字段时应该去获取历史版本列表
     // Item revision, For recycle item, this field is missing
     // #[serde(default)]
     // pub rev: String,

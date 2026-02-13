@@ -419,6 +419,8 @@ impl super::CloudApi {
 
     /// # Upload big file
     ///
+    /// - Input: Need call [UploadArgs::compute_mini]
+    ///
     /// **Note**: File size should be less than 100 GiB
     #[cfg(feature = "multipart")]
     pub async fn upload_big<R>(&self, args: &UploadArgs, mut reader: R) -> crate::Result<()>
@@ -443,11 +445,11 @@ impl super::CloudApi {
         let json = Payload::Json(&init);
         // 原始数据不保序, 但上传要求严格保序, 且只有最后一个分块大小可以不为 PART_SIZE
         let bytes = self.universal_request(Method::POST, url, &json).await?;
+        // 我们在这里预排序
         let part = args.parse_part(&bytes)?;
 
-        let mut part_info = std::collections::BTreeMap::<String, (String, u64)>::new();
+        let mut part_info = serde_json::Map::<String, Value>::new();
         let mut remaining = args.length;
-        // 我们手动严格保序查找
         for (index, auth) in part {
             // TODO: 难以维护 etag 状态, 暂不支持断点续传
             let key = index.to_string();
@@ -474,11 +476,11 @@ impl super::CloudApi {
                 .headers()
                 .get("etag")
                 .ok_or_else(|| Error::server("No Etag in Upload").with_label("Cloud"))?
-                .to_str()
-                // TODO: 这几乎不可能发生, 因为 Etag 是服务器返回的, 只要服务器返回了 Etag 就不会出错
-                .map_err(|_| Error::server("Invalid Etag in Upload").with_label("Cloud"))?
-                .trim_matches('"');
-            part_info.insert(key, (etag.to_string(), to_read));
+                .as_bytes();
+            // 服务器返回的 Etag 只要存在那必然有效. 并且需要去掉双引号
+            let etag = String::from_utf8_lossy(&etag);
+            let etag = etag.trim_matches('"');
+            part_info.insert(key, serde_json::json!([etag, to_read]));
         }
 
         // 上传大文件的分块完成协议, 提交分块信息
