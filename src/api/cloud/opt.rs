@@ -60,9 +60,29 @@ impl super::CloudApi {
 
     /// # Get a suggested name when name conflict in parent directory
     ///
+    /// Output: "[Name] [(Number)]", e.g. "New Folder (1)"
+    ///
     /// **Note**: For [super::CloudApi::create_dir] etc.
-    pub async fn get_suggest_name(&self, parent: &Item, name: &str) -> crate::Result<String> {
+    pub async fn get_suggest_dir_name(&self, parent: &Item, name: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
+        let json = serde_json::json!({
+            "docid": parent.id,
+            "name": name,
+        });
+        let payload = Payload::Json(&json);
+        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let res = utils::parse_by_tag(&bytes, "\"name\":\"", "\"")
+            .ok_or_else(|| parse_error("Can not get suggest name", &bytes, &"No 'name' field"))?;
+        Ok(res.to_string())
+    }
+
+    /// # Get a suggested name when name conflict in parent directory
+    ///
+    /// Output: "[Name] [(Number)].[Suffix]", e.g. "file (1).zip"
+    ///
+    /// **Note**: For upload etc.
+    pub async fn get_suggest_file_name(&self, parent: &Item, name: &str) -> crate::Result<String> {
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/getsuggestname";
         let json = serde_json::json!({
             "docid": parent.id,
             "name": name,
