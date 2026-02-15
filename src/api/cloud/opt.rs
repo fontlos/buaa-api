@@ -31,6 +31,8 @@ impl super::CloudApi {
         Ok(res.into_item())
     }
 
+    // 总体来看, `dir` 接口更强大, 几乎支持所有 `file` 操作, 所以尽量统一使用这个
+
     /// # List the contents of a directory
     pub async fn list_dir(&self, item: &Item) -> crate::Result<Dir> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/list";
@@ -58,30 +60,17 @@ impl super::CloudApi {
         Ok(res)
     }
 
+    // 文件和文件夹共用命名空间不得重复, 而对于文件的建议名称获取功能更强大一点支持扩展名,
+    // 所以就用它替代文件夹的命名算了, 绝大多数情况使用这个, 不过有一种情况会有意外,
+    // 对于形如 "Name.Suffix" 的 文件夹, 会得到 "Name (1).Suffix" 这样的建议名称
     /// # Get a suggested name when name conflict in parent directory
     ///
-    /// Output: "[Name] [(Number)]", e.g. "New Folder (1)"
+    /// Output:
+    ///     - Dir: "[Name] [(Number)]", e.g. "New Folder (1)"
+    ///     - File: "[Name] [(Number)].[Suffix]", e.g. "file (1).zip"
     ///
-    /// **Note**: For [super::CloudApi::create_dir] etc.
-    pub async fn get_suggest_dir_name(&self, parent: &Item, name: &str) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/getsuggestname";
-        let json = serde_json::json!({
-            "docid": parent.id,
-            "name": name,
-        });
-        let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res = utils::parse_by_tag(&bytes, "\"name\":\"", "\"")
-            .ok_or_else(|| parse_error("Can not get suggest name", &bytes, &"No 'name' field"))?;
-        Ok(res.to_string())
-    }
-
-    /// # Get a suggested name when name conflict in parent directory
-    ///
-    /// Output: "[Name] [(Number)].[Suffix]", e.g. "file (1).zip"
-    ///
-    /// **Note**: For upload etc.
-    pub async fn get_suggest_file_name(&self, parent: &Item, name: &str) -> crate::Result<String> {
+    /// **Note**: For dir named like "[Name].[Suffix]", the suggested name will be "[Name] [(Number)].[Suffix]"
+    pub async fn get_suggest_name(&self, parent: &Item, name: &str) -> crate::Result<String> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/getsuggestname";
         let json = serde_json::json!({
             "docid": parent.id,
@@ -125,7 +114,7 @@ impl super::CloudApi {
 
     /// # Move an item
     pub async fn move_item(&self, from: &Item, to: &Item) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/move";
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/dir/move";
         let json = serde_json::json!({
             "destparent": to.id,
             "docid": from.id,
@@ -153,6 +142,7 @@ impl super::CloudApi {
         Ok(res.to_string())
     }
 
+    // 文件的接口更干净一点
     // 重复删掉文件也不会报错
     /// # Delete an item to recycle bin
     pub async fn delete_item(&self, item: &Item) -> crate::Result<()> {
