@@ -40,7 +40,7 @@ mod tests {
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir().await.unwrap();
         let name = cloud
-            .get_suggest_name(&user_dir, "新建文件夹")
+            .get_suggest_name(&user_dir, "New Folder")
             .await
             .unwrap();
         let _ = cloud.create_dir(&user_dir, &name).await.unwrap();
@@ -50,28 +50,32 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename() {
+        init_log();
+
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        cloud.rename_item(&list.dirs[0], "dir").await.unwrap();
+        cloud.rename_item(&list.files[0], "dir").await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
 
     #[tokio::test]
     async fn test_move() {
+        init_log();
+
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
         let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
-        let dir = &list.dirs[0];
-        let file = &list.files[0];
+        let item1 = &list.dirs[0];
+        let item2 = &list.dirs[1];
 
-        let res = cloud.move_item(&file, &dir).await.unwrap();
+        let res = cloud.move_item(&item2, &item1).await.unwrap();
 
         println!("Moved item id: {}", res);
 
@@ -89,7 +93,7 @@ mod tests {
         let file = &list.files[0];
 
         let res = cloud.copy_item(&file, &dir).await.unwrap();
-        println!("Moved item id: {}", res);
+        println!("Copied item id: {}", res);
 
         context.save_auth("./data").unwrap();
     }
@@ -102,7 +106,7 @@ mod tests {
         let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        cloud.delete_item(&list.files[0]).await.unwrap();
+        cloud.delete_item(&list.dirs[2]).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
@@ -148,6 +152,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_download_url() {
+        init_log();
+
         let context = Context::with_auth("./data").unwrap();
 
         let cloud = context.cloud();
