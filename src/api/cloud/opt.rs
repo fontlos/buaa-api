@@ -277,38 +277,25 @@ impl super::CloudApi {
     ///
     /// **Note**: If you pass a single file(not a dir), it will return a bad URL.
     async fn get_muti_download_url(&self, items: &[&Item]) -> crate::Result<String> {
-        let url = "https://bhpan.buaa.edu.cn/api/open-doc/v1/file-download";
-        let ids: Vec<Value> = items
-            .iter()
-            .map(|item| {
-                // 从文件路径 id 反向找到文件 id, 找不到就用原 id, 这不会引起错误, 只会导致无法下载这个文件
-                // 同样是下载, 单个文件就用完整 id, 多个文件就用文件 id, 那证明文件 id 就够用了, 这什么**设计
-                let file_id = match item.id.rfind('/') {
-                    Some(idx) => &item.id[idx + 1..],
-                    None => &item.id,
-                };
-                serde_json::json!({ "id": file_id })
-            })
-            .collect();
+        let (dirs, files): (Vec<&Item>, Vec<&Item>) = items.iter().partition(|i| i.is_dir());
+        let dirs: Vec<&str> = dirs.iter().map(|i| i.id.as_str()).collect();
+        let files: Vec<&str> = files.iter().map(|i| i.id.as_str()).collect();
+
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/batchdownload";
         let json = serde_json::json!({
             "name": "download.zip",
-            "doc": ids
+            "reqhost": "bhpan.buaa.edu.cn",
+            "dirs": dirs,
+            "files": files
         });
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let raw_url =
-            utils::parse_by_tag(&bytes, "\"package_address\":\"", "\"").ok_or_else(|| {
-                parse_error(
-                    "Can not get download url",
-                    &bytes,
-                    &"No 'package_address' field",
-                )
-            })?;
-
-        // 在获取下载链接请求发出后获取 token, 通过其自动刷新机制保证 token 正常情况是存在的
-        let token = self.cred.load().value::<crate::api::Cloud>()?;
-        let url = format!("{raw_url}?token={token}");
-        Ok(url)
+        let mut res = utils::parse_by_tag(&bytes, "\"url\":\"", "\"")
+            .ok_or_else(|| parse_error("Can not get download url", &bytes, &"No 'url' field"))?
+            .to_string();
+        // 服务器返回的 URL 中反斜杠是转义字符, 需要去掉
+        res.retain(|c| c != '\\');
+        Ok(res)
     }
 
     /// # Get a download URL with the indexes of items.
