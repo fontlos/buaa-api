@@ -181,6 +181,11 @@ pub struct Share {
 }
 
 impl Share {
+    /// Get share link URL.
+    pub fn as_url(&self) -> String {
+        format!("https://bhpan.buaa.edu.cn/link/{}", self.id)
+    }
+
     /// Enable preview permission
     pub fn enable_preview(mut self) -> Self {
         self.item.permission.0 |= Permission::PREVIEW;
