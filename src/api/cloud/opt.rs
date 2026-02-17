@@ -217,25 +217,27 @@ impl super::CloudApi {
     /// # Share an item
     ///
     /// - Input: [Share] from [Item::to_share()]
-    /// - Output: Share ID
+    /// - Output: New [Share] with ID field filled
     ///
     /// **Note**: The share link can be formed as `https://bhpan.buaa.edu.cn/link/{ID}`.
-    pub async fn share_item(&self, share: &Share) -> crate::Result<String> {
+    pub async fn share_item(&self, mut share: Share) -> crate::Result<Share> {
         let url = "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous";
         let payload = Payload::Json(&share);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, "\"id\":\"", "\"")
             .ok_or_else(|| parse_error("Can not create share link", &bytes, &"No 'id' field"))?;
-        Ok(res.to_string())
+        share.id = res.to_string();
+        Ok(share)
     }
 
     /// # Update share
     ///
-    /// - Input:
-    ///     - id: Share ID
-    ///     - share: Updated [Share]
-    pub async fn share_update(&self, id: &str, share: &Share) -> crate::Result<()> {
-        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
+    /// - Input: Updated [Share] from `share_record` or `share_item`
+    pub async fn share_update(&self, share: &Share) -> crate::Result<()> {
+        let url = format!(
+            "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{}",
+            share.id
+        );
         let payload = Payload::Json(&share);
         self.universal_request(Method::PUT, &url, &payload).await?;
         Ok(())
@@ -243,9 +245,12 @@ impl super::CloudApi {
 
     /// # Delete share
     ///
-    /// - Input: Share ID
-    pub async fn share_delete(&self, id: &str) -> crate::Result<()> {
-        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{id}");
+    /// - Input: [Share] from `share_record` or `share_item`
+    pub async fn share_delete(&self, share: &Share) -> crate::Result<()> {
+        let url = format!(
+            "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous/{}",
+            share.id
+        );
         let payload = Payload::<'_, ()>::Empty;
         self.universal_request(Method::DELETE, &url, &payload)
             .await?;

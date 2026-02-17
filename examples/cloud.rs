@@ -136,16 +136,16 @@ mod tests {
         let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
-        let shares = cloud.share_record(&list.dirs[0]).await.unwrap();
+        let shares = cloud.share_record(&list.files[0]).await.unwrap();
         println!("Shares: {shares:#?}");
 
-        let share = list.dirs[0].to_share();
-        let share_id = cloud.share_item(&share).await.unwrap();
-        println!("Share Link: https://bhpan.buaa.edu.cn/link/{}", share_id);
+        let share = list.files[0].to_share();
+        let share = cloud.share_item(share).await.unwrap();
+        println!("Share Link: {}", share.as_url());
 
-        let share = share.enable_preview().enable_upload();
-        cloud.share_update(&share_id, &share).await.unwrap();
-        cloud.share_delete(&share_id).await.unwrap();
+        let share = share.enable_preview().enable_download();
+        cloud.share_update(&share).await.unwrap();
+        cloud.share_delete(&share).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
