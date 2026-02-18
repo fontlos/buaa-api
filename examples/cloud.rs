@@ -136,6 +136,9 @@ mod tests {
         let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
+        let history = cloud.share_history().await.unwrap();
+        println!("Share History: {history:#?}");
+
         let shares = cloud.share_record(&list.files[0]).await.unwrap();
         println!("Shares: {shares:#?}");
 

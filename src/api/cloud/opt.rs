@@ -201,6 +201,15 @@ impl super::CloudApi {
         Ok(res.to_string())
     }
 
+    /// # List all share records of the user
+    pub async fn share_history(&self) -> crate::Result<Vec<Share>> {
+        let url = "https://bhpan.buaa.edu.cn/api/doc-share/v1/docs-shared-with-anyone";
+        let payload = Payload::<'_, ()>::Empty;
+        let bytes = self.universal_request(Method::GET, url, &payload).await?;
+        let res = Share::parse_history(&bytes)?;
+        Ok(res)
+    }
+
     // 传入不存在的 id 会在上层触发 400 错误
     /// # Get item share record
     pub async fn share_record(&self, item: &Item) -> crate::Result<Vec<Share>> {
