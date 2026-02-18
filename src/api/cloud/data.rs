@@ -126,13 +126,12 @@ impl Item {
 
     /// For `share_item` method
     pub fn to_share(&self) -> Share {
-        let kind = if self.is_dir() { "folder" } else { "file" };
         Share {
             // 只在反序列化时用到, 所以永远不会被赋值
             id: String::new(),
             item: ShareItem {
                 id: Some(self.id.clone()),
-                kind: Some(kind),
+                is_dir: self.is_dir(),
                 permission: Permission::new(),
             },
             title: self.name.clone(),
@@ -163,11 +162,12 @@ pub struct Size {
 /// Share Item
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Share {
+    /// Share item info.
+    item: ShareItem,
     // 只在反序列化时用到的字段
     /// Share ID. For share link
     #[serde(skip_serializing)]
     pub id: String,
-    item: ShareItem,
     /// Share link title
     pub title: String,
     /// Share link expiration time, "1970-01-01T08:00:00+08:00" for never expire
@@ -215,19 +215,81 @@ impl Share {
         self.item.permission.0 |= Permission::CREATE;
         self
     }
+
+    pub(super) fn parse_history(bytes: &[u8]) -> crate::Result<Vec<Share>> {
+        // 共享文件信息
+        #[derive(Deserialize)]
+        struct I {
+            r#type: String,
+            id: String,
+        }
+
+        // 共享链接信息
+        #[derive(Deserialize)]
+        struct J {
+            id: String,
+            title: String,
+            allow: Permission,
+            expires_at: String,
+            password: String,
+            // created_at: String,
+            limited_times: i64,
+        }
+
+        // 共享记录信息
+        #[derive(Deserialize)]
+        struct K {
+            doc: I,
+            link_configs: Vec<J>,
+        }
+        #[derive(Deserialize)]
+        struct L {
+            entries: Vec<K>,
+        }
+        let l: L = serde_json::from_slice(bytes)
+            .map_err(|e| parse_error("Bad history record", bytes, &e))?;
+        let mut historys: Vec<Share> = Vec::with_capacity(l.entries.len());
+        for k in l.entries {
+            for j in k.link_configs {
+                historys.push(Share {
+                    id: j.id,
+                    title: j.title,
+                    expiration: j.expires_at,
+                    password: j.password,
+                    limit: j.limited_times,
+                    item: ShareItem {
+                        id: Some(k.doc.id.clone()),
+                        is_dir: k.doc.r#type == "folder",
+                        permission: j.allow,
+                    },
+                });
+            }
+        }
+        Ok(historys)
+    }
 }
 
+/// Share item info
 #[derive(Debug, Deserialize, Serialize)]
 struct ShareItem {
     #[serde(default)]
     #[serde(skip_deserializing)]
     id: Option<String>,
     #[serde(default)]
+    #[serde(serialize_with = "serialize_share_type")]
     #[serde(skip_deserializing)]
     #[serde(rename = "type")]
-    kind: Option<&'static str>,
+    is_dir: bool,
     #[serde(rename = "allow")]
     permission: Permission,
+}
+
+fn serialize_share_type<S>(is_dir: &bool, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let s = if *is_dir { "folder" } else { "file" };
+    serializer.serialize_str(s)
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
