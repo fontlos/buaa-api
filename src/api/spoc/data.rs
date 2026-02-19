@@ -5,7 +5,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
-use tokio::sync::{mpsc, oneshot};
 
 use crate::{Error, crypto, utils};
 
@@ -412,14 +411,6 @@ pub(super) struct MergeArgs<'a> {
     #[serde(rename = "totalSize")]
     len: usize,
     filename: &'a str,
-}
-
-/// Upload handle
-pub struct UploadHandle {
-    /// Upload result receiver
-    pub result_rx: oneshot::Receiver<crate::Result<UploadRes>>,
-    /// Upload progress receiver
-    pub progress_rx: mpsc::UnboundedReceiver<UploadProgress>,
 }
 
 /// Upload progress stream. Chunk/2MB

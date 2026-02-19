@@ -42,7 +42,9 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_spoc_upload_with_progress() {
-        use buaa_api::api::spoc::UploadArgs;
+        use buaa_api::api::spoc::{UploadArgs, SpocApi, UploadProgress, UploadRes};
+        use tokio::sync::{mpsc, oneshot};
+
         use std::fs::File;
         use std::io::Seek;
 
@@ -63,14 +65,28 @@ mod tests {
         .await
         .unwrap();
 
-        let mut handle = spoc.upload_progress(args, reader);
+        let (progress_tx, mut progress_rx) = mpsc::unbounded_channel::<UploadProgress>();
+        let (result_tx, result_rx) = oneshot::channel::<buaa_api::Result<UploadRes>>();
+
+        let client = spoc.client().clone();
+
+        let upload = async move {
+            SpocApi::upload_callback(&client, &args, reader, |progress| {
+                progress_tx.send(progress).unwrap();
+            }).await
+        };
 
         tokio::spawn(async move {
-            while let Some(progress) = handle.progress_rx.recv().await {
+            let result = upload.await;
+            let _ = result_tx.send(result);
+        });
+
+        tokio::spawn(async move {
+            while let Some(progress) = progress_rx.recv().await {
                 println!("Progress: {}/{}", progress.done, progress.total);
             }
         });
-        match handle.result_rx.await {
+        match result_rx.await {
             Ok(Ok(res)) => println!("URL: {}", res.as_url()),
             Ok(Err(e)) => println!("Upload Error: {}", e),
             Err(_) => println!("Channel Err"),
