@@ -1,10 +1,8 @@
 use reqwest::Method;
-#[cfg(feature = "multipart")]
-use tokio::sync::{mpsc, oneshot};
 
 use super::{Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadRes, Week};
 #[cfg(feature = "multipart")]
-use super::{UploadArgs, UploadHandle, UploadProgress, UploadStatus};
+use super::{UploadArgs, UploadProgress, UploadStatus};
 
 impl super::SpocApi {
     /// Get current week
@@ -111,9 +109,14 @@ impl super::SpocApi {
     // 这似乎是难以修复的, 因为即使在 Spoc 网页端它们也是通过两次访问同一个 URL 并丢弃第一个来获取正确文件的.
     // 不过好消息是经过几分钟后, 服务器能处理好这种情况.
 
-    /// Internal upload function
+    /// Upload file with progress callback
+    ///
+    /// **Note**: Only upload when hash not matched, support resume. And can rename file by same file with new name.
+    ///
+    /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
+    /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
     #[cfg(feature = "multipart")]
-    async fn upload_internal<R, F>(
+    pub async fn upload_callback<R, F>(
         client: &reqwest::Client,
         args: &UploadArgs,
         reader: R,
@@ -182,41 +185,7 @@ impl super::SpocApi {
     where
         R: std::io::Read,
     {
-        Self::upload_internal(&self.client, args, reader, |_| {}).await
-    }
-
-    /// # Upload file with progress
-    ///
-    /// **Note**: Only upload when hash not matched, support resume. And can rename file by same file with new name.
-    ///
-    /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
-    /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
-    #[cfg(feature = "multipart")]
-    pub fn upload_progress<R>(&self, args: UploadArgs, reader: R) -> UploadHandle
-    where
-        R: std::io::Read + Send + 'static,
-    {
-        let (progress_tx, progress_rx) = mpsc::unbounded_channel();
-        let (result_tx, result_rx) = oneshot::channel();
-        let client = self.client.clone();
-
-        let upload = async move {
-            Self::upload_internal(&client, &args, reader, |progress| {
-                let _ = progress_tx.send(progress);
-            })
-            .await
-        };
-
-        tokio::spawn(async move {
-            // crate::Result<UploadRes>
-            let result = upload.await;
-            let _ = result_tx.send(result);
-        });
-
-        UploadHandle {
-            result_rx,
-            progress_rx,
-        }
+        Self::upload_callback(&self.client, args, reader, |_| {}).await
     }
 
     /// # An easy Upload
@@ -246,6 +215,6 @@ impl super::SpocApi {
         .await
         .map_err(|e| crate::Error::io("Task error").with_source(e))??;
 
-        Self::upload_internal(&self.client, &args, reader, |_| {}).await
+        Self::upload_callback(&self.client, &args, reader, |_| {}).await
     }
 }
