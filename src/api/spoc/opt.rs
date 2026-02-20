@@ -181,40 +181,10 @@ impl super::SpocApi {
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
     #[cfg(feature = "multipart")]
-    pub async fn upload_file<R>(&self, args: &UploadArgs, reader: R) -> crate::Result<UploadRes>
+    pub async fn upload<R>(&self, args: &UploadArgs, reader: R) -> crate::Result<UploadRes>
     where
         R: std::io::Read,
     {
         Self::upload_callback(&self.client, args, reader, |_| {}).await
-    }
-
-    /// # An easy Upload
-    ///
-    /// **Note**: Only upload when hash not matched, support resume. And can rename file by same file with new name.
-    ///
-    /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
-    /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
-    #[cfg(feature = "multipart")]
-    pub async fn upload<R, N>(&self, mut reader: R, name: N) -> crate::Result<UploadRes>
-    where
-        R: std::io::Read + std::io::Seek + Send + 'static,
-        N: Into<String>,
-    {
-        let name = name.into();
-
-        let (args, reader) = tokio::task::spawn_blocking(move || {
-            let start = reader
-                .stream_position()
-                .map_err(|_| crate::Error::io("Failed to get stream position"))?;
-            let args = UploadArgs::from_reader(&mut reader, name)?;
-            reader
-                .seek(std::io::SeekFrom::Start(start))
-                .map_err(|_| crate::Error::io("Failed to seek back"))?;
-            crate::Result::Ok((args, reader))
-        })
-        .await
-        .map_err(|e| crate::Error::io("Task error").with_source(e))??;
-
-        Self::upload_callback(&self.client, &args, reader, |_| {}).await
     }
 }

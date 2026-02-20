@@ -19,12 +19,19 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_spoc_upload() {
+        use buaa_api::api::spoc::UploadArgs;
+
+        use std::io::{Seek, SeekFrom};
+
         let context = Context::with_auth("./data").unwrap();
 
         let spoc = context.spoc();
 
-        let file = std::fs::File::open("data/file.zip").unwrap();
-        let upload = spoc.upload(file, "file.zip").await.unwrap();
+        let mut reader = std::fs::File::open("data/file.zip").unwrap();
+        let start = reader.stream_position().unwrap();
+        let args = UploadArgs::from_reader(&mut reader, "file.zip".into()).unwrap();
+        reader.seek(SeekFrom::Start(start)).unwrap();
+        let upload = spoc.upload(&args, &reader).await.unwrap();
         println!("URL: {}", upload.as_url());
 
         // let courses = spoc.query_courses("2025-20261").await.unwrap();
