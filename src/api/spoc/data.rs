@@ -1,10 +1,10 @@
 #[cfg(feature = "multipart")]
 use reqwest::multipart::{Form, Part};
 use serde::{Deserialize, Deserializer, Serialize};
-#[cfg(feature = "multipart")]
-use serde_json::Value;
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
+
+use std::io::{Read, Seek, SeekFrom};
 
 use crate::{Error, crypto, utils};
 
@@ -271,32 +271,42 @@ pub struct UploadArgs {
     index: usize,
     /// Size of each chunk (fixed)
     #[serde(rename = "chunkSize")]
-    chunk_size: usize,
+    chunk_size: u64,
     #[serde(rename = "currentChunkSize")]
-    current_chunk_size: usize,
+    current_chunk_size: u64,
     #[serde(rename = "totalSize")]
-    len: usize,
+    len: u64,
     identifier: String,
     // 不能缺少的字段, 这个名字仅在匹配上传时生效, 可以起到一个重命名的作用
     filename: String,
     // #[serde(rename = "relativePath")]
     // relative_path: String,
     #[serde(rename = "totalChunks")]
-    total_chunks: usize,
+    total_chunks: u64,
 }
 
 impl UploadArgs {
     /// # Create UploadArgs from reader.
     ///
+    /// **Note**: This function will read from beginning and reset the reader position to the beginning
+    ///
     /// **Note**: CPU intensive (MD5), please run in blocking task.
-    pub fn from_reader<R>(reader: &mut R, name: String) -> crate::Result<Self>
+    pub fn from_reader<R>(reader: &mut R, name: &str) -> crate::Result<Self>
     where
-        R: std::io::Read,
+        R: Read + Seek,
     {
         // 暂时先定死 chunk 大小, 这也是网页端规定的大小
         let chunk_size = 2048000;
 
-        let mut len = 0;
+        // 先获取总长度
+        let len = reader
+            .seek(SeekFrom::End(0))
+            .map_err(|_| Error::io("Failed to get length"))?;
+        // 回退到文件开头
+        reader
+            .seek(SeekFrom::Start(0))
+            .map_err(|_| Error::io("Failed rewind reader"))?;
+
         let mut hasher = crypto::md5::Md5::new();
         let mut buffer = [0u8; 8192];
         loop {
@@ -307,7 +317,6 @@ impl UploadArgs {
                 break;
             }
             hasher.update(&buffer[..n]);
-            len += n;
         }
         let hash = hasher.finalize();
         let identifier = crypto::bytes2hex(&hash);
@@ -319,19 +328,23 @@ impl UploadArgs {
         } else {
             len / chunk_size + 1
         };
+        // 回退到文件开头
+        reader
+            .seek(SeekFrom::Start(0))
+            .map_err(|_| Error::io("Failed rewind reader"))?;
         Ok(UploadArgs {
             index: 1,
             chunk_size,
             current_chunk_size,
             len,
             identifier,
-            filename: name,
+            filename: name.into(),
             total_chunks,
         })
     }
 
     /// Get total chunks
-    pub fn total_chunks(&self) -> usize {
+    pub fn total_chunks(&self) -> u64 {
         self.total_chunks
     }
 
@@ -366,7 +379,7 @@ impl UploadArgs {
         mut reader: R,
     ) -> impl Iterator<Item = crate::Result<(usize, Form)>>
     where
-        R: std::io::Read,
+        R: Read,
     {
         let mut chunk_index = 1;
         let mut remaining = self.len;
@@ -377,7 +390,7 @@ impl UploadArgs {
             }
 
             let to_read = std::cmp::min(self.chunk_size, remaining);
-            let mut buffer = vec![0u8; to_read];
+            let mut buffer = vec![0u8; to_read as usize];
             match reader.read_exact(&mut buffer) {
                 Ok(()) => {
                     remaining -= to_read;
@@ -409,16 +422,16 @@ impl UploadArgs {
 pub(super) struct MergeArgs<'a> {
     identifier: &'a str,
     #[serde(rename = "totalSize")]
-    len: usize,
+    len: u64,
     filename: &'a str,
 }
 
 /// Upload progress stream. Chunk/2MB
 pub struct UploadProgress {
     /// Chunks done
-    pub done: usize,
+    pub done: u64,
     /// Total chunks
-    pub total: usize,
+    pub total: u64,
 }
 
 /// Upload file status
@@ -432,6 +445,8 @@ pub(super) enum UploadStatus {
 impl UploadStatus {
     // 怎么这么恶心啊, 快速上传 check 时就包一层 data 需要用这个, merge 就不需要
     pub(super) fn from_json(bytes: &[u8]) -> crate::Result<Self> {
+        use serde_json::Value;
+
         #[derive(Deserialize)]
         struct I {
             data: Value,
