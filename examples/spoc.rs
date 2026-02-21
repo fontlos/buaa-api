@@ -21,16 +21,12 @@ mod tests {
     async fn test_spoc_upload() {
         use buaa_api::api::spoc::UploadArgs;
 
-        use std::io::{Seek, SeekFrom};
-
         let context = Context::with_auth("./data").unwrap();
 
         let spoc = context.spoc();
 
         let mut reader = std::fs::File::open("data/file.zip").unwrap();
-        let start = reader.stream_position().unwrap();
-        let args = UploadArgs::from_reader(&mut reader, "file.zip".into()).unwrap();
-        reader.seek(SeekFrom::Start(start)).unwrap();
+        let args = UploadArgs::from_reader(&mut reader, "file.zip").unwrap();
         let upload = spoc.upload(&args, &reader).await.unwrap();
         println!("URL: {}", upload.as_url());
 
@@ -53,7 +49,6 @@ mod tests {
         use tokio::sync::{mpsc, oneshot};
 
         use std::fs::File;
-        use std::io::Seek;
 
         let context = Context::with_auth("./data").unwrap();
         let spoc = context.spoc();
@@ -64,10 +59,7 @@ mod tests {
         let mut reader = File::open(file_path).unwrap();
         // 重定向到开始位置
         let (args, reader) = tokio::task::spawn_blocking(move || {
-            let start = reader.stream_position().unwrap();
-            let args = UploadArgs::from_reader(&mut reader, file_name.into()).unwrap();
-            reader.seek(std::io::SeekFrom::Start(start)).unwrap();
-            (args, reader)
+            (UploadArgs::from_reader(&mut reader, file_name.into()).unwrap(), reader)
         })
         .await
         .unwrap();
@@ -93,6 +85,7 @@ mod tests {
                 println!("Progress: {}/{}", progress.done, progress.total);
             }
         });
+
         match result_rx.await {
             Ok(Ok(res)) => println!("URL: {}", res.as_url()),
             Ok(Err(e)) => println!("Upload Error: {}", e),

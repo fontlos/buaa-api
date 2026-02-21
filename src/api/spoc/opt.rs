@@ -136,7 +136,7 @@ impl super::SpocApi {
         match status {
             UploadStatus::Complete(c) => Ok(c),
             UploadStatus::Partial(partial) => {
-                let mut done = partial.len();
+                let mut done = partial.len() as u64;
                 let total = args.total_chunks();
 
                 // 分块上传, 可以乱序, 并且 partial 保序, 如果重复上传会导致合并失败
