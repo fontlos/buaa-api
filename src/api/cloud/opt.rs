@@ -343,7 +343,6 @@ impl super::CloudApi {
     /// # Check whether can upload fast
     ///
     /// - Input: Need call [UploadArgs::compute_mini]
-    #[cfg(feature = "multipart")]
     pub async fn upload_fast_check(&self, args: &UploadArgs) -> crate::Result<bool> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/predupload";
         let json = serde_json::json!({
@@ -360,7 +359,6 @@ impl super::CloudApi {
     /// # Upload file fast
     ///
     /// - Input: Need call [UploadArgs::compute_full]
-    #[cfg(feature = "multipart")]
     pub async fn upload_fast(&self, args: &UploadArgs) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/dupload";
         let json = serde_json::json!({
@@ -388,7 +386,6 @@ impl super::CloudApi {
     /// - Input: Need call [UploadArgs::compute_mini]
     ///
     /// **Note**: File size should be less than 5 GiB. Recommended for files smaller than 100 MiB.
-    #[cfg(feature = "multipart")]
     pub async fn upload_small(&self, args: &UploadArgs, body: Vec<u8>) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osbeginupload";
         let json = serde_json::json!({
@@ -433,7 +430,6 @@ impl super::CloudApi {
     /// - Input: Need call [UploadArgs::compute_mini]
     ///
     /// **Note**: File size should be less than 100 GiB
-    #[cfg(feature = "multipart")]
     pub async fn upload_big<R>(&self, args: &UploadArgs, mut reader: R) -> crate::Result<()>
     where
         R: std::io::Read + Send + 'static,
