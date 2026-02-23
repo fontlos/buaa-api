@@ -1,8 +1,12 @@
+use bytes::{BufMut, BytesMut};
 use reqwest::Method;
 
-use super::{Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadRes, Week};
-#[cfg(feature = "multipart")]
-use super::{UploadArgs, UploadProgress, UploadStatus};
+use crate::utils;
+
+use super::{
+    Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadProgress,
+    UploadRes, UploadStatus, Week,
+};
 
 impl super::SpocApi {
     /// Get current week
@@ -115,7 +119,6 @@ impl super::SpocApi {
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
-    #[cfg(feature = "multipart")]
     pub async fn upload_callback<R, F>(
         client: &reqwest::Client,
         args: &UploadArgs,
@@ -142,14 +145,65 @@ impl super::SpocApi {
                 // 分块上传, 可以乱序, 并且 partial 保序, 如果重复上传会导致合并失败
                 // TODO: 并发上传?
                 for chunk in args.chunk_iter(reader) {
-                    let (index, form) = chunk?;
+                    let (index, data) = chunk?;
                     // 已经上传过的跳过
                     if partial.binary_search(&index).is_ok() {
                         continue;
                     }
+
+                    // 可以使用 query 参数, 或者也可以在 multipart/form-data 的 text 字段
+                    let size = data.len();
+                    let query = [
+                        ("chunkNumber", index.to_string()),
+                        ("chunkSize", args.chunk_size.to_string()),
+                        ("currentChunkSize", size.to_string()),
+                        ("totalSize", args.len.to_string()),
+                        ("identifier", args.identifier.clone()),
+                        // ("filename", args.filename.clone()),
+                        // ("relativePath", args.filename.clone()),
+                        ("totalChunks", args.total_chunks.to_string()),
+                    ];
+
+                    // 由于其他参数可在 query 中传递, 对于纯粹的文件, 我们手动构建这一段 multipart/form-data
+                    let boundary = format!("----WebKitFormBoundary{}", utils::gen_rand_str(16));
+
+                    let body_len = size + boundary.len() * 2 + 200; // 200 固定内容, 实际为 111 左右
+                    let mut body = BytesMut::with_capacity(body_len);
+                    // 起始 boundary: 2 + boundary.len() + 2
+                    body.put_slice(b"--");
+                    body.put_slice(boundary.as_bytes());
+                    body.put_slice(b"\r\n");
+                    // Part 头部: 66 + 31
+                    // 这个字段很重要, 但具体名字不重要
+                    // 名字取决于 merge 操作, 但它必须是 PDF 文件骗骗文件系统
+                    body.put_slice(
+                        b"Content-Disposition: form-data; name=\"file\"; filename=\"file.pdf\"\r\n",
+                    );
+                    body.put_slice(b"Content-Type: application/pdf\r\n");
+                    // 空行分隔 header 和 body: 2
+                    body.put_slice(b"\r\n");
+                    // 文件原始二进制数据: size + 2
+                    body.put_slice(&data);
+                    body.put_slice(b"\r\n");
+                    // 结束 boundary: 2 + boundary.len() + 4
+                    body.put_slice(b"--");
+                    body.put_slice(boundary.as_bytes());
+                    body.put_slice(b"--\r\n");
+
+                    let body = body.freeze();
+
+                    // Content-Type
+                    let content_type = format!("multipart/form-data; boundary={}", boundary);
+
                     // 一些无用的 {"data":null,"mc":false}
                     // TODO: 但是为空时也是出错
-                    let _res = client.post(upload_url).multipart(form).send().await?;
+                    let _res = client
+                        .post(upload_url)
+                        .query(&query)
+                        .header("Content-Type", content_type)
+                        .body(body)
+                        .send()
+                        .await?;
 
                     done += 1;
                     // 进度回调, 空闭包理应被优化掉
@@ -180,7 +234,6 @@ impl super::SpocApi {
     ///
     /// **Note**: For some special types of files (like DLL, PDB, EXE), the server may reject the upload.
     /// You can try renaming the file with a common extension (like .pdf) or using a compressed archive.
-    #[cfg(feature = "multipart")]
     pub async fn upload<R>(&self, args: &UploadArgs, reader: R) -> crate::Result<UploadRes>
     where
         R: std::io::Read,

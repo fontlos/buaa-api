@@ -1,5 +1,3 @@
-#[cfg(feature = "multipart")]
-use reqwest::multipart::{Form, Part};
 use serde::{Deserialize, Deserializer, Serialize};
 use time::macros::format_description;
 use time::{PrimitiveDateTime, Weekday};
@@ -271,18 +269,22 @@ pub struct UploadArgs {
     index: usize,
     /// Size of each chunk (fixed)
     #[serde(rename = "chunkSize")]
-    chunk_size: u64,
+    pub(super) chunk_size: u64,
     #[serde(rename = "currentChunkSize")]
     current_chunk_size: u64,
     #[serde(rename = "totalSize")]
-    len: u64,
-    identifier: String,
+    /// Total file size
+    pub(super) len: u64,
+    /// File identifier (MD5 hash)
+    pub(super) identifier: String,
     // 不能缺少的字段, 这个名字仅在匹配上传时生效, 可以起到一个重命名的作用
-    filename: String,
+    /// File name (used for matching upload, can rename file by same file with new name)
+    pub(super) filename: String,
     // #[serde(rename = "relativePath")]
     // relative_path: String,
+    /// Total chunks
     #[serde(rename = "totalChunks")]
-    total_chunks: u64,
+    pub(super) total_chunks: u64,
 }
 
 impl UploadArgs {
@@ -348,36 +350,11 @@ impl UploadArgs {
         self.total_chunks
     }
 
-    #[cfg(feature = "multipart")]
-    fn build_form(&self, index: usize, data: Vec<u8>) -> Form {
-        let current_chunk_size = data.len();
-        Form::new()
-            .text("chunkNumber", index.to_string())
-            .text("chunkSize", self.chunk_size.to_string())
-            .text("currentChunkSize", current_chunk_size.to_string())
-            .text("totalSize", self.len.to_string())
-            .text("identifier", self.identifier.clone())
-            // .text("filename", self.filename.clone())
-            // .text("relativePath", self.filename.clone())
-            .text("totalChunks", self.total_chunks.to_string())
-            .part(
-                "file",
-                Part::bytes(data)
-                    // 这个字段很重要, 但具体名字不重要
-                    // 名字取决于 merge 操作, 但它必须是 PDF 文件骗骗文件系统
-                    // .file_name(self.filename.clone())
-                    .file_name("file.pdf")
-                    .mime_str("application/pdf")
-                    .unwrap(),
-            )
-    }
-
     /// Convert to multiple Form iterator
-    #[cfg(feature = "multipart")]
     pub(super) fn chunk_iter<R>(
         &self,
         mut reader: R,
-    ) -> impl Iterator<Item = crate::Result<(usize, Form)>>
+    ) -> impl Iterator<Item = crate::Result<(usize, Vec<u8>)>>
     where
         R: Read,
     {
@@ -394,7 +371,7 @@ impl UploadArgs {
             match reader.read_exact(&mut buffer) {
                 Ok(()) => {
                     remaining -= to_read;
-                    let chunk = (chunk_index, self.build_form(chunk_index, buffer));
+                    let chunk = (chunk_index, buffer);
                     chunk_index += 1;
                     Some(Ok(chunk))
                 }
@@ -406,7 +383,6 @@ impl UploadArgs {
         })
     }
 
-    #[cfg(feature = "multipart")]
     pub(super) fn to_merge(&self) -> MergeArgs<'_> {
         MergeArgs {
             identifier: &self.identifier,
@@ -417,7 +393,6 @@ impl UploadArgs {
 }
 
 /// Merge file arguments
-#[cfg(feature = "multipart")]
 #[derive(Debug, Serialize)]
 pub(super) struct MergeArgs<'a> {
     identifier: &'a str,
@@ -435,13 +410,11 @@ pub struct UploadProgress {
 }
 
 /// Upload file status
-#[cfg(feature = "multipart")]
 pub(super) enum UploadStatus {
     Partial(Vec<usize>),
     Complete(UploadRes),
 }
 
-#[cfg(feature = "multipart")]
 impl UploadStatus {
     // 怎么这么恶心啊, 快速上传 check 时就包一层 data 需要用这个, merge 就不需要
     pub(super) fn from_json(bytes: &[u8]) -> crate::Result<Self> {
