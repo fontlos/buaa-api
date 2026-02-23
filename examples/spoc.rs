@@ -45,7 +45,7 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_spoc_upload_with_progress() {
-        use buaa_api::api::spoc::{UploadArgs, SpocApi, UploadProgress, UploadRes};
+        use buaa_api::api::spoc::{SpocApi, UploadArgs, UploadProgress, UploadRes};
         use tokio::sync::{mpsc, oneshot};
 
         use std::fs::File;
@@ -57,12 +57,7 @@ mod tests {
         let file_name = "file.zip";
 
         let mut reader = File::open(file_path).unwrap();
-        // 重定向到开始位置
-        let (args, reader) = tokio::task::spawn_blocking(move || {
-            (UploadArgs::from_reader(&mut reader, file_name.into()).unwrap(), reader)
-        })
-        .await
-        .unwrap();
+        let args = UploadArgs::from_reader(&mut reader, file_name).unwrap();
 
         let (progress_tx, mut progress_rx) = mpsc::unbounded_channel::<UploadProgress>();
         let (result_tx, result_rx) = oneshot::channel::<buaa_api::Result<UploadRes>>();
@@ -72,7 +67,8 @@ mod tests {
         let upload = async move {
             SpocApi::upload_callback(&client, &args, reader, |progress| {
                 progress_tx.send(progress).unwrap();
-            }).await
+            })
+            .await
         };
 
         tokio::spawn(async move {
