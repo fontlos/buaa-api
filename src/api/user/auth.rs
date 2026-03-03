@@ -1,5 +1,5 @@
 use crate::api::Sso;
-use crate::utils;
+use crate::utils::time::DateTime;
 
 impl super::UserApi {
     /// # Login to UserApi
@@ -9,7 +9,7 @@ impl super::UserApi {
             self.api::<Sso>().login().await?;
         }
 
-        let time = utils::get_time_millis();
+        let time = DateTime::millis();
         // 获取 JSESSIONID
         self.client
             .get(format!(

@@ -1,9 +1,8 @@
 use serde::Deserialize;
-use time::PrimitiveDateTime;
 
 use std::collections::HashMap;
 
-use crate::utils::deserialize_datetime;
+use crate::utils::time::DateTime;
 
 /// Exam schedule
 #[derive(Debug)]
@@ -34,13 +33,11 @@ pub struct Exam {
     #[serde(rename = "course_name")]
     pub name: String,
     /// Exam start time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "exame_start_time")]
-    pub start: PrimitiveDateTime,
+    pub start: DateTime,
     /// Exam end time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "exame_end_time")]
-    pub end: PrimitiveDateTime,
+    pub end: DateTime,
     // kclx 课程类型 必修/选修
     // exam_type 考试类型 期中/期末
     /// Exam position

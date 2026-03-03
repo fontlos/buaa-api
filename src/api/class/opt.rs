@@ -1,16 +1,16 @@
 use serde_json::Value;
 
-use crate::utils;
+use crate::utils::time::DateTime;
 
 use super::data::{Course, CourseSchedule, Res, Schedule};
 
 impl super::ClassApi {
     /// # Query one day's all schedules
     ///
-    /// **Input:** Date string, format `YYYYMMDD`,
-    pub async fn query_schedule(&self, date: &str) -> crate::Result<Vec<Schedule>> {
+    /// **Input:** DateTime
+    pub async fn query_schedule(&self, date: &DateTime) -> crate::Result<Vec<Schedule>> {
         let url = "https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action";
-        let payload = [("dateStr", date)];
+        let payload = [("dateStr", date.to_date())];
         let bytes = self.universal_request(url, &payload).await?;
         let res: Vec<Schedule> = Res::parse(&bytes)?;
         Ok(res)
@@ -67,7 +67,7 @@ impl super::ClassApi {
         let url = "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action";
         let payload = [
             ("courseSchedId", id),
-            ("timestamp", &utils::get_time_millis().to_string()),
+            ("timestamp", &DateTime::millis().to_string()),
         ];
         let bytes = self.universal_request(url, &payload).await?;
         // TODO: 检查类型移除 Value

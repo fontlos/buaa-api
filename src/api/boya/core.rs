@@ -3,6 +3,7 @@ use serde::Serialize;
 
 use crate::api::{Boya, Sso};
 use crate::error::Error;
+use crate::utils::time::DateTime;
 use crate::{crypto, utils};
 
 /// From hard-coded in JS
@@ -115,7 +116,7 @@ impl super::BoyaApi {
         let body = aes_cipher.encrypt_ecb(&date);
         let body = crypto::encode_base64(body);
 
-        let time = utils::get_time_millis();
+        let time = DateTime::millis();
 
         // 现在似乎传一遍 token 就可以了, 留哪个都行
         let res = self
