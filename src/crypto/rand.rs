@@ -2,7 +2,7 @@
 
 use std::ops::{Range, RangeInclusive};
 
-use crate::utils::get_time_nanos;
+use crate::utils::time::DateTime;
 
 /// Random number generator core trait
 pub trait RngCore {
@@ -39,7 +39,7 @@ pub struct WyRng {
 impl WyRng {
     /// Create a new WyRng
     pub fn new() -> Self {
-        let seed = get_time_nanos() as u64;
+        let seed = DateTime::nanos() as u64;
         Self {
             // 确保非零
             state: seed | 1,
@@ -89,7 +89,7 @@ pub struct Xoshiro256ppRng {
 impl Xoshiro256ppRng {
     /// Create a new Xoshiro256ppRng
     pub fn new() -> Self {
-        let seed = get_time_nanos();
+        let seed = DateTime::nanos();
         let seed_bytes = seed.to_le_bytes();
 
         let mut state = [
@@ -189,7 +189,7 @@ impl ChaCha20Rng {
     pub fn generate_seed() -> [u8; 32] {
         let mut seed = [0u8; 32];
 
-        let time = get_time_nanos() as u64;
+        let time = DateTime::nanos() as u64;
         let stack = &time as *const _ as u64;
         let phi = stack.wrapping_mul(0x9E3779B97F4A7C15);
         let mut mixer = time ^ stack ^ phi;

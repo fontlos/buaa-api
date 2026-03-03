@@ -23,10 +23,6 @@ mod request;
 pub mod store;
 mod utils;
 
-pub use context::Context;
+pub use crate::utils::time;
+pub use context::{Context, ContextBuilder};
 pub use error::{Error, Result};
-
-pub mod exports {
-    //! Some useful internal items are re-exported here for external use.
-    pub use crate::context::ContextBuilder;
-}

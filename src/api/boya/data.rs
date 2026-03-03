@@ -1,9 +1,8 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use time::{Date, Month, PrimitiveDateTime, Time};
 
 use crate::error::Error;
-use crate::utils::{self, deserialize_datetime};
+use crate::utils::time::{Date, DateTime, Month, Time};
 
 #[derive(Deserialize)]
 pub(crate) struct Res<T> {
@@ -39,12 +38,10 @@ pub(super) struct Data<T>(pub T);
 pub struct Semester {
     /// Semester start date
     #[serde(rename = "semesterStartDate")]
-    #[serde(deserialize_with = "deserialize_datetime")]
-    pub start: PrimitiveDateTime,
+    pub start: DateTime,
     /// Semester end date
     #[serde(rename = "semesterEndDate")]
-    #[serde(deserialize_with = "deserialize_datetime")]
-    pub end: PrimitiveDateTime,
+    pub end: DateTime,
 }
 
 impl<'de> Deserialize<'de> for Data<Semester> {
@@ -70,11 +67,10 @@ impl<'de> Deserialize<'de> for Data<Semester> {
 impl Semester {
     /// Get current semester based on local time. This is ONLY an estimation.
     pub fn estimated_current() -> Self {
-        let now = utils::get_datetime();
+        let now = DateTime::now();
         let year = now.year();
-        let datetime_helper = |y, m, d| {
-            PrimitiveDateTime::new(Date::from_calendar_date(y, m, d).unwrap(), Time::MIDNIGHT)
-        };
+        let datetime_helper =
+            |y, m, d| DateTime::new(Date::from_calendar_date(y, m, d).unwrap(), Time::MIDNIGHT);
         // 秋/春季学期
         let (start, end) = if now.month() >= Month::August {
             (
@@ -166,25 +162,20 @@ pub struct Course {
 #[derive(Debug, Deserialize)]
 pub struct Schedule {
     /// Course start time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseStartDate")]
-    pub course_start: PrimitiveDateTime,
+    pub course_start: DateTime,
     /// Course end time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseEndDate")]
-    pub course_end: PrimitiveDateTime,
+    pub course_end: DateTime,
     /// Course pre-selection start time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseSelectStartDate")]
-    pub select_start: PrimitiveDateTime,
+    pub select_start: DateTime,
     /// Course pre-selection end time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseSelectEndDate")]
-    pub select_end: PrimitiveDateTime,
+    pub select_end: DateTime,
     /// Course cancellation end time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "courseCancelEndDate")]
-    pub cancel_end: PrimitiveDateTime,
+    pub cancel_end: DateTime,
 }
 
 /// Course category
@@ -294,21 +285,17 @@ where
 #[derive(Debug, Deserialize)]
 pub struct SignConfig {
     /// Check in start time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signStartDate")]
-    pub checkin_start: PrimitiveDateTime,
+    pub checkin_start: DateTime,
     /// Check in end time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signEndDate")]
-    pub checkin_end: PrimitiveDateTime,
+    pub checkin_end: DateTime,
     /// Check out start time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signOutStartDate")]
-    pub checkout_start: PrimitiveDateTime,
+    pub checkout_start: DateTime,
     /// Check out end time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "signOutEndDate")]
-    pub checkout_end: PrimitiveDateTime,
+    pub checkout_end: DateTime,
     /// Coordinate for check in/out
     #[serde(deserialize_with = "deserialize_coordinate")]
     #[serde(rename = "signPointList")]

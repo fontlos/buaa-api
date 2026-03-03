@@ -1,10 +1,10 @@
-use crate::utils;
+use crate::utils::time::DateTime;
 
 impl super::UserApi {
     /// # Get User Center state
     /// - Output: `String`, JSON includes name and username, etc
     pub async fn get_state(&self) -> crate::Result<String> {
-        let time = utils::get_time_millis();
+        let time = DateTime::millis();
         // 获取登录状态
         let res = self
             .client

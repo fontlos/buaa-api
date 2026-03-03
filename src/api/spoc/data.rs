@@ -1,9 +1,8 @@
 use serde::{Deserialize, Deserializer, Serialize};
-use time::macros::format_description;
-use time::{PrimitiveDateTime, Weekday};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use crate::utils::time::{DateTime, Weekday};
 use crate::{Error, crypto, utils};
 
 /// Request Body Payload
@@ -137,17 +136,15 @@ where
 #[derive(Debug)]
 pub struct TimeRange {
     /// Course start time
-    pub start: PrimitiveDateTime,
+    pub start: DateTime,
     /// Course end time
-    pub end: PrimitiveDateTime,
+    pub end: DateTime,
 }
 
 fn deserialize_time_range<'de, D>(deserializer: D) -> Result<TimeRange, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let format_string = format_description!("[year]-[month]-[day] [hour]:[minute]");
-
     let s: String = Deserialize::deserialize(deserializer)?;
 
     let parts: Vec<&str> = s.split(' ').collect();
@@ -164,10 +161,8 @@ where
     let start_time = format!("{} {}", date_part, time_parts[0]);
     let end_time = format!("{} {}", date_part, time_parts[1]);
 
-    let start =
-        PrimitiveDateTime::parse(&start_time, &format_string).map_err(serde::de::Error::custom)?;
-    let end =
-        PrimitiveDateTime::parse(&end_time, &format_string).map_err(serde::de::Error::custom)?;
+    let start = DateTime::from_standard(&start_time).map_err(serde::de::Error::custom)?;
+    let end = DateTime::from_standard(&end_time).map_err(serde::de::Error::custom)?;
 
     Ok(TimeRange { start, end })
 }

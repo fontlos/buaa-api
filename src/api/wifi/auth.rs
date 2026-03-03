@@ -3,6 +3,7 @@ use std::error::Error as StdError;
 use crate::crypto;
 use crate::error::{Code, Error};
 use crate::utils;
+use crate::utils::time::DateTime;
 
 use super::info;
 
@@ -71,7 +72,7 @@ impl super::WifiApi {
         };
 
         // 获取 Challenge Token
-        let time = utils::get_time_millis().to_string();
+        let time = DateTime::millis().to_string();
         let time = time.as_str();
         let params = [
             ("callback", time),
@@ -217,7 +218,7 @@ impl super::WifiApi {
             None => return Err(Error::server("No AC ID").with_label("Wifi")),
         };
 
-        let time = utils::get_time_millis().to_string();
+        let time = DateTime::millis().to_string();
         let time = time.as_str();
 
         // 构造登出 URL 并登录

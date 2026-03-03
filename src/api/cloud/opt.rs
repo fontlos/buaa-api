@@ -3,6 +3,7 @@ use serde_json::Value;
 
 use crate::error::Error;
 use crate::utils;
+use crate::utils::time::DateTime;
 
 use super::data::{
     Dir, Item, Payload, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
@@ -362,7 +363,7 @@ impl super::CloudApi {
     pub async fn upload_fast(&self, args: &UploadArgs) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/dupload";
         let json = serde_json::json!({
-            "client_mtime": utils::get_time_millis(),
+            "client_mtime": DateTime::millis(),
             "crc32": args.crc32,
             "docid": args.dir,
             "length": args.length,
@@ -389,7 +390,7 @@ impl super::CloudApi {
     pub async fn upload_small(&self, args: &UploadArgs, body: Vec<u8>) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osbeginupload";
         let json = serde_json::json!({
-            "client_mtime": utils::get_time_millis(),
+            "client_mtime": DateTime::millis(),
             "docid": args.dir,
             "length": args.length,
             "name": args.name,

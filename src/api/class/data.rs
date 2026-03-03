@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::error::Error;
-use crate::utils::deserialize_datetime;
+use crate::utils::time::DateTime;
 
 /// Respond wrapper
 #[derive(Deserialize)]
@@ -45,9 +45,8 @@ pub struct Schedule {
     #[serde(rename = "teacherName")]
     pub teacher: String,
     /// Checkin time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "classBeginTime")]
-    pub time: time::PrimitiveDateTime,
+    pub time: DateTime,
     /// Checkin status
     #[serde(deserialize_with = "deserialize_status")]
     #[serde(rename = "signStatus")]
@@ -75,9 +74,8 @@ pub struct CourseSchedule {
     #[serde(rename = "courseSchedId")]
     pub id: String,
     /// Checkin time
-    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "classBeginTime")]
-    pub time: time::PrimitiveDateTime,
+    pub time: DateTime,
     /// Checkin status
     #[serde(deserialize_with = "deserialize_status")]
     #[serde(rename = "signStatus")]

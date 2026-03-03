@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
-use time::Weekday;
 
 use crate::error::Error;
+use crate::utils::time::Weekday;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Res<T> {

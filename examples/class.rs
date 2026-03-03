@@ -5,11 +5,13 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_class_checkin() {
+        use buaa_api::time::DateTime;
         let context = Context::with_auth("./data").unwrap();
 
         let class = context.class();
 
-        let res = class.query_schedule("20251014").await.unwrap();
+        let date = DateTime::now();
+        let res = class.query_schedule(&date).await.unwrap();
         println!("{:#?}", res);
         let res = class.checkin(&res[0].id).await.unwrap();
         println!("{}", res);

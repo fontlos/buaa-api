@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::api::{Aas, App, Boya, Class, Cloud, Spoc, Srs, Sso, Tes};
 use crate::error::{Code, Error, Result};
-use crate::utils;
+use crate::utils::time::DateTime;
 
 /// Store for credentials
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -125,7 +125,7 @@ impl CredentialStore {
     }
 
     pub(crate) fn is_expired<T: Token>(&self) -> bool {
-        T::field(self).expiration.load(Ordering::Relaxed) < utils::get_time_secs()
+        T::field(self).expiration.load(Ordering::Relaxed) < DateTime::secs()
     }
 
     // 原子类型可以直接在不可变引用上更新
@@ -133,12 +133,12 @@ impl CredentialStore {
     pub(crate) fn refresh<T: Token>(&self) {
         T::field(self)
             .expiration
-            .store(utils::get_time_secs() + T::EXPIRATION, Ordering::Relaxed);
+            .store(DateTime::secs() + T::EXPIRATION, Ordering::Relaxed);
     }
 
     // Update 动作包含 Refresh
     pub(crate) fn update<T: Token>(&mut self, value: String) {
-        let now = utils::get_time_secs();
+        let now = DateTime::secs();
         let item = T::mut_field(self);
         item.expiration
             .store(now + T::EXPIRATION, Ordering::Relaxed);
