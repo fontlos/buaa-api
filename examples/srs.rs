@@ -8,15 +8,18 @@ mod tests {
         let context = Context::with_auth("./data").unwrap();
 
         let srs = context.srs();
+        srs.login().await.unwrap();
 
-        let filter = srs.get_default_filter().await.unwrap();
+        let mut filter = srs.get_default_filter().await.unwrap();
+        filter.set_display_conflict(true);
         let res = srs.query_course(&filter).await.unwrap();
-        let batch = srs.get_batch().await.unwrap();
-        println!("{:?}", res);
-        let mut opt = res.data[0].as_opt();
-        opt.set_batch(&batch);
-        opt.set_index(1);
-        srs.pre_select_course(&opt).await.unwrap();
+        println!("{:#?}", res);
+
+        // let batch = srs.get_batch().await.unwrap();
+        // let mut opt = res[0].as_opt();
+        // opt.set_batch(&batch);
+        // opt.set_index(1);
+        // srs.pre_select_course(&opt).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }

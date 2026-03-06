@@ -22,19 +22,12 @@ where
     Ok(s == "1")
 }
 
-fn serialize_bool<S>(value: &bool, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_str(if *value { "1" } else { "0" })
-}
-
 // ====================
 // 用于课程查询
 // ====================
 
 /// # Filter for querying courses
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct Filter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
@@ -48,21 +41,39 @@ pub struct Filter {
     size: u8,
     // 校区
     campus: u8,
-    // 是否显示冲突课程, 可选, 隐藏冲突为 0
+    // 是否显示冲突课程, 可选
+    // 全部显示置空, 隐藏冲突为 0, 只显示冲突为 1, 理论上用不到状态 1
+    #[serde(skip_serializing_if = "is_true")]
     #[serde(rename = "SFCT")]
-    #[serde(serialize_with = "serialize_bool")]
+    #[serde(serialize_with = "serialize_conflict")]
     display_conflict: bool,
     // 课程性质, 必修限修等, 可选
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "KCXZ")]
     #[serde(serialize_with = "serialize_requirement")]
     requirement: Option<Requirement>,
     // 课程类型, 可选
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "KCLB")]
     #[serde(serialize_with = "serialize_category")]
     category: Option<Category>,
     // 搜索关键字, 可选
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "KEY")]
     key: Option<String>,
+}
+
+const fn is_true(a: &bool) -> bool {
+    *a
+}
+
+// display_conflict 全部显示置空, 隐藏冲突为 0, 只显示冲突为 1, 理论上用不到状态 1
+// 所以为 true 时我们跳过序列化, 那么序列化函数只需考虑 false 的情况, 直接序列化为 "0" 即可
+fn serialize_conflict<S>(_: &bool, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    serializer.serialize_str("0")
 }
 
 impl Filter {
@@ -164,7 +175,7 @@ pub enum Scope {
 }
 
 impl Scope {
-    pub(crate) fn as_str(&self) -> &'static str {
+    pub(crate) fn as_query_str(&self) -> &'static str {
         match self {
             Scope::Suggest => "TJKC",
             Scope::WithinPlan => "FANKC",
@@ -184,12 +195,13 @@ fn serialize_scope<S>(scope: &Scope, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    serializer.serialize_str(scope.as_str())
+    serializer.serialize_str(scope.as_query_str())
 }
 
 /// # The requirement of the course
 ///
 /// Be sure to consult the corresponding notes in the document to know the specific type
+#[derive(Debug)]
 pub enum Requirement {
     /// `必修`
     Compulsory,
@@ -229,6 +241,7 @@ where
 /// # The category of course
 ///
 /// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
+#[derive(Debug)]
 pub enum Category {
     /// `数学与自然科学类`
     A,
@@ -393,6 +406,10 @@ pub struct Course {
     /// Offering department
     #[serde(rename = "KKDW")]
     pub department: String,
+    /// Whether the course is conflicted
+    #[serde(deserialize_with = "deserialize_bool")]
+    #[serde(rename = "SFCT")]
+    pub is_conflict: bool,
     /// Whether the course is selected
     #[serde(rename = "SFYX")]
     #[serde(deserialize_with = "deserialize_bool")]
@@ -464,7 +481,7 @@ impl Course {
     /// Convert Course to Opt for select or drop course
     pub fn as_opt(&self) -> Opt<'_> {
         Opt {
-            scope: self.scope.as_str(),
+            scope: self.scope.as_query_str(),
             id: &self.id,
             sum: &self.sum,
             batch: None,
