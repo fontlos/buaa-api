@@ -41,7 +41,7 @@ impl super::SrsApi {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
         let payload = Payload::Json(filter);
         let mut res: Data<Vec<Course>> = self.universal_request(url, payload).await?;
-        // 手动插入 scope, 方便调用
+        // 手动插入 scope, 方便后续调用选课相关 API
         res.0.iter_mut().for_each(|c| c.scope = filter.scope);
         Ok(res.0)
     }
