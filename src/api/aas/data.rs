@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 
 use crate::error::Error;
-use crate::utils::time::Weekday;
+use crate::utils::time::{Weekday, Time};
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Res<T> {
@@ -110,11 +110,13 @@ pub struct Schedule {
     #[serde(rename = "dayOfWeek")]
     pub weekday: Weekday,
     /// Begin time
+    #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "beginTime")]
-    pub begin_time: String,
+    pub begin_time: Time,
     /// End time
+    #[serde(deserialize_with = "deserialize_time")]
     #[serde(rename = "endTime")]
-    pub end_time: String,
+    pub end_time: Time,
     /// Begin slots
     #[serde(rename = "beginSection")]
     pub begin_slot: u8,
@@ -141,4 +143,13 @@ where
         7 => Ok(Weekday::Sunday),
         _ => Err(serde::de::Error::custom("Unexpected value")),
     }
+}
+
+fn deserialize_time<'de, D>(deserializer: D) -> Result<Time, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let value: &str = Deserialize::deserialize(deserializer)?;
+    let format = time::macros::format_description!("[hour]:[minute]");
+    Time::parse(value, &format).map_err(serde::de::Error::custom)
 }
