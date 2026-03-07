@@ -1,5 +1,5 @@
-use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use bytes::Bytes;
+use serde::Serialize;
 
 use crate::api::{Srs, Sso};
 use crate::error::Error;
@@ -35,14 +35,13 @@ impl super::SrsApi {
         Ok(())
     }
 
-    pub(super) async fn universal_request<'a, P, T>(
+    pub(super) async fn universal_request<'a, P>(
         &self,
         url: &str,
         payload: Payload<'a, P>,
-    ) -> crate::Result<T>
+    ) -> crate::Result<Bytes>
     where
         P: Serialize + ?Sized,
-        T: DeserializeOwned,
     {
         let cred = self.cred.load();
         if cred.is_expired::<Srs>() {
@@ -60,17 +59,6 @@ impl super::SrsApi {
         };
 
         let bytes = req.send().await?.bytes().await?;
-        let res = serde_json::from_slice::<Res<T>>(&bytes)?;
-        if res.code != 200 {
-            return Err(Error::server(format!("Response: {}", res.msg)).with_label("Srs"));
-        }
-        Ok(res.data)
+        Ok(bytes)
     }
-}
-
-#[derive(Deserialize)]
-struct Res<T> {
-    code: u16,
-    msg: String,
-    data: T,
 }

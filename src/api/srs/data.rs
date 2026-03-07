@@ -1,6 +1,25 @@
 use serde::de::Deserializer;
 use serde::{Deserialize, Serialize, Serializer};
 
+use crate::error::Error;
+
+#[derive(Deserialize)]
+pub(crate) struct Res<T> {
+    code: u16,
+    msg: String,
+    data: T,
+}
+
+impl<'de, T: Deserialize<'de>> Res<T> {
+    pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
+        let res: Res<T> = serde_json::from_slice(&v)?;
+        if res.code != 200 {
+            return Err(Error::server(format!("Response: {}", res.msg)).with_label("Srs"));
+        }
+        Ok(res.data)
+    }
+}
+
 pub(super) enum Payload<'a, P: Serialize + ?Sized> {
     QueryWithToken,
     Form(&'a P),

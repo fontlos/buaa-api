@@ -16,6 +16,7 @@ mod tests {
         println!("{:#?}", res);
 
         // let batch = srs.get_batch().await.unwrap();
+        // println!("Batch: {:?}", batch);
         // let mut opt = res[0].as_opt();
         // opt.set_batch(&batch);
         // opt.set_index(1);
