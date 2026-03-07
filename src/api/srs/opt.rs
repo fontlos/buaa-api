@@ -1,6 +1,6 @@
 use crate::{Error, utils};
 
-use super::{Course, Data, Filter, Opt, Payload, Selected};
+use super::{Res, Course, Data, Filter, Opt, Payload, Selected};
 
 impl super::SrsApi {
     /// # Get the default course filter.
@@ -10,7 +10,10 @@ impl super::SrsApi {
     pub async fn get_default_filter(&self) -> crate::Result<Filter> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
         let payload = Payload::<'_, ()>::QueryWithToken;
-        let res: serde_json::Value = self.universal_request(url, payload).await?;
+        // TODO: 这个里面也有 BatchID
+        let bytes = self.universal_request(url, payload).await?;
+        // println!("Response: {}", String::from_utf8_lossy(&bytes));
+        let res: serde_json::Value = Res::parse(&bytes)?;
         let campus = res
             .pointer("/student/campus")
             .and_then(|v| v.as_str())
@@ -40,7 +43,8 @@ impl super::SrsApi {
     pub async fn query_course(&self, filter: &Filter) -> crate::Result<Vec<Course>> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/list";
         let payload = Payload::Json(filter);
-        let mut res: Data<Vec<Course>> = self.universal_request(url, payload).await?;
+        let bytes = self.universal_request(url, payload).await?;
+        let mut res: Data<Vec<Course>> = Res::parse(&bytes)?;
         // 手动插入 scope, 方便后续调用选课相关 API
         res.0.iter_mut().for_each(|c| c.scope = filter.scope);
         Ok(res.0)
@@ -54,7 +58,8 @@ impl super::SrsApi {
     pub async fn query_pre_selected(&self) -> crate::Result<Vec<Vec<Selected>>> {
         let url = "https://byxk.buaa.edu.cn/xsxk/volunteer/select";
         let payload = Payload::<'_, ()>::Empty;
-        let res: Data<Vec<Vec<Selected>>> = self.universal_request(url, payload).await?;
+        let bytes = self.universal_request(url, payload).await?;
+        let res: Data<Vec<Vec<Selected>>> = Res::parse(&bytes)?;
         Ok(res.0)
     }
 
@@ -64,7 +69,8 @@ impl super::SrsApi {
     pub async fn query_selected(&self) -> crate::Result<Vec<Selected>> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/select";
         let payload = Payload::<'_, ()>::Empty;
-        let res = self.universal_request(url, payload).await?;
+        let bytes = self.universal_request(url, payload).await?;
+        let res: Vec<Selected> = Res::parse(&bytes)?;
         Ok(res)
     }
 
@@ -83,7 +89,8 @@ impl super::SrsApi {
     pub async fn pre_select_course<'a>(&self, opt: &'a Opt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
         let payload = Payload::Form(&opt);
-        let _: Option<()> = self.universal_request(url, payload).await?;
+        let bytes = self.universal_request(url, payload).await?;
+        let _: Option<()> = Res::parse(&bytes)?;
 
         Ok(())
     }
@@ -98,7 +105,8 @@ impl super::SrsApi {
     pub async fn select_course<'a>(&self, opt: &'a Opt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/buaa/clazz/add";
         let payload = Payload::Form(opt);
-        let _: Option<()> = self.universal_request(url, payload).await?;
+        let bytes = self.universal_request(url, payload).await?;
+        let _: Option<()> = Res::parse(&bytes)?;
 
         Ok(())
     }
@@ -111,7 +119,8 @@ impl super::SrsApi {
     pub async fn drop_course<'a>(&self, opt: &'a Opt<'a>) -> crate::Result<()> {
         let url = "https://byxk.buaa.edu.cn/xsxk/elective/clazz/del";
         let payload = Payload::Form(opt);
-        let _: Option<()> = self.universal_request(url, payload).await?;
+        let bytes = self.universal_request(url, payload).await?;
+        let _: Option<()> = Res::parse(&bytes)?;
 
         Ok(())
     }
