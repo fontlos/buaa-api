@@ -5,12 +5,14 @@ mod tests {
     #[ignore]
     #[tokio::test]
     async fn test_srs() {
+        use buaa_api::api::srs::Filter;
         let context = Context::with_auth("./data").unwrap();
 
         let srs = context.srs();
         srs.login().await.unwrap();
 
-        let mut filter = srs.get_default_filter().await.unwrap();
+        let config = srs.get_config().await.unwrap();
+        let mut filter = Filter::new(config.campus);
         filter.set_display_conflict(true);
         let res = srs.query_course(&filter).await.unwrap();
         println!("{:#?}", res);
