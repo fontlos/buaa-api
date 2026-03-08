@@ -2,6 +2,7 @@ use serde::de::Deserializer;
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::error::Error;
+use crate::utils::time::DateTime;
 
 #[derive(Deserialize)]
 pub(crate) struct Res<T> {
@@ -42,6 +43,94 @@ where
 }
 
 // ====================
+// 用于获取配置
+// ====================
+
+/// Configuration for SrsApi
+#[derive(Debug, Deserialize)]
+pub struct Config {
+    /// Campus ID
+    pub campus: Campus,
+    // TODO: 暂不确定预选时这个结构如何, 可能会解析错误
+    /// Batch list
+    #[serde(rename = "electiveBatchList")]
+    pub batchs: Vec<Batch>,
+}
+
+impl<'de> Deserialize<'de> for Data<Config> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Debug, Deserialize)]
+        struct I {
+            student: Config,
+        }
+        let i = I::deserialize(deserializer)?;
+        Ok(Data(i.student))
+    }
+}
+
+/// Campus
+#[derive(Debug)]
+pub enum Campus {
+    /// XueYuanLu campus
+    XueYuanLu,
+    /// ShaHe campus
+    ShaHe,
+}
+
+// TODO: 在 Config 中要从字符串解析, 但是 Filter 要传入数字, 虽然测试结果传字符串也可以
+impl<'de> Deserialize<'de> for Campus {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s: String = Deserialize::deserialize(deserializer)?;
+        match s.as_str() {
+            "1" => Ok(Campus::XueYuanLu),
+            "2" => Ok(Campus::ShaHe),
+            _ => Err(serde::de::Error::custom(format!(
+                "Invalid campus value: {}",
+                s
+            ))),
+        }
+    }
+}
+
+impl Serialize for Campus {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Campus::XueYuanLu => serializer.serialize_u8(1),
+            Campus::ShaHe => serializer.serialize_u8(2),
+        }
+    }
+}
+
+/// Batch info
+#[derive(Debug, Deserialize)]
+pub struct Batch {
+    /// Batch ID
+    #[serde(rename = "code")]
+    pub id: String,
+    /// Batch name
+    pub name: String,
+    /// Whether the batch can be selected
+    #[serde(rename = "canSelect")]
+    #[serde(deserialize_with = "deserialize_bool")]
+    pub can_select: bool,
+    /// Batch start time
+    #[serde(rename = "beginTime")]
+    pub start: DateTime,
+    /// Batch end time
+    #[serde(rename = "endTime")]
+    pub end: DateTime,
+}
+
+// ====================
 // 用于课程查询
 // ====================
 
@@ -59,7 +148,7 @@ pub struct Filter {
     #[serde(rename = "pageSize")]
     size: u8,
     // 校区
-    campus: u8,
+    campus: Campus,
     // 是否显示冲突课程, 可选
     // 全部显示置空, 隐藏冲突为 0, 只显示冲突为 1, 理论上用不到状态 1
     #[serde(skip_serializing_if = "is_true")]
@@ -99,8 +188,8 @@ impl Filter {
     /// Create a default course filter
     ///
     /// **Warning:** make sure the campus is correct,
-    /// or you can use `SrsApi.get_default_filter()` to get the default campus
-    pub fn new(campus: u8) -> Self {
+    /// or you can use `SrsApi.get_config()` to get the current campus
+    pub fn new(campus: Campus) -> Self {
         Filter {
             scope: Scope::default(),
             page: 1,
@@ -130,34 +219,27 @@ impl Filter {
 
     /// **Warning**: only scope is RETAKE can set the campus
     ///
-    /// Set up the campus as XueYuanLu
-    pub fn set_campus_xueyuanlu(&mut self) {
-        self.campus = 1;
+    /// Set up the campus of the course query
+    pub fn set_campus(&mut self, campus: Campus) {
+        self.campus = campus;
     }
 
-    /// **Warning**: only scope is RETAKE can set the campus
-    ///
-    /// Set up the campus as ShaHe
-    pub fn set_campus_shahe(&mut self) {
-        self.campus = 2;
-    }
-
-    /// Set display of the conflict course
+    /// Set display of the conflict course query
     pub fn set_display_conflict(&mut self, opt: bool) {
         self.display_conflict = opt;
     }
 
-    /// Set up the requirement of the course
+    /// Set up the requirement of the course query
     pub fn set_requirement(&mut self, req: Option<Requirement>) {
         self.requirement = req;
     }
 
-    /// Set up the category of the course
+    /// Set up the category of the course query
     pub fn set_category(&mut self, category: Option<Category>) {
         self.category = category;
     }
 
-    /// Set up the key word of the course
+    /// Set up the key word of the course query
     pub fn set_key(&mut self, key: Option<String>) {
         self.key = key;
     }

@@ -1,26 +1,15 @@
 use crate::{Error, utils};
 
-use super::{Res, Course, Data, Filter, Opt, Payload, Selected};
+use super::{Config, Course, Data, Filter, Opt, Payload, Res, Selected};
 
 impl super::SrsApi {
-    /// # Get the default course filter.
-    ///
-    /// If you know your campus,
-    /// you can create the filter by [Filter::new()] directly.
-    pub async fn get_default_filter(&self) -> crate::Result<Filter> {
+    /// # Get configuration of SrsApi
+    pub async fn get_config(&self) -> crate::Result<Config> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
         let payload = Payload::<'_, ()>::QueryWithToken;
-        // TODO: 这个里面也有 BatchID
         let bytes = self.universal_request(url, payload).await?;
-        // println!("Response: {}", String::from_utf8_lossy(&bytes));
-        let res: serde_json::Value = Res::parse(&bytes)?;
-        let campus = res
-            .pointer("/student/campus")
-            .and_then(|v| v.as_str())
-            .ok_or_else(|| Error::server("Missing campus field").with_label("Srs"))?
-            .parse::<u8>()
-            .map_err(|_| Error::parse("Failed to parse campus"))?;
-        Ok(Filter::new(campus))
+        let res: Data<Config> = Res::parse(&bytes)?;
+        Ok(res.0)
     }
 
     // 预选所需, 有病吧嵌在 HTML 里
