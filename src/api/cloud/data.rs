@@ -12,7 +12,7 @@ pub(super) enum Payload<'a, P: Serialize + ?Sized> {
     Empty,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 #[serde(transparent)]
 pub(super) struct Res<T>(T);
 
@@ -36,6 +36,7 @@ pub(super) fn parse_error(err: &'static str, raw: &[u8], source: &dyn Display) -
 }
 
 /// Root directory type
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Root {
     /// All directories
     All,
@@ -64,7 +65,7 @@ impl Root {
 }
 
 /// Root directory info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct RootDir {
     /// Root directory ID
     pub id: String,
@@ -86,7 +87,7 @@ impl RootDir {
 }
 
 /// Directory info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Dir {
     /// Subdirectories
     pub dirs: Vec<Item>,
@@ -95,7 +96,7 @@ pub struct Dir {
 }
 
 /// File or Directory info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Item {
     // 对于回收站, 这个字段不存在
     /// Creation time (timestamp). For recycle item, this field is missing
@@ -143,7 +144,7 @@ impl Item {
 }
 
 /// Response for item size
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Size {
     /// Number of directories
     #[serde(rename = "dirnum")]
@@ -160,7 +161,7 @@ pub struct Size {
 // 共享 API 和共享管理 API 所需的 JSON 相似但又不完全相似
 // 导致这整个结构很扭曲
 /// Share Item
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Share {
     /// Share item info.
     item: ShareItem,
@@ -270,7 +271,7 @@ impl Share {
 }
 
 /// Share item info
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct ShareItem {
     #[serde(default)]
     #[serde(skip_deserializing)]
@@ -292,7 +293,7 @@ where
     serializer.serialize_str(s)
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 struct Permission(u8);
 
 impl Permission {
@@ -377,7 +378,7 @@ impl Serialize for Permission {
 }
 
 /// Upload arguments
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct UploadArgs {
     /// Target directory
     pub dir: String,

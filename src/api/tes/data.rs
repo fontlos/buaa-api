@@ -64,7 +64,7 @@ impl<'de> Deserialize<'de> for Data<Vec<Task>> {
 }
 
 /// Evaluation task item
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Task {
     // 甚至不需要这个字段? **的看起来最有用的字段你不用用**字符串查询?
     // 真正的问卷 ID (可选)
@@ -128,7 +128,7 @@ impl<'de> Deserialize<'de> for Data<Form> {
 }
 
 /// Evaluation form
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Form {
     // 评教系统 评教结果查看表. 这**是人能想出来的字段名啊
     #[serde(deserialize_with = "deserialize_form_info")]
@@ -143,7 +143,7 @@ pub struct Form {
     map: FormMap,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct FormInfo {
     #[serde(rename = "pjid")]
     id1: String,
@@ -182,7 +182,7 @@ where
 }
 
 /// Evaluation question
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Question {
     /// Question ID
     #[serde(rename = "tmid")]
@@ -200,7 +200,7 @@ pub struct Question {
 }
 
 /// Evaluation choice
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Choice {
     /// Choice ID
     #[serde(rename = "tmxxid")]
@@ -230,7 +230,7 @@ where
     Ok(j.tklist)
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 struct FormMap {
     #[serde(rename = "PJJGXXBM")]
     pj1: String,
@@ -245,6 +245,7 @@ struct FormMap {
 // ====================
 
 /// Answer to a question in the evaluation form
+#[derive(Clone, Debug)]
 pub enum Answer {
     /// Choice answer
     Choice(usize),
@@ -336,7 +337,7 @@ impl Form {
 }
 
 /// The completed evaluation to be sent
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Completed<'a> {
     pjidlist: [(); 0],
     #[serde(rename = "pjjglist")]
@@ -401,7 +402,7 @@ impl<'a> Completed<'a> {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct CompletedContent<'a> {
     // 特殊字段, 来自 info.id2
     zsxz: &'a str,
@@ -420,7 +421,7 @@ struct CompletedContent<'a> {
     literal: CompletedLiteral,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct CompletedQuestion<'a> {
     sjly: &'static str,
     stlx: &'static str,
@@ -438,7 +439,7 @@ struct CompletedQuestion<'a> {
 }
 
 // What can I say! **的为什么有一堆常量啊, 这玩意你不能服务器里面自己加吗
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 struct CompletedLiteral {
     pjsx: u8,
     pjfs: &'static str,
@@ -471,7 +472,7 @@ impl Default for CompletedLiteral {
 }
 
 // 很难想象为什么缺少几个 null 的字段都不行
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 struct Null;
 
 impl Serialize for Null {
