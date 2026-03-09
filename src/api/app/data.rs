@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::utils::time::DateTime;
 
 /// Exam schedule
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Exams {
     /// Exam data
     pub data: Vec<Exam>,
@@ -27,7 +27,7 @@ impl<'de> Deserialize<'de> for Exams {
 }
 
 /// Exam information
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Exam {
     /// Exam name
     #[serde(rename = "course_name")]

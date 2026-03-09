@@ -47,7 +47,7 @@ where
 // ====================
 
 /// Configuration for SrsApi
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     /// Campus ID
     pub campus: Campus,
@@ -62,7 +62,7 @@ impl<'de> Deserialize<'de> for Data<Config> {
     where
         D: Deserializer<'de>,
     {
-        #[derive(Debug, Deserialize)]
+        #[derive(Deserialize)]
         struct I {
             student: Config,
         }
@@ -72,7 +72,7 @@ impl<'de> Deserialize<'de> for Data<Config> {
 }
 
 /// Campus
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Campus {
     /// XueYuanLu campus
     XueYuanLu,
@@ -111,7 +111,7 @@ impl Serialize for Campus {
 }
 
 /// Batch info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Batch {
     /// Batch ID
     #[serde(rename = "code")]
@@ -135,7 +135,7 @@ pub struct Batch {
 // ====================
 
 /// # Filter for querying courses
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Filter {
     // 课程查询的范围
     #[serde(rename = "teachingClassType")]
@@ -252,7 +252,7 @@ impl Filter {
 /// # The scope of the course query
 ///
 /// Be sure to consult the corresponding notes in the document to know the specific scope
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Scope {
     /// `班级课表推荐课程`
     #[default]
@@ -302,7 +302,7 @@ where
 /// # The requirement of the course
 ///
 /// Be sure to consult the corresponding notes in the document to know the specific type
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Requirement {
     /// `必修`
     Compulsory,
@@ -342,7 +342,7 @@ where
 /// # The category of course
 ///
 /// Given the letters in the order given by the school, be sure to consult the corresponding notes in the document to know the specific type
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Category {
     /// `数学与自然科学类`
     A,
@@ -421,7 +421,7 @@ where
 // ====================
 
 /// Structure for course select and drop
-#[derive(Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Opt<'a> {
     // 范围
     #[serde(rename = "clazzType")]
@@ -464,7 +464,7 @@ impl<'de> Deserialize<'de> for Data<Vec<Course>> {
     where
         D: Deserializer<'de>,
     {
-        #[derive(Debug, Deserialize)]
+        #[derive(Deserialize)]
         struct I {
             // total 总数不解析了
             #[serde(rename = "rows")]
@@ -476,7 +476,7 @@ impl<'de> Deserialize<'de> for Data<Vec<Course>> {
 }
 
 /// Course info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Course {
     // 教学班 ID
     #[serde(rename = "JXBID")]
@@ -558,7 +558,7 @@ pub struct Course {
 }
 
 /// Course schedule item
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedule {
     /// Week number
     #[serde(rename = "SKZCMC")]
@@ -617,7 +617,7 @@ impl<'de> Deserialize<'de> for Data<Vec<Vec<Selected>>> {
 
 // Res<Vec<Selected>>
 /// Selected course item
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Selected {
     #[serde(rename = "JXBID")]
     pub(super) id: String,

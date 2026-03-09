@@ -31,7 +31,7 @@ impl<'de, T: Deserialize<'de>> Res<T> {
 }
 
 /// Schedule of some day
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedule {
     /// Schedule ID. Use to checkin
     pub id: String,
@@ -54,7 +54,7 @@ pub struct Schedule {
 }
 
 /// Course info
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Course {
     /// Course ID. Use to query [CourseSchedule]
     #[serde(rename = "course_id")]
@@ -68,7 +68,7 @@ pub struct Course {
 }
 
 /// Course Schedule
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct CourseSchedule {
     /// Schedule ID, only use to checkin
     #[serde(rename = "courseSchedId")]

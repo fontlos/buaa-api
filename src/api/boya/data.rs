@@ -26,7 +26,6 @@ impl<'de, T: Deserialize<'de>> Res<T> {
 }
 
 // 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
-#[derive(Debug)]
 pub(super) struct Data<T>(pub T);
 
 // ====================
@@ -34,7 +33,7 @@ pub(super) struct Data<T>(pub T);
 // ====================
 
 /// Semester
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Semester {
     /// Semester start date
     #[serde(rename = "semesterStartDate")]
@@ -123,7 +122,7 @@ impl<'de> Deserialize<'de> for Data<Vec<Course>> {
 // ====================
 
 /// Course info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Course {
     /// Course ID, for sign rule, select and drop
     pub id: u32,
@@ -159,7 +158,7 @@ pub struct Course {
 }
 
 /// Schedule of course's start, end, pre-selection and cancellation
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedule {
     /// Course start time
     #[serde(rename = "courseStartDate")]
@@ -179,7 +178,7 @@ pub struct Schedule {
 }
 
 /// Course category
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 pub enum Category {
     /// `美育`
     Arts,
@@ -211,7 +210,7 @@ where
 }
 
 /// Course capacity
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Capacity {
     /// Maximum capacity
     #[serde(rename = "courseMaxCount")]
@@ -233,7 +232,7 @@ where
 }
 
 /// Course campus
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
 pub enum Campus {
     /// `学院路`
     XueYuanLu,
@@ -282,7 +281,7 @@ where
 }
 
 /// Sign Configuration
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SignConfig {
     /// Check in start time
     #[serde(rename = "signStartDate")]
@@ -303,7 +302,7 @@ pub struct SignConfig {
 }
 
 /// Coordinate in [SignConfig]
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Coordinate {
     /// Longitude
     #[serde(rename = "lng")]
@@ -354,7 +353,7 @@ impl<'de> Deserialize<'de> for Data<Vec<Selected>> {
 }
 
 /// Selected course info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Selected {
     /// Course ID, for drop
     pub id: u32,
@@ -400,7 +399,7 @@ impl<'de> Deserialize<'de> for Data<Statistic> {
 }
 
 /// Course Statistics
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Statistic {
     /// 德育
     #[serde(rename = "55|德育")]
@@ -420,7 +419,7 @@ pub struct Statistic {
 /// Includes required quantity,
 /// selected quantity, completed quantity,
 /// failed quantity, and undone quantity
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Assessment {
     /// Required quantity
     #[serde(rename = "assessmentCount")]
@@ -463,7 +462,7 @@ impl<'de> Deserialize<'de> for Data<SignRes> {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(crate) struct SignRes {
     #[serde(rename = "signIn")]
     pub checkin: SignInfo,
@@ -473,7 +472,7 @@ pub(crate) struct SignRes {
 }
 
 /// Sign in/out info
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct SignInfo {
     /// Longitude
     #[serde(rename = "lng")]

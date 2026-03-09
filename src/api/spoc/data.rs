@@ -6,7 +6,6 @@ use crate::utils::time::{DateTime, Weekday};
 use crate::{Error, crypto, utils};
 
 /// Request Body Payload
-#[derive(Debug, Serialize)]
 pub enum Payload<'a, P: Serialize + ?Sized> {
     /// Query data
     Query(&'a P),
@@ -58,7 +57,7 @@ pub(super) struct Data<T>(pub T);
 
 // Res<Week>
 /// For `get_week_schedule`, you can get it through `get_week`, and manual builds are generally not recommended
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Week {
     /// Week date range
     #[serde(deserialize_with = "deserialize_time")]
@@ -91,7 +90,7 @@ where
 
 // Res<Vec<Schedule>>
 /// Weekly Schedule item
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedule {
     /// Course weekday
     #[serde(deserialize_with = "deserialize_weekday")]
@@ -133,7 +132,7 @@ where
 }
 
 /// Course time range
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TimeRange {
     /// Course start time
     pub start: DateTime,
@@ -172,7 +171,7 @@ where
 // ====================
 
 /// Course item
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Course {
     /// Course ID
     #[serde(rename = "kcid")]
@@ -204,7 +203,7 @@ impl<'de> Deserialize<'de> for Data<Vec<Homework>> {
 }
 
 /// Homework list item
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Homework {
     /// Homework ID
     pub id: String,
@@ -234,7 +233,7 @@ pub struct Homework {
 
 // 上面有的字段这里都有, 但没什么用
 /// Homework detail
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct HomeworkDetail {
     /// Homework content (Contain \n)
     #[serde(deserialize_with = "deserialize_homework_content")]
@@ -258,7 +257,7 @@ where
 }
 
 /// Upload file arguments
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UploadArgs {
     #[serde(rename = "chunkNumber")]
     index: usize,
@@ -397,6 +396,7 @@ pub(super) struct MergeArgs<'a> {
 }
 
 /// Upload progress stream. Chunk/2MB
+#[derive(Clone, Debug)]
 pub struct UploadProgress {
     /// Chunks done
     pub done: u64,
@@ -436,7 +436,7 @@ impl UploadStatus {
 }
 
 /// Upload file response
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct UploadRes {
     /// File ID
     pub id: String,

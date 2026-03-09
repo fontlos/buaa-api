@@ -1,9 +1,9 @@
 use serde::{Deserialize, Deserializer};
 
 use crate::error::Error;
-use crate::utils::time::{Weekday, Time};
+use crate::utils::time::{Time, Weekday};
 
-#[derive(Debug, Deserialize)]
+#[derive(Deserialize)]
 pub(super) struct Res<T> {
     datas: T,
     code: String,
@@ -34,7 +34,7 @@ pub(super) struct Data<T>(pub T);
 // ====================
 
 /// School calendar config
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     /// Current week
     #[serde(rename = "classWeek")]
@@ -61,7 +61,7 @@ impl<'de> Deserialize<'de> for Data<Config> {
 }
 
 /// Term schedule
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedules {
     /// Scheduled (offline) schedule (Arranged time and position)
     #[serde(rename = "arrangedList")]
@@ -72,7 +72,7 @@ pub struct Schedules {
 }
 
 /// Schedule base info. For both offline schedule and online schedule
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ScheduleInfo {
     /// Course ID. Format 'B[xxxxxxxxx]'
     #[serde(rename = "courseCode")]
@@ -100,7 +100,7 @@ where
 }
 
 /// Course schedule. Only for offline schedule
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Schedule {
     /// Schedule base info
     #[serde(flatten)]
