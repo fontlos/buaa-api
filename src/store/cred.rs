@@ -6,7 +6,7 @@ use std::fs::OpenOptions;
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::api::{Aas, App, Boya, Class, Cloud, Spoc, Srs, Sso, Tes};
+use crate::api::{Aas, App, Boya, Class, Cloud, Live, Spoc, Srs, Sso, Tes};
 use crate::error::{Code, Error, Result};
 use crate::utils::time::DateTime;
 
@@ -25,6 +25,8 @@ pub struct CredentialStore {
     pub class_token: CredentialItem,
     /// Token for Cloud API
     pub cloud_token: CredentialItem,
+    /// Token for Live API
+    pub live_token: CredentialItem,
     /// Token for Spoc API
     pub spoc_token: CredentialItem,
     /// Token for Srs API
@@ -71,6 +73,8 @@ impl_token!(Boya, boya_token, 600);
 impl_token!(Class, class_token, 86400);
 // 测得 40 分钟以内有效, 但某些操作会快速过期, 防止意外这里用 10 分钟. 使用可刷新时效
 impl_token!(Cloud, cloud_token, 600);
+// TODO: Cookie 标记有效期 16 小时, 这里暂定 12 小时. 使用不可刷新时效
+impl_token!(Live, live_token, 43200);
 // 测得 5 小时以内有效, 这里用 3 小时. 使用不可刷新时效
 impl_token!(Spoc, spoc_token, 10800);
 // 测得 25 分钟以内有效, 这里用 20 分钟. 使用不可刷新时效

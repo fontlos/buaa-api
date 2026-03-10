@@ -12,10 +12,19 @@
   - [x] Login: built in `Context`
 - [ ] BUAA Academic Affairs System: `aas`
   - [x] Login
+  - [x] Get config
+  - [x] Query week schedule
+  - [x] Query term schedule
+  - [x] A universal request API for extensions
+- [ ] BUAA APP: `app`
+  - [x] Login
+  - [x] Get exam schedule
+  - [x] A universal request API for extensions
 - [x] BUAA Boya Course: `boya`
   - [x] Login
+  - [x] Get current semester
   - [x] Query courses list
-  - [x] Query single course
+  - [x] Query single course info
   - [x] Query selected courses
   - [x] Query statistic information
   - [x] Select course
@@ -26,7 +35,7 @@
 - [x] BUAA Smart Classroom: `class`
   - [x] Login
   - [x] Query schedule by date
-  - [x] Query course
+  - [x] Query course list
   - [x] Query course schedule
   - [x] Checkin class
 - [ ] BUAA Cloud Disk: `cloud`
@@ -48,7 +57,8 @@
     - [x] Delete
     - [x] Restore
   - [x] Share
-    - [x] Share record
+    - [x] Share history
+    - [x] Share record of one item
     - [x] Share item
     - [x] Share update
     - [x] Share delete
@@ -57,11 +67,13 @@
     - [x] Get a zip of multiple items download URL
     - [x] Auto get items download URL
   - [x] Upload item
-    - [x] Check hash
-    - [x] Fast upload (Check hash success)
-    - [x] Get upload authorization
-    - [x] Upload (Need `multipart` feature)
-- [ ] Spoc Platform: `spoc`
+    - [x] Upload fast check
+    - [x] Upload fast (Check success)
+    - [x] Upload small file
+    - [x] Upload big file (Over 5 GiB)
+- [ ] BUAA Classroom Live Broadcast (Spoc): `live`
+  - [x] Login
+- [ ] BUAA Spoc Platform: `spoc`
   - [x] Login
   - [x] Query teaching week
   - [x] Query weekly schedule
@@ -70,11 +82,12 @@
     - [x] Query list
     - [x] Query detail
     - [x] Submit
-  - [x] Upload file (Optional with progress)
+  - [x] Upload file (Authless) (Optional with progress)
   - [x] A universal request API for extensions
 - [x] BUAA Undergraduate & Graduate Student Course Registration System: `srs`
   - [x] Login
-  - [x] Get filter
+  - [x] Get config
+  - [x] Get batch
   - [x] Query courses with filter
   - [x] Query pre-selected courses
   - [x] Query selected courses

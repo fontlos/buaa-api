@@ -5,6 +5,7 @@ pub mod app;
 pub mod boya;
 pub mod class;
 pub mod cloud;
+pub mod live;
 pub mod spoc;
 pub mod srs;
 pub mod sso;
@@ -25,6 +26,8 @@ pub struct Boya;
 pub struct Class;
 /// Marker type for BUAA Cloud Disk API Group
 pub struct Cloud;
+/// Marker type for BUAA Classroom Live Broadcast (Spoc) API Group
+pub struct Live;
 /// Marker type for BUAA Spoc Platform API Group
 pub struct Spoc;
 /// Marker type for BUAA Undergraduate & Graduate Student Course Registration System API Group
@@ -58,6 +61,10 @@ impl crate::Context<Core> {
     /// Get BUAA Cloud Disk API Group
     pub const fn cloud(&self) -> &crate::Context<Cloud> {
         self.api::<Cloud>()
+    }
+    /// Get BUAA Classroom Live Broadcast (Spoc) API Group
+    pub const fn live(&self) -> &crate::Context<Live> {
+        self.api::<Live>()
     }
     /// Get BUAA Spoc Platform API Group
     pub const fn spoc(&self) -> &crate::Context<Spoc> {
