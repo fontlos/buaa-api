@@ -74,6 +74,9 @@ impl Cookie {
                         path = Some(v.trim().to_string());
                     }
                     "domain" => {
+                        // 在这里移除可能的前导点, 以简化后续匹配
+                        // 例如 LiveApi 就会产生这种域名
+                        let v = v.trim_start_matches('.');
                         domain = Some(v.trim().to_string());
                     }
                     _ => {}
