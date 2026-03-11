@@ -50,7 +50,7 @@ pub struct Schedule {
     /// Checkin status
     #[serde(deserialize_with = "deserialize_status")]
     #[serde(rename = "signStatus")]
-    pub status: u8,
+    pub status: bool,
 }
 
 /// Course info
@@ -79,17 +79,17 @@ pub struct CourseSchedule {
     /// Checkin status
     #[serde(deserialize_with = "deserialize_status")]
     #[serde(rename = "signStatus")]
-    pub status: u8,
+    pub status: bool,
 }
 
-fn deserialize_status<'de, D>(deserializer: D) -> Result<u8, D::Error>
+fn deserialize_status<'de, D>(deserializer: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'de>,
 {
     let s: String = Deserialize::deserialize(deserializer)?;
     match s.as_str() {
-        "1" => Ok(1),
-        "0" => Ok(0),
+        "1" => Ok(true),
+        "0" => Ok(false),
         _ => Err(serde::de::Error::custom("Unexpected status in Schedule")),
     }
 }
