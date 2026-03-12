@@ -1,31 +1,32 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::error::Error;
+use crate::utils;
 use crate::utils::time::DateTime;
 
+// 每个字段都可能缺失, 所以手动解析
 /// Respond wrapper
 #[derive(Deserialize)]
 pub(crate) struct Res<T> {
-    #[serde(rename = "STATUS")]
-    status: String,
-    #[serde(rename = "ERRMSG")]
-    msg: Option<String>,
-    result: Option<T>,
+    result: T,
 }
 
 impl<'de, T: Deserialize<'de>> Res<T> {
     pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
-        let res: Res<T> = serde_json::from_slice(&v)?;
-        if res.status != "0" {
-            let source = format!("Status Code: {}. Error Message: {:?}", res.status, res.msg);
-            return Err(Error::server("Operation failed")
-                .with_label("Class")
-                .with_source(source));
-        }
-
-        match res.result {
-            Some(r) => Ok(r),
-            None => Err(Error::server("No result").with_label("Class")),
+        let status = utils::parse_by_tag(&v, "\"STATUS\":\"", "\"");
+        match status {
+            Some("0") => Ok(serde_json::from_slice::<Res<T>>(&v)?.result),
+            // 状态码为 2 表示数据为空, 通常是今日没有课程, 没有任何其他字段
+            Some("2") => Err(Error::server("Empty data list").with_label("Class")),
+            Some(s) => {
+                let msg = utils::parse_by_tag(&v, "\"ERRMSG\":\"", "\"");
+                let source = format!("Status Code: {}. Error Message: {:?}", s, msg);
+                return Err(Error::server("Operation failed")
+                    .with_label("Class")
+                    .with_source(source));
+            }
+            // 错误请求可能返回 `\r\n`
+            None => Err(Error::server("Empty response").with_label("Class"))
         }
     }
 }
