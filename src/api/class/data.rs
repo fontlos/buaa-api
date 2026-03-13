@@ -16,7 +16,7 @@ impl<'de, T: Deserialize<'de>> Res<T> {
         let status = utils::parse_by_tag(&v, "\"STATUS\":\"", "\"");
         match status {
             Some("0") => Ok(serde_json::from_slice::<Res<T>>(&v)?.result),
-            // 状态码为 2 表示数据为空, 通常是今日没有课程, 没有任何其他字段
+            // 状态码为 2 表示数据为空, 通常是今日没有课程, 或者查询了过时的数据, 没有任何其他字段
             Some("2") => Err(Error::server("Empty data list").with_label("Class")),
             Some(s) => {
                 let msg = utils::parse_by_tag(&v, "\"ERRMSG\":\"", "\"");
@@ -26,7 +26,7 @@ impl<'de, T: Deserialize<'de>> Res<T> {
                     .with_source(source));
             }
             // 错误请求可能返回 `\r\n`
-            None => Err(Error::server("Empty response").with_label("Class"))
+            None => Err(Error::server("Empty response").with_label("Class")),
         }
     }
 }
@@ -80,6 +80,16 @@ pub struct CourseSchedule {
     /// Checkin status
     #[serde(deserialize_with = "deserialize_status")]
     #[serde(rename = "signStatus")]
+    pub status: bool,
+}
+
+/// Checkin Result
+#[derive(Clone, Debug, Deserialize)]
+pub(crate) struct Checkin {
+    // stuSignId, 似乎没什么用
+    /// Checkin status
+    #[serde(deserialize_with = "deserialize_status")]
+    #[serde(rename = "stuSignStatus")]
     pub status: bool,
 }
 
