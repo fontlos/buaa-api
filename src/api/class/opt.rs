@@ -1,8 +1,7 @@
-use serde_json::Value;
-
+use crate::error::Error;
 use crate::utils::time::DateTime;
 
-use super::data::{Course, CourseSchedule, Res, Schedule};
+use super::data::{Checkin, Course, CourseSchedule, Res, Schedule};
 
 impl super::ClassApi {
     /// # Query one day's all schedules
@@ -54,6 +53,7 @@ impl super::ClassApi {
         let url = "https://iclass.buaa.edu.cn:8347/app/my/get_my_course_sign_detail.action";
         let payload = [("courseId", id)];
         let bytes = self.universal_request(url, &payload).await?;
+        println!("Raw response: {}", String::from_utf8_lossy(&bytes));
         let res: Vec<CourseSchedule> = Res::parse(&bytes)?;
         Ok(res)
     }
@@ -63,15 +63,18 @@ impl super::ClassApi {
     /// **Input:** Schedule ID,
     /// from [Schedule::id] via [super::ClassApi::query_schedule()] (most recommended)
     /// or [CourseSchedule::id] via [super::ClassApi::query_course_schedule()]
-    pub async fn checkin(&self, id: &str) -> crate::Result<Value> {
+    pub async fn checkin(&self, id: &str) -> crate::Result<()> {
         let url = "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action";
         let payload = [
             ("courseSchedId", id),
             ("timestamp", &DateTime::millis().to_string()),
         ];
         let bytes = self.universal_request(url, &payload).await?;
-        // TODO: 检查类型移除 Value
-        let res: Value = Res::parse(&bytes)?;
-        Ok(res)
+        let res: Checkin = Res::parse(&bytes)?;
+        if res.status {
+            Ok(())
+        } else {
+            Err(Error::server("Checkin failed").with_label("Class"))
+        }
     }
 }

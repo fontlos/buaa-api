@@ -13,8 +13,7 @@ mod tests {
         let date = DateTime::now();
         let res = class.query_schedule(&date).await.unwrap();
         println!("{:#?}", res);
-        let res = class.checkin(&res[0].id).await.unwrap();
-        println!("{}", res);
+        class.checkin(&res[0].id).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
@@ -30,8 +29,7 @@ mod tests {
         println!("{:#?}", res);
         let res = class.query_course_schedule(&res[0].id).await.unwrap();
         println!("{:#?}", res);
-        let res = class.checkin(&res.last().unwrap().id).await.unwrap();
-        println!("{}", res);
+        class.checkin(&res.last().unwrap().id).await.unwrap();
 
         context.save_auth("./data").unwrap();
     }
