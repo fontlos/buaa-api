@@ -5,6 +5,9 @@
 //! In principle, it belongs to Spoc, but it mainly exists independently under `msa.buaa.edu.cn`.
 
 mod core;
+mod data;
+
+pub use data::*;
 
 /// # BUAA Classroom Live Broadcast (Spoc) API Group
 ///

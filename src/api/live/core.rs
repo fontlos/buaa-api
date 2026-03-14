@@ -1,5 +1,11 @@
+use bytes::Bytes;
+use reqwest::Method;
+use serde::Serialize;
+
 use crate::api::{Live, Sso};
 use crate::error::Error;
+
+use super::data::Payload;
 
 impl super::LiveApi {
     /// # Login to LiveApi
@@ -38,5 +44,32 @@ impl super::LiveApi {
             }
             None => Err(Error::server("Login failed. No token").with_label("Live")),
         }
+    }
+
+    /// # Universal Request for LiveApi
+    pub async fn universal_request<P>(
+        &self,
+        url: &str,
+        method: Method,
+        payload: Payload<'_, P>,
+    ) -> crate::Result<Bytes>
+    where
+        P: Serialize + ?Sized,
+    {
+        let cred = self.cred.load();
+        if cred.is_expired::<Live>() {
+            self.login().await?;
+        }
+        let token = cred.value::<Live>()?;
+
+        let req = self.client.request(method, url).bearer_auth(token);
+        let req = match payload {
+            Payload::Query(p) => req.query(p),
+            Payload::Json(p) => req.json(p),
+            Payload::Empty => req,
+        };
+
+        let bytes = req.send().await?.bytes().await?;
+        Ok(bytes)
     }
 }
