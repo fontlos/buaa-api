@@ -6,6 +6,7 @@
 
 mod core;
 mod data;
+mod opt;
 
 pub use data::*;
 
