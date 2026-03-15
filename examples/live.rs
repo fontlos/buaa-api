@@ -9,7 +9,8 @@ mod tests {
 
         let live = context.live();
 
-        live.login().await.unwrap();
+        let user = live.get_user_id().await.unwrap();
+        println!("User ID: {}", user);
 
         context.save_auth("./data").unwrap();
     }
