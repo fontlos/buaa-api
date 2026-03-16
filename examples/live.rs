@@ -9,8 +9,11 @@ mod tests {
 
         let live = context.live();
 
-        let user = live.get_user_id().await.unwrap();
-        println!("User ID: {}", user);
+        let schedule = live
+            .get_week_schedule("2026-03-09", "2026-03-15")
+            .await
+            .unwrap();
+        println!("Courses: {:?}", schedule);
 
         context.save_auth("./data").unwrap();
     }
