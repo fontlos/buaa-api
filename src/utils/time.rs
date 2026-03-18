@@ -80,6 +80,12 @@ impl Deref for DateTime {
     }
 }
 
+impl From<PrimitiveDateTime> for DateTime {
+    fn from(value: PrimitiveDateTime) -> Self {
+        Self(value)
+    }
+}
+
 impl<'de> Deserialize<'de> for DateTime {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -102,8 +108,55 @@ impl DateTime {
     }
 
     // For ClassAPI. 将日期转换为 YYYYMMDD 格式的字符串
-    pub(crate) fn to_date(&self) -> String {
+    pub(crate) fn to_date1(&self) -> String {
         let format = format_description!("[year][month][day]");
         self.format(&format).unwrap()
+    }
+
+    /// For LiveAPI. 将日期转换为 YYYY-MM-DD 格式的字符串
+    pub(crate) fn to_date2(&self) -> String {
+        let format = format_description!("[year]-[month]-[day]");
+        self.format(&format).unwrap()
+    }
+}
+
+/// A week represented by its start and end `DateTime`
+#[derive(Debug, Clone)]
+pub struct Week {
+    pub(crate) start: DateTime,
+    pub(crate) end: DateTime,
+}
+
+impl Week {
+    /// Get the current week (Monday to Sunday) based on the current date
+    pub fn current() -> Self {
+        let now = DateTime::now();
+        let weekday = now.weekday();
+        let start = *now - time::Duration::days(weekday.number_days_from_monday() as i64);
+        let end = start + time::Duration::days(6);
+        Self {
+            start: start.into(),
+            end: end.into(),
+        }
+    }
+
+    /// Get the next week
+    pub fn next(&self) -> Self {
+        let start = self.start.0 + time::Duration::days(7);
+        let end = self.end.0 + time::Duration::days(7);
+        Self {
+            start: start.into(),
+            end: end.into(),
+        }
+    }
+
+    /// Get the previous week
+    pub fn prev(&self) -> Self {
+        let start = self.start.0 - time::Duration::days(7);
+        let end = self.end.0 - time::Duration::days(7);
+        Self {
+            start: start.into(),
+            end: end.into(),
+        }
     }
 }
