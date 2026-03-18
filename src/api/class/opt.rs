@@ -9,7 +9,7 @@ impl super::ClassApi {
     /// **Input:** DateTime
     pub async fn query_schedule(&self, date: &DateTime) -> crate::Result<Vec<Schedule>> {
         let url = "https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action";
-        let payload = [("dateStr", date.to_date())];
+        let payload = [("dateStr", date.to_date1())];
         let bytes = self.universal_request(url, &payload).await?;
         let res: Vec<Schedule> = Res::parse(&bytes)?;
         Ok(res)
