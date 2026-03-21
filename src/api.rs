@@ -91,3 +91,6 @@ impl crate::Context<Core> {
         self.api::<Wifi>()
     }
 }
+
+/// Complex response wrapper
+struct Data<T>(pub T);

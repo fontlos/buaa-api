@@ -1,10 +1,9 @@
 use crate::Error;
+use crate::api::Data;
 use crate::crypto::rand::{Rng, WyRng};
 
 use super::BoyaApi;
-use super::data::{
-    Coordinate, Course, Data, Res, Selected, Semester, SignInfo, SignRes, Statistic,
-};
+use super::data::{Coordinate, Course, Res, Selected, Semester, SignInfo, SignRes, Statistic};
 
 impl BoyaApi {
     /// # Get Current Semester

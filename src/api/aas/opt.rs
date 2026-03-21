@@ -1,6 +1,8 @@
 use reqwest::Method;
 
-use super::{Config, Data, Res, Schedules};
+use crate::api::Data;
+
+use super::data::{Config, Res, Schedules};
 
 impl super::AasApi {
     /// # Get user config

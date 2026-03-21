@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
+use crate::api::Data;
 use crate::error::Error;
 use crate::utils::time::{Date, DateTime, Month, Time};
 
@@ -24,9 +25,6 @@ impl<'de, T: Deserialize<'de>> Res<T> {
         Ok(res.data)
     }
 }
-
-// 内部辅助容器, 因为所需数据普遍在 data 字段内部的下一层包装
-pub(super) struct Data<T>(pub T);
 
 // ====================
 // 用于 get_semester

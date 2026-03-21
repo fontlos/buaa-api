@@ -1,9 +1,10 @@
 use reqwest::Method;
 
 use crate::Error;
+use crate::api::Data;
 use crate::utils::time::Week;
 
-use super::data::{Data, Payload, Schedule};
+use super::data::{Payload, Schedule};
 
 // 什么纸张司马设计每个接口返回格式都不一样啊
 impl super::LiveApi {

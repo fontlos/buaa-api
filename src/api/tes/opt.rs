@@ -1,8 +1,10 @@
 use futures::future;
 
-use crate::{Error, utils};
+use crate::api::Data;
+use crate::error::Error;
+use crate::utils;
 
-use super::{Completed, Data, Form, Task};
+use super::{Completed, Form, Task};
 
 impl super::TesApi {
     /// # Get list of evaluation task

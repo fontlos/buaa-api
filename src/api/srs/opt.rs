@@ -1,6 +1,8 @@
-use crate::{Error, utils};
+use crate::api::Data;
+use crate::error::Error;
+use crate::utils;
 
-use super::{Config, Course, Data, Filter, Opt, Payload, Res, Selected};
+use super::{Config, Course, Filter, Opt, Payload, Res, Selected};
 
 impl super::SrsApi {
     /// # Get configuration of SrsApi

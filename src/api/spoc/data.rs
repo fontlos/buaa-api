@@ -2,6 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use std::io::{Read, Seek, SeekFrom};
 
+use crate::api::Data;
 use crate::utils::time::{DateTime, Weekday};
 use crate::{Error, crypto, utils};
 
@@ -47,9 +48,6 @@ impl<'de, T: Deserialize<'de>> Res<T> {
             .with_source(source))
     }
 }
-
-// 辅助容器
-pub(super) struct Data<T>(pub T);
 
 // ====================
 // 用于 get_week
