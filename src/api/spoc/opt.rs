@@ -1,10 +1,11 @@
 use bytes::{BufMut, BytesMut};
 use reqwest::Method;
 
+use crate::api::Data;
 use crate::utils;
 
 use super::{
-    Course, Data, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadProgress,
+    Course, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadProgress,
     UploadRes, UploadStatus, Week,
 };
 

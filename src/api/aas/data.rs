@@ -1,5 +1,6 @@
 use serde::{Deserialize, Deserializer};
 
+use crate::api::Data;
 use crate::error::Error;
 use crate::utils::time::{Time, Weekday};
 
@@ -25,9 +26,6 @@ impl<'de, T: Deserialize<'de>> Res<T> {
         }
     }
 }
-
-// 辅助容器
-pub(super) struct Data<T>(pub T);
 
 // ====================
 // 用于 get_config

@@ -7,8 +7,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use std::borrow::Cow;
 
-use crate::error::Error;
-
 // 当学校能整出这种**玩意时我将觉得这东西没有解析的必要了, 什么类型都乱塞, 空指针异常也塞进来
 // {"code":200,"msg":null,"content":{"timestamp":"...","status":500,"error":"...","path":"..."}}
 // {"code":"200","msg":"...","result":{...}}
@@ -26,7 +24,8 @@ use crate::error::Error;
 
 // 我**就只解析我要的字段, 拿不到就视为 Server Error
 // "这种处理方式完全合理，对于垃圾 API 就该用简单的规则" -- DeepSeek
-pub(super) struct Data<T>(pub T);
+use crate::api::Data;
+use crate::error::Error;
 
 // 每个都只用一次是真难绷. 返回的什么一坨石
 fn deserialize_u8_bool<'de, D>(deserializer: D) -> Result<bool, D::Error>

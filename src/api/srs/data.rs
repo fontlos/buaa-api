@@ -1,6 +1,7 @@
 use serde::de::Deserializer;
 use serde::{Deserialize, Serialize, Serializer};
 
+use crate::api::Data;
 use crate::error::Error;
 use crate::utils::time::DateTime;
 
@@ -27,8 +28,6 @@ pub(super) enum Payload<'a, P: Serialize + ?Sized> {
     Json(&'a P),
     Empty,
 }
-
-pub(super) struct Data<T>(pub T);
 
 // ====================
 // 反/序列化布尔值
