@@ -22,13 +22,6 @@ impl<'de, T: Deserialize<'de>> Res<T> {
     }
 }
 
-pub(super) enum Payload<'a, P: Serialize + ?Sized> {
-    QueryWithToken,
-    Form(&'a P),
-    Json(&'a P),
-    Empty,
-}
-
 // ====================
 // 反/序列化布尔值
 // ====================

@@ -2,12 +2,10 @@ use bytes::Bytes;
 use reqwest::Method;
 use serde::Serialize;
 
-use crate::api::{Cloud, Sso};
+use crate::api::{Cloud, Payload, Sso};
 use crate::error::Error;
 use crate::store::cookies::Cookie;
 use crate::utils;
-
-use super::data::Payload;
 
 // 手动登录用 RSA 密钥, 但我们使用 SSO 登录
 // From https://bhpan.buaa.edu.cn/anyshare/static/js/main.xxx.chunk.js
@@ -132,6 +130,7 @@ impl super::CloudApi {
             Payload::Query(f) => req.query(f),
             Payload::Json(j) => req.json(j),
             Payload::Empty => req,
+            _ => unreachable!(),
         };
         let res = req.send().await?;
 

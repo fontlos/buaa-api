@@ -1,12 +1,12 @@
 use bytes::{BufMut, BytesMut};
 use reqwest::Method;
 
-use crate::api::Data;
+use crate::api::{Data, Payload};
 use crate::utils;
 
 use super::{
-    Course, Homework, HomeworkDetail, Payload, Res, Schedule, UploadArgs, UploadProgress,
-    UploadRes, UploadStatus, Week,
+    Course, Homework, HomeworkDetail, Res, Schedule, UploadArgs, UploadProgress, UploadRes,
+    UploadStatus, Week,
 };
 
 impl super::SpocApi {

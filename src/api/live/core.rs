@@ -2,10 +2,8 @@ use bytes::Bytes;
 use reqwest::Method;
 use serde::Serialize;
 
-use crate::api::{Live, Sso};
+use crate::api::{Live, Payload, Sso};
 use crate::error::Error;
-
-use super::data::Payload;
 
 impl super::LiveApi {
     /// # Login to LiveApi
@@ -67,6 +65,7 @@ impl super::LiveApi {
             Payload::Query(p) => req.query(p),
             Payload::Json(p) => req.json(p),
             Payload::Empty => req,
+            _ => unreachable!(),
         };
 
         let bytes = req.send().await?.bytes().await?;

@@ -6,12 +6,6 @@ use std::io::{Read, Seek, SeekFrom};
 use crate::crypto::{self, crc, md5};
 use crate::error::Error;
 
-pub(super) enum Payload<'a, P: Serialize + ?Sized> {
-    Query(&'a P),
-    Json(&'a P),
-    Empty,
-}
-
 #[derive(Deserialize)]
 #[serde(transparent)]
 pub(super) struct Res<T>(T);

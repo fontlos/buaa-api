@@ -1,14 +1,14 @@
-use crate::api::Data;
+use crate::api::{Data, Payload};
 use crate::error::Error;
 use crate::utils;
 
-use super::{Config, Course, Filter, Opt, Payload, Res, Selected};
+use super::{Config, Course, Filter, Opt, Res, Selected};
 
 impl super::SrsApi {
     /// # Get configuration of SrsApi
     pub async fn get_config(&self) -> crate::Result<Config> {
         let url = "https://byxk.buaa.edu.cn/xsxk/web/studentInfo";
-        let payload = Payload::<'_, ()>::QueryWithToken;
+        let payload = Payload::<'_, ()>::Token;
         let bytes = self.universal_request(url, payload).await?;
         let res: Data<Config> = Res::parse(&bytes)?;
         Ok(res.0)

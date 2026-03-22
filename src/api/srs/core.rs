@@ -1,10 +1,8 @@
 use bytes::Bytes;
 use serde::Serialize;
 
-use crate::api::{Srs, Sso};
+use crate::api::{Payload, Srs, Sso};
 use crate::error::Error;
-
-use super::Payload;
 
 impl super::SrsApi {
     /// Login to SrsApi
@@ -52,10 +50,11 @@ impl super::SrsApi {
         let req = self.client.post(url).header("Authorization", token);
 
         let req = match payload {
-            Payload::QueryWithToken => req.query(&[("token", token)]),
+            Payload::Token => req.query(&[("token", token)]),
             Payload::Form(f) => req.form(f),
             Payload::Json(j) => req.json(j),
             Payload::Empty => req,
+            _ => unreachable!(),
         };
 
         let bytes = req.send().await?.bytes().await?;

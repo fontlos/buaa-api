@@ -94,3 +94,20 @@ impl crate::Context<Core> {
 
 /// Complex response wrapper
 struct Data<T>(pub T);
+
+/// Multiple types of payload wrapper
+pub enum Payload<'a, P>
+where
+    P: serde::Serialize + ?Sized,
+{
+    /// No Payload
+    Empty,
+    /// Form
+    Form(&'a P),
+    /// JSON
+    Json(&'a P),
+    /// Query
+    Query(&'a P),
+    /// Query with Token
+    Token,
+}
