@@ -6,14 +6,6 @@ use crate::api::Data;
 use crate::utils::time::{DateTime, Weekday};
 use crate::{Error, crypto, utils};
 
-/// Request Body Payload
-pub enum Payload<'a, P: Serialize + ?Sized> {
-    /// Query data
-    Query(&'a P),
-    /// JSON data
-    Json(&'a P),
-}
-
 /// Response Wrapper
 #[derive(Deserialize)]
 pub struct Res<T> {

@@ -2,11 +2,9 @@ use bytes::Bytes;
 use reqwest::Method;
 use serde::Serialize;
 
-use crate::api::{Spoc, Sso};
+use crate::api::{Payload, Spoc, Sso};
 use crate::crypto;
 use crate::error::Error;
-
-use super::data::Payload;
 
 // 逆向出来的密钥和初始向量, 用于 AES 加密请求体,
 // 不过既然写死了为什么不用 ECB 而用 CBC 模式啊
@@ -78,6 +76,7 @@ impl super::SpocApi {
                 let json = serde_json::json!({ "param": data });
                 req.json(&json)
             }
+            _ => unreachable!(),
         };
 
         let res = req.send().await?.bytes().await?;

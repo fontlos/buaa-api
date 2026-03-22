@@ -1,12 +1,13 @@
 use reqwest::Method;
 use serde_json::Value;
 
+use crate::api::Payload;
 use crate::error::Error;
 use crate::utils;
 use crate::utils::time::DateTime;
 
 use super::data::{
-    Dir, Item, Payload, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
+    Dir, Item, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
 };
 
 impl super::CloudApi {

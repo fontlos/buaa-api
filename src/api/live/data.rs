@@ -1,20 +1,10 @@
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Deserializer};
 
 // 经典司马接口每个响应体都不一样, 直接解析
 // {"code":0,"msg":"success","list":{OBJ,OBJ}}
 // {"code":10000,"message":"操作成功","data":{}}
 // {"success":true,"result":{"code":200,"msg":"", list:[]}}
 use crate::api::Data;
-
-/// Request Body Payload
-pub enum Payload<'a, P: Serialize + ?Sized> {
-    /// Query data
-    Query(&'a P),
-    /// JSON data
-    Json(&'a P),
-    /// No data
-    Empty,
-}
 
 /// Schedule info
 #[derive(Debug, Clone, Deserialize)]
