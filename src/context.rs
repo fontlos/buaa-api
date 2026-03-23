@@ -15,6 +15,19 @@ pub struct Context<G = Core> {
     _marker: PhantomData<G>,
 }
 
+unsafe impl<G> Sync for Context<G> {}
+
+impl<G> std::fmt::Debug for Context<G> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Context")
+            .field("client", &"<client>")
+            .field("cookies", &"<cookies>")
+            .field("cred", &"<credentials>")
+            .field("_marker", &self._marker)
+            .finish()
+    }
+}
+
 impl Default for Context {
     fn default() -> Self {
         Self::new()
