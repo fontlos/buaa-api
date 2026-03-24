@@ -5,13 +5,13 @@ use time::macros::{format_description, offset};
 use time::{OffsetDateTime, PrimitiveDateTime};
 
 use std::fmt::Display;
-use std::ops::Deref;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::ops::{Add, Deref, Sub};
+use std::time::{Duration as StdDuration, SystemTime, UNIX_EPOCH};
 
-pub use time::{Date, Month, Time, Weekday};
+pub use time::{Date, Duration, Month, Time, Weekday};
 
 /// A wrapper of `PrimitiveDateTime`
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Hash)]
 pub struct DateTime(PrimitiveDateTime);
 
 impl DateTime {
@@ -37,7 +37,7 @@ impl DateTime {
 
     /// Get the current timestamp as `Duration` since UNIX_EPOCH
     #[inline]
-    pub fn timestamp() -> Duration {
+    pub fn timestamp() -> StdDuration {
         SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .expect("Timestamp should always get successfully")
@@ -56,6 +56,16 @@ impl DateTime {
     /// Get the current timestamp in nanoseconds since UNIX_EPOCH
     pub fn nanos() -> u128 {
         Self::timestamp().as_nanos()
+    }
+
+    /// Get the date part of the `DateTime`
+    pub fn date(&self) -> Date {
+        self.0.date()
+    }
+
+    /// Get the time part of the `DateTime`
+    pub fn time(&self) -> Time {
+        self.0.time()
     }
 }
 
@@ -77,6 +87,30 @@ impl Deref for DateTime {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl Add<Duration> for DateTime {
+    type Output = Self;
+
+    fn add(self, rhs: Duration) -> Self::Output {
+        Self(self.0 + rhs)
+    }
+}
+
+impl Sub<Duration> for DateTime {
+    type Output = Self;
+
+    fn sub(self, rhs: Duration) -> Self::Output {
+        Self(self.0 - rhs)
+    }
+}
+
+impl Sub for DateTime {
+    type Output = Duration;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.0 - rhs.0
     }
 }
 
