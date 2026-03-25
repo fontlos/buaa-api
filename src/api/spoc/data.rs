@@ -150,8 +150,8 @@ where
     let start_time = format!("{} {}", date_part, time_parts[0]);
     let end_time = format!("{} {}", date_part, time_parts[1]);
 
-    let start = DateTime::from_standard(&start_time).map_err(serde::de::Error::custom)?;
-    let end = DateTime::from_standard(&end_time).map_err(serde::de::Error::custom)?;
+    let start = DateTime::parse(&start_time).map_err(serde::de::Error::custom)?;
+    let end = DateTime::parse(&end_time).map_err(serde::de::Error::custom)?;
 
     Ok(TimeRange { start, end })
 }

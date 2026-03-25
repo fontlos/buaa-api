@@ -130,17 +130,8 @@ fn deserialize_weekday<'de, D>(deserializer: D) -> Result<Weekday, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let value: u8 = Deserialize::deserialize(deserializer)?;
-    match value {
-        1 => Ok(Weekday::Monday),
-        2 => Ok(Weekday::Tuesday),
-        3 => Ok(Weekday::Wednesday),
-        4 => Ok(Weekday::Thursday),
-        5 => Ok(Weekday::Friday),
-        6 => Ok(Weekday::Saturday),
-        7 => Ok(Weekday::Sunday),
-        _ => Err(serde::de::Error::custom("Unexpected value")),
-    }
+    let value: u32 = Deserialize::deserialize(deserializer)?;
+    Weekday::from_num(value).ok_or_else(|| serde::de::Error::custom("Invalid weekday"))
 }
 
 fn deserialize_time<'de, D>(deserializer: D) -> Result<Time, D::Error>
@@ -148,6 +139,6 @@ where
     D: Deserializer<'de>,
 {
     let value: &str = Deserialize::deserialize(deserializer)?;
-    let format = time::macros::format_description!("[hour]:[minute]");
-    Time::parse(value, &format).map_err(serde::de::Error::custom)
+    // HH:MM
+    Time::parse(value).map_err(serde::de::Error::custom)
 }

@@ -17,10 +17,24 @@ impl super::LiveApi {
         // user_id 并不重要, 来自
         // https://classroom.msa.buaa.edu.cn/consoleapi/v2/user/group-user
         // {"code":10000,"message":"操作成功","data":{}}, id 字段
-        let query = [
-            ("start_at", week.start.to_date2()),
-            ("end_at", week.end.to_date2()),
-        ];
+        let start_date = week.start.date();
+        // YYYY-MM-DD
+        let start_str = format!(
+            "{}-{:02}-{:02}",
+            start_date.year(),
+            start_date.month() as u8,
+            start_date.day()
+        );
+        let end_date = week.end.date();
+        // YYYY-MM-DD
+        let end_str = format!(
+            "{}-{:02}-{:02}",
+            end_date.year(),
+            end_date.month() as u8,
+            end_date.day()
+        );
+
+        let query = [("start_at", start_str), ("end_at", end_str)];
         let payload = Payload::Query(&query);
         // {"success":true,"result":{"code":200,"msg":"", list:[]}}, 七个元素
         // success 似乎总是 true, 但 code 可能是 400

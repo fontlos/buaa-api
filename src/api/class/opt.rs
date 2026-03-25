@@ -9,7 +9,10 @@ impl super::ClassApi {
     /// **Input:** DateTime
     pub async fn query_schedule(&self, date: &DateTime) -> crate::Result<Vec<Schedule>> {
         let url = "https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action";
-        let payload = [("dateStr", date.to_date1())];
+        let date = date.date();
+        // YYYYMMDD
+        let date_str = format!("{}{:02}{:02}", date.year(), date.month() as u8, date.day());
+        let payload = [("dateStr", date_str)];
         let bytes = self.universal_request(url, &payload).await?;
         let res: Vec<Schedule> = Res::parse(&bytes)?;
         Ok(res)
@@ -53,7 +56,6 @@ impl super::ClassApi {
         let url = "https://iclass.buaa.edu.cn:8347/app/my/get_my_course_sign_detail.action";
         let payload = [("courseId", id)];
         let bytes = self.universal_request(url, &payload).await?;
-        println!("Raw response: {}", String::from_utf8_lossy(&bytes));
         let res: Vec<CourseSchedule> = Res::parse(&bytes)?;
         Ok(res)
     }

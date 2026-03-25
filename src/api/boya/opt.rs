@@ -51,8 +51,8 @@ impl BoyaApi {
         let url = "https://bykc.buaa.edu.cn/sscv/queryChosenCourse";
         // 要求时间格式为 hh:mm:ss, to_string 方法会导致 秒 有小数点, 不过似乎不影响
         let payload = serde_json::json!({
-            "startDate": semester.start.to_string(),
-            "endDate": semester.end.to_string(),
+            "startDate": semester.start.format(),
+            "endDate": semester.end.format(),
         });
         let bytes = self.universal_request(url, &payload).await?;
         let res: Data<Vec<Selected>> = Res::parse(&bytes)?;
