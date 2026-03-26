@@ -37,9 +37,10 @@ pub struct Config {
     /// Current week
     #[serde(rename = "classWeek")]
     pub week: u8,
+    // 原来真是 BUG 啊, 2026.3.25 确认修复了, 太**了
     // 为什么纯数字的是学期名称, 另一个汉字的是学期代码, 什么**命名
     /// Current Term
-    #[serde(rename = "xnxqmc")]
+    #[serde(rename = "xnxqdm")]
     pub term: String,
 }
 
