@@ -1,4 +1,5 @@
 use crate::error::Error;
+use crate::utils;
 use crate::utils::time::DateTime;
 
 use super::data::{Checkin, Course, CourseSchedule, Res, Schedule};
@@ -66,11 +67,11 @@ impl super::ClassApi {
     /// from [Schedule::id] via [super::ClassApi::query_schedule()] (most recommended)
     /// or [CourseSchedule::id] via [super::ClassApi::query_course_schedule()]
     pub async fn checkin(&self, id: &str) -> crate::Result<()> {
+        // 2026.03.23. 签到时间现在基于服务器内部时间而非标准 UTC 了.
+        // 你在干什么! 怎么敢另立标准的, 其心可诛!
+        let timestamp = self.get_time().await?;
         let url = "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action";
-        let payload = [
-            ("courseSchedId", id),
-            ("timestamp", &DateTime::millis().to_string()),
-        ];
+        let payload = [("courseSchedId", id), ("timestamp", &timestamp)];
         let bytes = self.universal_request(url, &payload).await?;
         let res: Checkin = Res::parse(&bytes)?;
         if res.status {
@@ -78,5 +79,15 @@ impl super::ClassApi {
         } else {
             Err(Error::server("Checkin failed").with_label("Class"))
         }
+    }
+
+    /// Calibrate the internal time of the server
+    async fn get_time(&self) -> crate::Result<String> {
+        let url = "http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action";
+        let payload: [&str; 0] = [];
+        let bytes = self.universal_request(url, &payload).await?;
+        let timestamp = utils::parse_by_tag(&bytes, "\"timestamp\":", "}")
+            .ok_or_else(|| Error::server("Failed to parse timestamp").with_label("Class"))?;
+        Ok(timestamp.to_string())
     }
 }
