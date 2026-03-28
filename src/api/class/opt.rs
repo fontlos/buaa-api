@@ -86,6 +86,7 @@ impl super::ClassApi {
         let url = "http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action";
         let payload: [&str; 0] = [];
         let bytes = self.universal_request(url, &payload).await?;
+        Res::check(&bytes)?;
         let timestamp = utils::parse_by_tag(&bytes, "\"timestamp\":", "}")
             .ok_or_else(|| Error::server("Failed to parse timestamp").with_label("Class"))?;
         Ok(timestamp.to_string())
