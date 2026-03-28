@@ -4,18 +4,16 @@ use crate::error::Error;
 use crate::utils;
 use crate::utils::time::DateTime;
 
-// 每个字段都可能缺失, 所以手动解析
-/// Respond wrapper
-#[derive(Deserialize)]
-pub(crate) struct Res<T> {
-    result: T,
-}
+/// Respond handler
+pub(crate) struct Res;
 
-impl<'de, T: Deserialize<'de>> Res<T> {
-    pub(crate) fn parse(v: &'de [u8]) -> crate::Result<T> {
+impl Res {
+    /// 部分接口的响应格式不规范, 因此分离状态检查与响应解析
+    /// 并且每个字段都可能缺失, 所以手动解析
+    pub(crate) fn check(v: &[u8]) -> crate::Result<()> {
         let status = utils::parse_by_tag(&v, "\"STATUS\":\"", "\"");
         match status {
-            Some("0") => Ok(serde_json::from_slice::<Res<T>>(&v)?.result),
+            Some("0") => Ok(()),
             // 状态码为 2 表示数据为空, 通常是今日没有课程, 或者查询了过时的数据, 没有任何其他字段
             Some("2") => Err(Error::server("Empty data list").with_label("Class")),
             Some(s) => {
@@ -25,9 +23,19 @@ impl<'de, T: Deserialize<'de>> Res<T> {
                     .with_label("Class")
                     .with_source(source));
             }
-            // 错误请求可能返回 `\r\n`
-            None => Err(Error::server("Empty response").with_label("Class")),
+            // 错误请求可能只返回 "\r\n"
+            None => Err(Error::server("Bad response").with_label("Class")),
         }
+    }
+
+    pub(crate) fn parse<'de, T: Deserialize<'de>>(v: &'de [u8]) -> crate::Result<T> {
+        Self::check(v)?;
+        // 这是最普遍的响应格式, 部分接口需要额外处理
+        #[derive(Deserialize)]
+        struct I<T> {
+            result: T,
+        }
+        Ok(serde_json::from_slice::<I<T>>(&v)?.result)
     }
 }
 
