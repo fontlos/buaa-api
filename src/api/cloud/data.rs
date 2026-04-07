@@ -5,6 +5,7 @@ use std::io::{Read, Seek, SeekFrom};
 
 use crate::crypto::{self, crc, md5};
 use crate::error::Error;
+use crate::utils::time::DateTime;
 
 #[derive(Deserialize)]
 #[serde(transparent)]
@@ -71,8 +72,8 @@ impl RootDir {
     /// Convert to [Item] with size -1 (indicating a directory)
     pub fn into_item(self) -> Item {
         Item {
-            create: 0,
-            modify: 0,
+            create: default_datetime(),
+            modify: default_datetime(),
             id: self.id,
             name: self.name,
             size: -1,
@@ -93,13 +94,15 @@ pub struct Dir {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Item {
     // 对于回收站, 这个字段不存在
-    /// Creation time (timestamp). For recycle item, this field is missing
-    #[serde(default)]
+    /// Creation time. For recycle item, this field is missing
+    #[serde(default = "default_datetime")]
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "create_time")]
-    pub create: u64,
-    /// Modification time (timestamp)
+    pub create: DateTime,
+    /// Modification time
+    #[serde(deserialize_with = "deserialize_datetime")]
     #[serde(rename = "modified")]
-    pub modify: u64,
+    pub modify: DateTime,
     /// Item ID
     #[serde(rename = "docid")]
     pub id: String,
@@ -111,6 +114,19 @@ pub struct Item {
     // pub rev: String,
     /// Item size (in bytes, -1 for directories)
     pub size: i64,
+}
+
+fn default_datetime() -> DateTime {
+    DateTime::from_timestamp(0)
+}
+
+fn deserialize_datetime<'de, D>(deserializer: D) -> Result<DateTime, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let i: i64 = Deserialize::deserialize(deserializer)?;
+    // 纳秒级时间戳转换为秒级时间戳
+    Ok(DateTime::from_timestamp(i/1000000))
 }
 
 impl Item {
@@ -534,7 +550,7 @@ impl UploadArgs {
         let form_err = || Error::server("Bad complete upload response").with_label("Cloud");
         // 查找 XML 开始位置, 搜索 '<'
         let xml_start = bytes.iter().position(|&b| b == b'<').ok_or_else(form_err)?;
-        // 继续查找 XML 结束位置, 搜索 '-'
+        // 继续查找 XML 结束位置, 搜索 '-', 源自分割记号 '--boundary'
         let xml_end = bytes[xml_start..]
             .iter()
             .position(|&b| b == b'-')
