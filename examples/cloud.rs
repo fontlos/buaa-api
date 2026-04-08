@@ -137,10 +137,10 @@ mod tests {
         let list = cloud.list_dir(&user_dir).await.unwrap();
 
         let history = cloud.share_history().await.unwrap();
-        println!("Share History: {history:#?}");
+        println!("All Share History: {history:#?}");
 
         let shares = cloud.share_record(&list.files[0]).await.unwrap();
-        println!("Shares: {shares:#?}");
+        println!("File Share Records: {shares:#?}");
 
         let share = list.files[0].to_share();
         let share = cloud.share_item(share).await.unwrap();
@@ -148,7 +148,12 @@ mod tests {
 
         let share = share.enable_preview().enable_download();
         cloud.share_update(&share).await.unwrap();
+
+        let item = cloud.share_parse(&share.id, None).await.unwrap();
+        println!("Parsed Share Item: {item:#?}");
+
         cloud.share_delete(&share).await.unwrap();
+        println!("Share deleted");
 
         context.save_auth("./data").unwrap();
     }

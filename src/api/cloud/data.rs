@@ -2,6 +2,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use std::fmt::Display;
 use std::io::{Read, Seek, SeekFrom};
+use std::time::Duration;
 
 use crate::crypto::{self, crc, md5};
 use crate::error::Error;
@@ -126,7 +127,7 @@ where
 {
     let i: i64 = Deserialize::deserialize(deserializer)?;
     // 纳秒级时间戳转换为秒级时间戳
-    Ok(DateTime::from_timestamp(i/1000000))
+    Ok(DateTime::from_timestamp(i / 1000000))
 }
 
 impl Item {
@@ -150,6 +151,56 @@ impl Item {
             password: "".to_string(),
             limit: -1,
         }
+    }
+
+    // 在解析分享链接时将响应解析到 Item
+    pub(crate) fn parse_from_share_link(bytes: &[u8]) -> crate::Result<Item> {
+        #[derive(Deserialize)]
+        struct I {
+            // yyyy-mm-ddThh:mm:ssZ
+            #[serde(deserialize_with = "d_datetime")]
+            created_at: DateTime,
+            #[serde(deserialize_with = "d_datetime")]
+            modified_at: DateTime,
+            // GNS ID
+            id: String,
+            // 包含分享人姓名
+            name: String,
+            // 不存在就是文件夹, 默认 -1
+            #[serde(default = "d_size")]
+            size: i64,
+        }
+
+        // deserialize datetime
+        fn d_datetime<'de, D>(deserializer: D) -> Result<DateTime, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let s: String = Deserialize::deserialize(deserializer)?;
+            let mut s = s.replace("T", " ");
+            s.pop(); // 去掉末尾的 Z
+            DateTime::parse(&s)
+                // 解析到的时间是 UTC 时间, 转为北京时间
+                .map(|dt| dt + Duration::from_secs(8 * 3600))
+                .map_err(serde::de::Error::custom)
+        }
+
+        // default size
+        fn d_size() -> i64 {
+            -1
+        }
+
+        // 由于只允许分享一个文件/目录, 所以长度为 1
+        let [i]: [I; 1] = serde_json::from_slice(bytes)
+            .map_err(|e| parse_error("Bad share link item info", bytes, &e))?;
+
+        Ok(Item {
+            create: i.created_at,
+            modify: i.modified_at,
+            id: i.id,
+            name: i.name,
+            size: i.size,
+        })
     }
 }
 

@@ -268,6 +268,90 @@ impl super::CloudApi {
         Ok(())
     }
 
+    /// # Parse share link
+    ///
+    /// - Input:
+    ///     - Share ID from [Share::id] or share link, e.g. for `https://bhpan.buaa.edu.cn/link/{ID}`
+    ///     - Password if needed, otherwise pass None
+    /// - Output: [Item] parsed from share link, which can be used in other APIs
+    ///     - [super::CloudApi::list_dir] for listing share contents if it's a dir
+    ///     - [super::CloudApi::copy_item] for saving to personal directory
+    ///     - [super::CloudApi::get_download_url] for downloading files
+    pub async fn share_parse(&self, id: &str, pwd: Option<&str>) -> crate::Result<Item> {
+        // 首先提前看看是否需要密码
+        let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/links/{}", id);
+        let bytes = self.client.get(&url).send().await?.bytes().await?;
+        // 这是一个诡异的方案, 因为匹配时右端可能是 ',' 也可能是 '}', 干脆直接拿 true/false 的 'e'
+        let pwd_required = match utils::parse_by_tag(&bytes, "\"password_required\":", "e") {
+            Some("tru") => true,
+            Some("fals") => false,
+            _ => return Err(Error::server("Invalid share info").with_label("Cloud")),
+        };
+
+        if pwd_required {
+            let pwd = pwd.ok_or_else(|| {
+                Error::parameter("Password required for this share").with_label("Cloud")
+            })?;
+            let url = "https://bhpan.buaa.edu.cn/link";
+            let json = serde_json::json!({
+                "id": id,
+                "type": "anonymous",
+                "password_required": true,
+                "password": pwd,
+                // 我们不需要 'linkConfig' 这个 cookie, 不需要其他参数
+            });
+            self.client.post(url).json(&json).send().await?;
+        }
+
+        // 需要密码的情况, 这里拿一个 cookie: 'link_token:ID'
+        if pwd_required {
+            let url = "https://bhpan.buaa.edu.cn/link";
+            let json = serde_json::json!({
+                "id": id,
+                "type": "anonymous",
+                "password_required": true,
+                "password": pwd,
+                // 我们不需要 'linkConfig' 这个 cookie, 不需要其他参数
+            });
+            self.client.post(url).json(&json).send().await?;
+        }
+
+        // 在原始流程中这次请求应该在上面那个之前, 不过似乎并不影响
+        // 然后访问这个链接拿一个 cookie: 'INGRESSCOOKIE'
+        // 无需密码的情况下这里也能拿到 cookie: 'link_token:ID'
+        let url = format!("https://bhpan.buaa.edu.cn/link/{}", id);
+        self.client.get(&url).send().await?;
+
+        // 用这个做临时凭据, 也许能让未登录情况也能下载
+        let link_cookie_name = format!("link_token:{}", id);
+        let link_cookie = self
+            .cookies
+            .load()
+            .get("bhpan.buaa.edu.cn", &link_cookie_name)
+            .and_then(|c| c.value())
+            .ok_or_else(|| Error::server("No link cookie").with_label("Cloud"))?;
+
+        // 最后可以在这里拿到分享链接对应的 GNS ID
+        let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-item";
+        let bytes = self
+            .client
+            .get(url)
+            .bearer_auth(link_cookie)
+            .send()
+            .await?
+            .bytes()
+            .await?;
+        // 最后防止污染 cookies 状态, 移除这些临时 cookie
+        self.cookies.update(|cookies| {
+            if let Some(namemap) = cookies.get_mut_map("bhpan.buaa.edu.cn") {
+                namemap.remove(&link_cookie_name);
+                namemap.remove("INGRESSCOOKIE");
+            }
+        });
+
+        Ok(Item::parse_from_share_link(&bytes)?)
+    }
+
     // 下载相关的参数错误也会在上层触发 400 错误
     // 内部方法
     /// Get a download URL for a single file.
