@@ -62,6 +62,7 @@
     - [x] Share item
     - [x] Share update
     - [x] Share delete
+    - [x] Share parse
   - [x] Download
     - [x] Get single item download URL
     - [x] Get a zip of multiple items download URL
