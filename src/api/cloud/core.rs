@@ -108,32 +108,17 @@ impl super::CloudApi {
         }
     }
 
-    /// Universal Request for CloudApi (Internal)
-    pub(super) async fn universal_request<'a, P>(
-        &self,
-        m: Method,
-        url: &str,
-        payload: &Payload<'a, P>,
-    ) -> crate::Result<Bytes>
-    where
-        P: Serialize + ?Sized,
-    {
+    pub(crate) async fn token(&self) -> crate::Result<String> {
         let cred = self.cred.load();
         if cred.is_expired::<Cloud>() {
             self.login().await?;
         }
-        let token = cred.value::<Cloud>()?;
+        Ok(cred.value::<Cloud>()?.to_string())
+    }
 
-        let req = self.client.request(m, url).bearer_auth(token);
-
-        let req = match payload {
-            Payload::Query(f) => req.query(f),
-            Payload::Json(j) => req.json(j),
-            Payload::Empty => req,
-            _ => unreachable!(),
-        };
+    // 请求实际发起函数
+    pub(crate) async fn request(req: reqwest::RequestBuilder) -> crate::Result<Bytes> {
         let res = req.send().await?;
-
         let status = res.status();
         // 状态码非 200 系异常 JSON 必然在这里产生
         if !status.is_success() {
@@ -154,8 +139,32 @@ impl super::CloudApi {
             }
             return Err(Error::server("Operation failed").with_label("Cloud"));
         }
-
-        cred.refresh::<Cloud>();
         Ok(res.bytes().await?)
+    }
+
+    // 为了让与分享链接相关的操作复用逻辑, 拆分通用请求到上面
+    /// Universal Request for CloudApi (Internal)
+    pub(super) async fn universal_request<'a, P>(
+        &self,
+        m: Method,
+        url: &str,
+        payload: &Payload<'a, P>,
+    ) -> crate::Result<Bytes>
+    where
+        P: Serialize + ?Sized,
+    {
+        let token = self.token().await?;
+
+        let req = self.client.request(m, url).bearer_auth(token);
+        let req = match payload {
+            Payload::Query(f) => req.query(f),
+            Payload::Json(j) => req.json(j),
+            Payload::Empty => req,
+            _ => unreachable!(),
+        };
+        let bytes = Self::request(req).await?;
+
+        self.cred.load().refresh::<Cloud>();
+        Ok(bytes)
     }
 }
