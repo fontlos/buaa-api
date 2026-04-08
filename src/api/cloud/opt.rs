@@ -7,7 +7,7 @@ use crate::utils;
 use crate::utils::time::DateTime;
 
 use super::data::{
-    Dir, Item, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
+    Dir, Item, ItemVariant, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
 };
 
 impl super::CloudApi {
@@ -44,9 +44,28 @@ impl super::CloudApi {
             "sort": "asc" // desc
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
-        let res: Dir = Res::parse(&bytes, "Can not get dir list")?;
-        Ok(res)
+        match item.variant {
+            ItemVariant::Owned => {
+                let bytes = self.universal_request(Method::POST, url, &payload).await?;
+                let res: Dir = Res::parse(&bytes, "Can not get dir list")?;
+                Ok(res)
+            }
+            // 分享链接只需要自己的 Token
+            ItemVariant::Shared(ref token) => {
+                let req = self.client.post(url).bearer_auth(token).json(&json);
+                let bytes = Self::request(req).await?;
+                let mut res: Dir = Res::parse(&bytes, "Can not get dir list")?;
+                // 插入分享链接的授权 token, 后续浏览目录, 另存为, 下载需要这个
+                // 暂时不做持久化适配, 过期了就抛出授权错误重新获取
+                res.dirs
+                    .iter_mut()
+                    .for_each(|i| i.variant = ItemVariant::Shared(token.clone()));
+                res.files
+                    .iter_mut()
+                    .for_each(|i| i.variant = ItemVariant::Shared(token.clone()));
+                Ok(res)
+            }
+        }
     }
 
     /// # Get the size of an item
@@ -324,7 +343,7 @@ impl super::CloudApi {
 
         // 用这个做临时凭据, 也许能让未登录情况也能下载
         let link_cookie_name = format!("link_token:{}", id);
-        let link_cookie = self
+        let link_token = self
             .cookies
             .load()
             .get("bhpan.buaa.edu.cn", &link_cookie_name)
@@ -336,7 +355,7 @@ impl super::CloudApi {
         let bytes = self
             .client
             .get(url)
-            .bearer_auth(link_cookie)
+            .bearer_auth(link_token)
             .send()
             .await?
             .bytes()
@@ -349,7 +368,11 @@ impl super::CloudApi {
             }
         });
 
-        Ok(Item::parse_from_share_link(&bytes)?)
+        let mut item = Item::parse_from_share_link(&bytes)?;
+        // 插入分享链接的授权 token, 后续浏览目录, 另存为, 下载需要这个
+        item.variant = ItemVariant::Shared(link_token.to_string());
+
+        Ok(item)
     }
 
     // 下载相关的参数错误也会在上层触发 400 错误
