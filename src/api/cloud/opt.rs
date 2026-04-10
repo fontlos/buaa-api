@@ -157,7 +157,22 @@ impl super::CloudApi {
             "ondup": 1
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = match from.variant {
+            ItemVariant::Owned => self.universal_request(Method::POST, url, &payload).await?,
+            // 对于分享链接, Copy 起到另存为的作用
+            // 主授权 Token 仍然用自己的, 但是需要 Link Token 作为二次授权, 命名成 x-as-authorization
+            ItemVariant::Shared(ref t) => {
+                let token = self.token().await?;
+                let req = self
+                    .client
+                    .post(url)
+                    .bearer_auth(token)
+                    // 额外的 Token
+                    .header("x-as-authorization", format!("Bearer {t}"))
+                    .json(&json);
+                Self::request(req).await?
+            }
+        };
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
             .ok_or_else(|| parse_error("Can not copy item", &bytes, &"No 'docid' field"))?;
         Ok(res.to_string())
