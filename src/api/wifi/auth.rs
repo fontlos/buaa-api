@@ -44,10 +44,11 @@ impl super::WifiApi {
         let ip =
             info::ip().ok_or(Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
 
-        // 从重定向 URL 中获取 ACID 接入点
-        // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
+        // 2025.04.11 更新
+        // 这里会重定向到 index_1.html, 最终 url 在它的 html meta 标签里
+        // 从那里获取接入点 AC ID
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = self
+        let bytes = self
             .client
             .get("http://gw.buaa.edu.cn")
             .send()
@@ -63,13 +64,12 @@ impl super::WifiApi {
                 } else {
                     Error::network("From reqwest crate").with_source(e)
                 }
-            })?;
+            })?
+            .bytes()
+            .await?;
 
-        let url = res.url().as_str().as_bytes();
-        let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
-            Some(s) => s,
-            None => return Err(Error::server("No AC ID").with_label("Wifi")),
-        };
+        let ac_id = utils::parse_by_tag(&bytes, "ac_id=", "&")
+            .ok_or_else(|| Error::server("No AC ID").with_label("Wifi"))?;
 
         // 获取 Challenge Token
         let time = DateTime::millis().to_string();
@@ -191,10 +191,11 @@ impl super::WifiApi {
         let ip =
             info::ip().ok_or(Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
 
-        // 从重定向 URL 中获取 ACID 接入点
-        // 不知道具体作用但是关系到登录之后能否使用网络, 如果用固定值可能出现登陆成功但网络不可用
+        // 2025.04.11 更新
+        // 这里会重定向到 index_1.html, 最终 url 在它的 html meta 标签里
+        // 从那里获取接入点 AC ID
         // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
-        let res = self
+        let bytes = self
             .client
             .get("http://gw.buaa.edu.cn")
             .send()
@@ -210,13 +211,12 @@ impl super::WifiApi {
                 } else {
                     Error::network("From reqwest crate").with_source(e)
                 }
-            })?;
+            })?
+            .bytes()
+            .await?;
 
-        let url = res.url().as_str().as_bytes();
-        let ac_id = match utils::parse_by_tag(url, "ac_id=", "&") {
-            Some(s) => s,
-            None => return Err(Error::server("No AC ID").with_label("Wifi")),
-        };
+        let ac_id = utils::parse_by_tag(&bytes, "ac_id=", "&")
+            .ok_or_else(|| Error::server("No AC ID").with_label("Wifi"))?;
 
         let time = DateTime::millis().to_string();
         let time = time.as_str();
