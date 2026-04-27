@@ -402,7 +402,16 @@ impl super::CloudApi {
             "authtype": "QUERY_STRING",
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = match item.variant {
+            ItemVariant::Owned => {
+                self.universal_request(Method::POST, url, &payload).await?
+            }
+            // 分享链接只需要自己的 Token
+            ItemVariant::Shared(ref token) => {
+                let req = self.client.post(url).bearer_auth(token).json(&json);
+                Self::request(req).await?
+            }
+        };
         // 这是 authrequest 数组中的第二个元素
         let res = utils::parse_by_tag(&bytes, ",\"", "\"").ok_or_else(|| {
             parse_error("Can not get download url", &bytes, &"No valid URL found")
@@ -427,7 +436,17 @@ impl super::CloudApi {
             "files": files
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        // let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = match items[0].variant {
+            ItemVariant::Owned => {
+                self.universal_request(Method::POST, url, &payload).await?
+            }
+            // 分享链接只需要自己的 Token
+            ItemVariant::Shared(ref token) => {
+                let req = self.client.post(url).bearer_auth(token).json(&json);
+                Self::request(req).await?
+            }
+        };
         let mut res = utils::parse_by_tag(&bytes, "\"url\":\"", "\"")
             .ok_or_else(|| parse_error("Can not get download url", &bytes, &"No 'url' field"))?
             .to_string();
