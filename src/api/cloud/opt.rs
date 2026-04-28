@@ -403,16 +403,14 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = match item.variant {
-            ItemVariant::Owned => {
-                self.universal_request(Method::POST, url, &payload).await?
-            }
+            ItemVariant::Owned => self.universal_request(Method::POST, url, &payload).await?,
             // 分享链接只需要自己的 Token
             ItemVariant::Shared(ref token) => {
                 let req = self.client.post(url).bearer_auth(token).json(&json);
                 Self::request(req).await?
             }
         };
-        // 这是 authrequest 数组中的第二个元素
+        // 下载链接是 authrequest 数组中的第二个元素
         let res = utils::parse_by_tag(&bytes, ",\"", "\"").ok_or_else(|| {
             parse_error("Can not get download url", &bytes, &"No valid URL found")
         })?;
@@ -423,24 +421,29 @@ impl super::CloudApi {
     /// Get a download URL of a zip package for multiple files or a dir.
     ///
     /// **Note**: If you pass a single file(not a dir), it will return a bad URL.
-    async fn get_muti_download_url(&self, items: &[&Item]) -> crate::Result<String> {
-        let (dirs, files): (Vec<&Item>, Vec<&Item>) = items.iter().partition(|i| i.is_dir());
-        let dirs: Vec<&str> = dirs.iter().map(|i| i.id.as_str()).collect();
-        let files: Vec<&str> = files.iter().map(|i| i.id.as_str()).collect();
+    async fn get_multi_download_url(&self, items: &[&Item], name: &str) -> crate::Result<String> {
+        let mut dirs = Vec::with_capacity(items.len());
+        let mut files = Vec::with_capacity(items.len());
+
+        for item in items {
+            if item.is_dir() {
+                dirs.push(item.id.as_str());
+            } else {
+                files.push(item.id.as_str());
+            }
+        }
 
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/batchdownload";
         let json = serde_json::json!({
-            "name": "download.zip",
+            // 对于分享链接, 根目录文件夹的名字可能包含所有人的名字, 形如 User\\Name
+            "name": format!("{}.zip", name),
             "reqhost": "bhpan.buaa.edu.cn",
             "dirs": dirs,
             "files": files
         });
         let payload = Payload::Json(&json);
-        // let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let bytes = match items[0].variant {
-            ItemVariant::Owned => {
-                self.universal_request(Method::POST, url, &payload).await?
-            }
+            ItemVariant::Owned => self.universal_request(Method::POST, url, &payload).await?,
             // 分享链接只需要自己的 Token
             ItemVariant::Shared(ref token) => {
                 let req = self.client.post(url).bearer_auth(token).json(&json);
@@ -455,21 +458,26 @@ impl super::CloudApi {
         Ok(res)
     }
 
-    /// # Get a download URL with the indexes of items.
+    /// # Get download URL of one item.
     ///
-    /// **Note**: If indexes is empty, it means all items.
-    pub async fn get_download_url(
-        &self,
-        items: &[Item],
-        indexes: &[usize],
-    ) -> crate::Result<String> {
-        let items: Vec<&Item> = if indexes.is_empty() {
-            // 全部文件
-            items.iter().collect()
-        } else {
-            indexes.iter().filter_map(|&idx| items.get(idx)).collect()
-        };
+    /// One file or One dir, if dir, the URL will be a zip package of the whole dir.
+    ///
+    /// **Note**: For multiple items, see `get_batch_url`
+    pub async fn get_download_url(&self, item: &Item) -> crate::Result<String> {
+        // 下载单个文件只能用这个, 不然得到的链接无法使用
+        // 但如果下载单个文件夹不能用这个, 不然得到的链接也无法使用
+        if !item.is_dir() {
+            return self.get_single_download_url(&item).await;
+        }
+        self.get_multi_download_url(&[item], &item.name).await
+    }
 
+    /// # Get download URL of any number of files and dirs.
+    ///
+    /// Multiple items or at least one dir, get a zip package with the given name.
+    ///
+    /// **Note**: If single file, get a direct download link, and `name` will be ignored.
+    pub async fn get_batch_url(&self, items: &[&Item], name: &str) -> crate::Result<String> {
         if items.is_empty() {
             return Err(Error::parameter("No valid file selected").with_label("Cloud"));
         }
@@ -477,10 +485,9 @@ impl super::CloudApi {
         // 下载单个文件只能用这个, 不然得到的链接无法使用
         // 但如果下载单个文件夹不能用这个, 不然得到的链接也无法使用
         if items.len() == 1 && !items[0].is_dir() {
-            return self.get_single_download_url(items[0]).await;
-        } else {
-            return self.get_muti_download_url(&items).await;
+            return self.get_single_download_url(&items[0]).await;
         }
+        self.get_multi_download_url(items, name).await
     }
 
     /// # Check whether can upload fast

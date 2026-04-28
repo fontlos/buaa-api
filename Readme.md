@@ -64,9 +64,8 @@
     - [x] Share delete
     - [x] Share parse
   - [x] Download
-    - [x] Get single item download URL
-    - [x] Get a zip of multiple items download URL
-    - [x] Auto get items download URL
+    - [x] Get single item download URL (Auto make zip for dir)
+    - [x] Get a batch of items download URL (Auto make zip for dir or files)
   - [x] Upload item
     - [x] Upload fast check
     - [x] Upload fast (Check success)
