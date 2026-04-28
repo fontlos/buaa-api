@@ -159,6 +159,36 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_share_parse() {
+        init_log();
+
+        // Share link not need login
+        let context = Context::new();
+
+        let cloud = context.cloud();
+
+        let share_id = "";
+        let pwd = Some("");
+
+        let item = cloud.share_parse(share_id, pwd).await.unwrap();
+        println!("Parsed Item: {item:#?}");
+
+        if item.is_dir() {
+            let url = cloud.get_download_url(&item).await.unwrap();
+            println!("Achieve Download URL: {url}");
+            let list = cloud.list_dir(&item).await.unwrap();
+            let url = cloud.get_download_url(&list.files[0]).await.unwrap();
+            println!("List: {list:#?}");
+            println!("File Download URL: {url}");
+        }
+
+        // Copy need login
+        // let user_dir = cloud.get_user_dir().await.unwrap();
+        // let list = cloud.list_dir(&user_dir).await.unwrap();
+        // cloud.copy_item(&item, &list.dirs[0]).await.unwrap();
+    }
+
+    #[tokio::test]
     async fn test_get_download_url() {
         init_log();
 
@@ -168,7 +198,11 @@ mod tests {
 
         let user_dir = cloud.get_user_dir().await.unwrap();
         let list = cloud.list_dir(&user_dir).await.unwrap();
-        let url = cloud.get_download_url(&list.files, &[0]).await.unwrap();
+        // For single file, name will be ignored
+        let url = cloud
+            .get_batch_url(&[&list.files[0]], "download.zip")
+            .await
+            .unwrap();
 
         println!("Download URL: {url}");
 
