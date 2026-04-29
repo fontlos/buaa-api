@@ -13,7 +13,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 ///
 /// Supports negative timestamps (before 1970)
 ///
-/// Not support later - earlier to get negative Duration
+/// **Note**: Subtraction of two DateTime always returns the absolute duration
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct DateTime {
     // Unix 时间戳(秒), 负数表示 1970 年之前
@@ -83,6 +83,17 @@ impl DateTime {
             timestamp,
             nanos: 0,
         })
+    }
+
+    /// Get the duration since a more earlier DateTime
+    ///
+    /// **Note**: If `self` is earlier than `earlier`, return zero duration
+    pub fn since(self, earlier: Self) -> Duration {
+        if self >= earlier {
+            self - earlier
+        } else {
+            Duration::ZERO
+        }
     }
 
     /// Get the timestamp in seconds since UNIX_EPOCH (UTC)
