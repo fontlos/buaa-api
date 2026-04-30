@@ -23,6 +23,22 @@ pub struct DateTime {
 }
 
 impl DateTime {
+    /// Create a DateTime from Date and Time
+    pub fn new(date: Date, time: Time) -> Self {
+        let timestamp = date_to_timestamp(
+            date.year(),
+            date.month() as u32,
+            date.day(),
+            time.hour(),
+            time.minute(),
+            time.second(),
+        );
+        Self {
+            timestamp,
+            nanos: 0,
+        }
+    }
+
     /// Get the current DateTime(with UTC+8) since UNIX_EPOCH
     pub fn now() -> Self {
         SystemTime::now()
