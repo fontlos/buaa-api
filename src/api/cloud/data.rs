@@ -15,20 +15,18 @@ pub(super) struct Res<T>(T);
 impl<'de, T: Deserialize<'de>> Res<T> {
     /// 当响应正确时只有目标字段
     pub(super) fn parse(v: &'de [u8], err: &'static str) -> crate::Result<T> {
-        let res: Res<T> = serde_json::from_slice(&v).map_err(|e| parse_error(err, v, &e))?;
+        let res: Res<T> = serde_json::from_slice(&v).map_err(|e| parse_error(err, v, e))?;
         Ok(res.0)
     }
 }
 
 /// 尝试从来自服务器的异常响应 JSON 解析错误. 设计好的 API 理应不会再触发这个函数
-#[cold]
-pub(super) fn parse_error(err: &'static str, raw: &[u8], source: &dyn Display) -> Error {
-    if log::log_enabled!(log::Level::Error) {
-        let raw = String::from_utf8_lossy(&raw);
-        log::error!("Error Source: {}", source);
-        log::info!("Raw Response: {}", raw);
-    }
-    Error::parse(err).with_label("Cloud")
+pub(super) fn parse_error(msg: &'static str, raw: &[u8], source: impl Display) -> Error {
+    let err = Error::parse(msg)
+        .with_label("Cloud")
+        .with_source(source.to_string());
+    err.log(Some(raw));
+    err
 }
 
 /// Root directory type
@@ -212,7 +210,7 @@ impl Item {
 
         // 由于只允许分享一个文件/目录, 所以长度为 1
         let [i]: [I; 1] = serde_json::from_slice(bytes)
-            .map_err(|e| parse_error("Bad share link item info", bytes, &e))?;
+            .map_err(|e| parse_error("Bad share link item info", bytes, e))?;
 
         Ok(Item {
             create: i.created_at,
@@ -330,7 +328,7 @@ impl Share {
             entries: Vec<K>,
         }
         let l: L = serde_json::from_slice(bytes)
-            .map_err(|e| parse_error("Bad history record", bytes, &e))?;
+            .map_err(|e| parse_error("Bad history record", bytes, e))?;
         let mut historys: Vec<Share> = Vec::with_capacity(l.entries.len());
         for k in l.entries {
             for j in k.link_configs {
@@ -588,7 +586,7 @@ impl UploadArgs {
     pub(super) fn parse_init(&self, bytes: &[u8]) -> crate::Result<UploadInit> {
         let part_num = self.length.div_ceil(Self::PART_SIZE);
         let mut init: UploadInit = serde_json::from_slice(&bytes)
-            .map_err(|e| parse_error("Can not initialize upload", bytes, &e))?;
+            .map_err(|e| parse_error("Can not initialize upload", bytes, e))?;
         init.parts = format!("1-{}", part_num);
         Ok(init)
     }
@@ -603,7 +601,7 @@ impl UploadArgs {
         }
         let part_num = self.length.div_ceil(Self::PART_SIZE) as usize;
         let part: UploadPart = serde_json::from_slice(&bytes)
-            .map_err(|e| parse_error("Can not get upload part auth", bytes, &e))?;
+            .map_err(|e| parse_error("Can not get upload part auth", bytes, e))?;
         let mut parts = Vec::with_capacity(part_num);
         for (k, v) in part.authrequests {
             // 原则上这必将成功
@@ -642,7 +640,7 @@ impl UploadArgs {
             authrequest: [String; 5],
         }
         let complete: UploadComplete = serde_json::from_slice(&json_bytes)
-            .map_err(|e| parse_error("Can not get complete upload auth", json_bytes, &e))?;
+            .map_err(|e| parse_error("Can not get complete upload auth", json_bytes, e))?;
         Ok((complete.authrequest, xml_bytes.to_vec()))
     }
 }

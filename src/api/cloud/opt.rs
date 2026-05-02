@@ -19,7 +19,7 @@ impl super::CloudApi {
         let bytes = self.universal_request(Method::GET, url, &payload).await?;
         // 纯数组无法放进 Res 结构体
         let res = serde_json::from_slice::<Vec<RootDir>>(&bytes)
-            .map_err(|e| parse_error("Can not get root dir", &bytes, &e))?;
+            .map_err(|e| parse_error("Can not get root dir", &bytes, e))?;
         Ok(res)
     }
 
@@ -29,7 +29,7 @@ impl super::CloudApi {
         let payload = Payload::<'_, ()>::Empty;
         let bytes = self.universal_request(Method::GET, url, &payload).await?;
         let [res]: [RootDir; 1] = serde_json::from_slice(&bytes)
-            .map_err(|e| parse_error("No user dir found", &bytes, &e))?;
+            .map_err(|e| parse_error("No user dir found", &bytes, e))?;
         Ok(res.into_item())
     }
 
@@ -100,7 +100,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, "\"name\":\"", "\"")
-            .ok_or_else(|| parse_error("Can not get suggest name", &bytes, &"No 'name' field"))?;
+            .ok_or_else(|| parse_error("Can not get suggest name", &bytes, "No 'name' field"))?;
         Ok(res.to_string())
     }
 
@@ -115,7 +115,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
-            .ok_or_else(|| parse_error("Can not create dir", &bytes, &"No 'docid' field"))?;
+            .ok_or_else(|| parse_error("Can not create dir", &bytes, "No 'docid' field"))?;
         Ok(res.to_string())
     }
 
@@ -144,7 +144,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
-            .ok_or_else(|| parse_error("Can not move item", &bytes, &"No 'docid' field"))?;
+            .ok_or_else(|| parse_error("Can not move item", &bytes, "No 'docid' field"))?;
         Ok(res.to_string())
     }
 
@@ -174,7 +174,7 @@ impl super::CloudApi {
             }
         };
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
-            .ok_or_else(|| parse_error("Can not copy item", &bytes, &"No 'docid' field"))?;
+            .ok_or_else(|| parse_error("Can not copy item", &bytes, "No 'docid' field"))?;
         Ok(res.to_string())
     }
 
@@ -232,7 +232,7 @@ impl super::CloudApi {
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
 
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"").ok_or_else(|| {
-            parse_error("Can not restore recycle item", &bytes, &"No 'docid' field")
+            parse_error("Can not restore recycle item", &bytes, "No 'docid' field")
         })?;
         Ok(res.to_string())
     }
@@ -270,7 +270,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&share);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let res = utils::parse_by_tag(&bytes, "\"id\":\"", "\"")
-            .ok_or_else(|| parse_error("Can not create share link", &bytes, &"No 'id' field"))?;
+            .ok_or_else(|| parse_error("Can not create share link", &bytes, "No 'id' field"))?;
         share.id = res.to_string();
         Ok(share)
     }
@@ -412,7 +412,7 @@ impl super::CloudApi {
         };
         // 下载链接是 authrequest 数组中的第二个元素
         let res = utils::parse_by_tag(&bytes, ",\"", "\"").ok_or_else(|| {
-            parse_error("Can not get download url", &bytes, &"No valid URL found")
+            parse_error("Can not get download url", &bytes, "No valid URL found")
         })?;
         Ok(res.to_string())
     }
@@ -451,7 +451,7 @@ impl super::CloudApi {
             }
         };
         let mut res = utils::parse_by_tag(&bytes, "\"url\":\"", "\"")
-            .ok_or_else(|| parse_error("Can not get download url", &bytes, &"No 'url' field"))?
+            .ok_or_else(|| parse_error("Can not get download url", &bytes, "No 'url' field"))?
             .to_string();
         // 服务器返回的 URL 中反斜杠是转义字符, 需要去掉
         res.retain(|c| c != '\\');
@@ -502,7 +502,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let matched = utils::parse_by_tag(&bytes, "\"match\":", "}")
-            .ok_or_else(|| parse_error("Can not check hash", &bytes, &"No 'match' field"))?;
+            .ok_or_else(|| parse_error("Can not check hash", &bytes, "No 'match' field"))?;
         Ok(matched == "true")
     }
 
@@ -524,7 +524,7 @@ impl super::CloudApi {
         let payload = Payload::Json(&json);
         let bytes = self.universal_request(Method::POST, url, &payload).await?;
         let success = utils::parse_by_tag(&bytes, "\"success\":", "}")
-            .ok_or_else(|| parse_error("Can not upload fast", &bytes, &"No 'success' field"))?;
+            .ok_or_else(|| parse_error("Can not upload fast", &bytes, "No 'success' field"))?;
         if success != "true" {
             return Err(Error::server("Can not upload fast").with_label("Cloud"));
         }

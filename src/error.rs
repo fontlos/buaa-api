@@ -78,6 +78,27 @@ impl Error {
         Self::new(Kind::Server, message)
     }
 
+    /// Simply log for Error
+    pub(crate) fn log(&self, raw: Option<&[u8]>) {
+        if log::log_enabled!(log::Level::Error) {
+            log::error!("Error: {}", self.kind);
+            log::error!("Message: {}", self.message);
+            if let Some(label) = self.label {
+                log::error!("Label: {}", label);
+            }
+            if let Some(code) = &self.code {
+                log::error!("Error Code: {:?}", code);
+            }
+            if let Some(source) = &self.source {
+                log::error!("Error Source: {}", source);
+            }
+            if let Some(raw) = raw {
+                let raw = String::from_utf8_lossy(&raw);
+                log::info!("Raw Response: {}", raw);
+            }
+        }
+    }
+
     /// Get the kind of error
     pub fn kind(&self) -> &Kind {
         &self.kind
