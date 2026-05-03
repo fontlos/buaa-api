@@ -7,7 +7,7 @@ use crate::utils;
 use crate::utils::time::DateTime;
 
 use super::data::{
-    Dir, Item, ItemVariant, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
+    Dir, Item, Res, Root, RootDir, Share, Size, UploadArgs, UploadAuth, parse_error,
 };
 
 impl super::CloudApi {
@@ -16,7 +16,7 @@ impl super::CloudApi {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/entry-doc-lib";
         let query = root.as_query();
         let payload = Payload::Query(&query);
-        let bytes = self.universal_request(Method::GET, url, &payload).await?;
+        let bytes = self.unireq(Method::GET, url, &payload, None).await?;
         // 纯数组无法放进 Res 结构体
         let res = serde_json::from_slice::<Vec<RootDir>>(&bytes)
             .map_err(|e| parse_error("Can not get root dir", &bytes, e))?;
@@ -27,7 +27,7 @@ impl super::CloudApi {
     pub async fn get_user_dir(&self) -> crate::Result<Item> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/owned-doc-lib";
         let payload = Payload::<'_, ()>::Empty;
-        let bytes = self.universal_request(Method::GET, url, &payload).await?;
+        let bytes = self.unireq(Method::GET, url, &payload, None).await?;
         let [res]: [RootDir; 1] = serde_json::from_slice(&bytes)
             .map_err(|e| parse_error("No user dir found", &bytes, e))?;
         Ok(res.into_item())
@@ -44,28 +44,21 @@ impl super::CloudApi {
             "sort": "asc" // desc
         });
         let payload = Payload::Json(&json);
-        match item.variant {
-            ItemVariant::Owned => {
-                let bytes = self.universal_request(Method::POST, url, &payload).await?;
-                let res: Dir = Res::parse(&bytes, "Can not get dir list")?;
-                Ok(res)
-            }
-            // 分享链接只需要自己的 Token
-            ItemVariant::Shared(ref token) => {
-                let req = self.client.post(url).bearer_auth(token).json(&json);
-                let bytes = Self::request(req).await?;
-                let mut res: Dir = Res::parse(&bytes, "Can not get dir list")?;
-                // 插入分享链接的授权 token, 后续浏览目录, 另存为, 下载需要这个
-                // 暂时不做持久化适配, 过期了就抛出授权错误重新获取
-                res.dirs
-                    .iter_mut()
-                    .for_each(|i| i.variant = ItemVariant::Shared(token.clone()));
-                res.files
-                    .iter_mut()
-                    .for_each(|i| i.variant = ItemVariant::Shared(token.clone()));
-                Ok(res)
-            }
+        let bytes = self
+            .unireq(Method::POST, url, &payload, item.token.as_ref())
+            .await?;
+        let mut res: Dir = Res::parse(&bytes, "Can not get dir list")?;
+        // 插入分享链接的授权 token, 后续浏览目录, 另存为, 下载需要这个
+        // 暂时不做持久化适配, 过期了就抛出授权错误重新获取
+        if let Some(token) = &item.token {
+            res.dirs
+                .iter_mut()
+                .for_each(|i| i.token = Some(token.clone()));
+            res.files
+                .iter_mut()
+                .for_each(|i| i.token = Some(token.clone()));
         }
+        Ok(res)
     }
 
     /// # Get the size of an item
@@ -76,7 +69,9 @@ impl super::CloudApi {
             "onlyrecycle": false
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self
+            .unireq(Method::POST, url, &payload, item.token.as_ref())
+            .await?;
         let res: Size = Res::parse(&bytes, "Can not get item size")?;
         Ok(res)
     }
@@ -98,7 +93,7 @@ impl super::CloudApi {
             "name": name,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let res = utils::parse_by_tag(&bytes, "\"name\":\"", "\"")
             .ok_or_else(|| parse_error("Can not get suggest name", &bytes, "No 'name' field"))?;
         Ok(res.to_string())
@@ -113,7 +108,7 @@ impl super::CloudApi {
             "ondup": 1
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
             .ok_or_else(|| parse_error("Can not create dir", &bytes, "No 'docid' field"))?;
         Ok(res.to_string())
@@ -129,7 +124,7 @@ impl super::CloudApi {
             "ondup": 1
         });
         let payload = Payload::Json(&json);
-        self.universal_request(Method::POST, url, &payload).await?;
+        self.unireq(Method::POST, url, &payload, None).await?;
         Ok(())
     }
 
@@ -142,7 +137,7 @@ impl super::CloudApi {
             "ondup": 1
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"")
             .ok_or_else(|| parse_error("Can not move item", &bytes, "No 'docid' field"))?;
         Ok(res.to_string())
@@ -157,11 +152,11 @@ impl super::CloudApi {
             "ondup": 1
         });
         let payload = Payload::Json(&json);
-        let bytes = match from.variant {
-            ItemVariant::Owned => self.universal_request(Method::POST, url, &payload).await?,
+        let bytes = match from.token {
+            None => self.unireq(Method::POST, url, &payload, None).await?,
             // 对于分享链接, Copy 起到另存为的作用
             // 主授权 Token 仍然用自己的, 但是需要 Link Token 作为二次授权, 命名成 x-as-authorization
-            ItemVariant::Shared(ref t) => {
+            Some(ref t) => {
                 let token = self.token().await?;
                 let req = self
                     .client
@@ -187,7 +182,7 @@ impl super::CloudApi {
             "docid": item.id,
         });
         let payload = Payload::Json(&json);
-        self.universal_request(Method::POST, url, &payload).await?;
+        self.unireq(Method::POST, url, &payload, None).await?;
         Ok(())
     }
 
@@ -203,7 +198,7 @@ impl super::CloudApi {
             "start": 0
         });
         let payload = Payload::Json(&json);
-        let res = self.universal_request(Method::POST, url, &payload).await?;
+        let res = self.unireq(Method::POST, url, &payload, None).await?;
         let res: Dir = Res::parse(&res, "Can not get recycle dir")?;
         Ok(res)
     }
@@ -217,7 +212,7 @@ impl super::CloudApi {
             "docid": item.id,
         });
         let payload = Payload::Json(&json);
-        self.universal_request(Method::POST, url, &payload).await?;
+        self.unireq(Method::POST, url, &payload, None).await?;
         Ok(())
     }
 
@@ -229,7 +224,7 @@ impl super::CloudApi {
             "ondup": 1
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
 
         let res = utils::parse_by_tag(&bytes, "\"docid\":\"", "\"").ok_or_else(|| {
             parse_error("Can not restore recycle item", &bytes, "No 'docid' field")
@@ -241,7 +236,7 @@ impl super::CloudApi {
     pub async fn share_history(&self) -> crate::Result<Vec<Share>> {
         let url = "https://bhpan.buaa.edu.cn/api/doc-share/v1/docs-shared-with-anyone";
         let payload = Payload::<'_, ()>::Empty;
-        let bytes = self.universal_request(Method::GET, url, &payload).await?;
+        let bytes = self.unireq(Method::GET, url, &payload, None).await?;
         let res = Share::parse_history(&bytes)?;
         Ok(res)
     }
@@ -254,7 +249,7 @@ impl super::CloudApi {
             item.id.replace(':', "%3A").replace('/', "%2F")
         );
         let payload = Payload::<'_, ()>::Empty;
-        let bytes = self.universal_request(Method::GET, &url, &payload).await?;
+        let bytes = self.unireq(Method::GET, &url, &payload, None).await?;
         let res = serde_json::from_slice::<Vec<Share>>(&bytes)?;
         Ok(res)
     }
@@ -268,7 +263,7 @@ impl super::CloudApi {
     pub async fn share_item(&self, mut share: Share) -> crate::Result<Share> {
         let url = "https://bhpan.buaa.edu.cn/api/shared-link/v1/document/anonymous";
         let payload = Payload::Json(&share);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let res = utils::parse_by_tag(&bytes, "\"id\":\"", "\"")
             .ok_or_else(|| parse_error("Can not create share link", &bytes, "No 'id' field"))?;
         share.id = res.to_string();
@@ -284,7 +279,7 @@ impl super::CloudApi {
             share.id
         );
         let payload = Payload::Json(&share);
-        self.universal_request(Method::PUT, &url, &payload).await?;
+        self.unireq(Method::PUT, &url, &payload, None).await?;
         Ok(())
     }
 
@@ -297,8 +292,7 @@ impl super::CloudApi {
             share.id
         );
         let payload = Payload::<'_, ()>::Empty;
-        self.universal_request(Method::DELETE, &url, &payload)
-            .await?;
+        self.unireq(Method::DELETE, &url, &payload, None).await?;
         Ok(())
     }
 
@@ -385,7 +379,7 @@ impl super::CloudApi {
 
         let mut item = Item::parse_from_share_link(&bytes)?;
         // 插入分享链接的授权 token, 后续浏览目录, 另存为, 下载需要这个
-        item.variant = ItemVariant::Shared(link_token.to_string());
+        item.token = Some(link_token.to_string());
 
         Ok(item)
     }
@@ -402,18 +396,12 @@ impl super::CloudApi {
             "authtype": "QUERY_STRING",
         });
         let payload = Payload::Json(&json);
-        let bytes = match item.variant {
-            ItemVariant::Owned => self.universal_request(Method::POST, url, &payload).await?,
-            // 分享链接只需要自己的 Token
-            ItemVariant::Shared(ref token) => {
-                let req = self.client.post(url).bearer_auth(token).json(&json);
-                Self::request(req).await?
-            }
-        };
+        let bytes = self
+            .unireq(Method::POST, url, &payload, item.token.as_ref())
+            .await?;
         // 下载链接是 authrequest 数组中的第二个元素
-        let res = utils::parse_by_tag(&bytes, ",\"", "\"").ok_or_else(|| {
-            parse_error("Can not get download url", &bytes, "No valid URL found")
-        })?;
+        let res = utils::parse_by_tag(&bytes, ",\"", "\"")
+            .ok_or_else(|| parse_error("Can not get download url", &bytes, "No valid URL found"))?;
         Ok(res.to_string())
     }
 
@@ -442,14 +430,9 @@ impl super::CloudApi {
             "files": files
         });
         let payload = Payload::Json(&json);
-        let bytes = match items[0].variant {
-            ItemVariant::Owned => self.universal_request(Method::POST, url, &payload).await?,
-            // 分享链接只需要自己的 Token
-            ItemVariant::Shared(ref token) => {
-                let req = self.client.post(url).bearer_auth(token).json(&json);
-                Self::request(req).await?
-            }
-        };
+        let bytes = self
+            .unireq(Method::POST, url, &payload, items[0].token.as_ref())
+            .await?;
         let mut res = utils::parse_by_tag(&bytes, "\"url\":\"", "\"")
             .ok_or_else(|| parse_error("Can not get download url", &bytes, "No 'url' field"))?
             .to_string();
@@ -500,7 +483,7 @@ impl super::CloudApi {
             "length": args.length
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let matched = utils::parse_by_tag(&bytes, "\"match\":", "}")
             .ok_or_else(|| parse_error("Can not check hash", &bytes, "No 'match' field"))?;
         Ok(matched == "true")
@@ -522,7 +505,7 @@ impl super::CloudApi {
             "ondup": 1
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let success = utils::parse_by_tag(&bytes, "\"success\":", "}")
             .ok_or_else(|| parse_error("Can not upload fast", &bytes, "No 'success' field"))?;
         if success != "true" {
@@ -546,7 +529,7 @@ impl super::CloudApi {
             "ondup": 1,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let auth: UploadAuth = Res::parse(&bytes, "Can not get upload auth")?;
         let req = self.client.put(&auth.authrequest[1]);
         // 0 号是方法, 1 号是 URL, 剩余的是 Header
@@ -571,7 +554,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         // editor 等无用字段
-        let _bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let _bytes = self.unireq(Method::POST, url, &payload, None).await?;
         Ok(())
     }
 
@@ -594,14 +577,14 @@ impl super::CloudApi {
             "ondup": 1,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let init = args.parse_init(&bytes)?;
 
         // 上传大文件的分块协议, 分块上传文件
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osuploadpart";
         let json = Payload::Json(&init);
         // 原始数据不保序, 但上传要求严格保序, 且只有最后一个分块大小可以不为 PART_SIZE
-        let bytes = self.universal_request(Method::POST, url, &json).await?;
+        let bytes = self.unireq(Method::POST, url, &json, None).await?;
         // 我们在这里预排序
         let part = args.parse_part(&bytes)?;
 
@@ -649,7 +632,7 @@ impl super::CloudApi {
             "partinfo": part_info,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         // HTTP 方法 POST, 上传链接, 授权 Token, Content-Type, 日期. 和一个 XML Body
         let (complete, body) = UploadArgs::parse_complete(&bytes)?;
 
@@ -680,7 +663,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         // editor 等无用字段
-        let _bytes = self.universal_request(Method::POST, url, &payload).await?;
+        let _bytes = self.unireq(Method::POST, url, &payload, None).await?;
 
         Ok(())
     }
