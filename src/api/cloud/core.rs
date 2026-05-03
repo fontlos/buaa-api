@@ -144,16 +144,20 @@ impl super::CloudApi {
 
     // 为了让与分享链接相关的操作复用逻辑, 拆分通用请求到上面
     /// Universal Request for CloudApi (Internal)
-    pub(super) async fn universal_request<'a, P>(
+    pub(super) async fn unireq<'a, P>(
         &self,
         m: Method,
         url: &str,
         payload: &Payload<'a, P>,
+        token: Option<&String>,
     ) -> crate::Result<Bytes>
     where
         P: Serialize + ?Sized,
     {
-        let token = self.token().await?;
+        let token = match token {
+            Some(token) => token,
+            None => &self.token().await?,
+        };
 
         let req = self.client.request(m, url).bearer_auth(token);
         let req = match payload {

@@ -76,7 +76,7 @@ impl RootDir {
             id: self.id,
             name: self.name,
             size: -1,
-            variant: default_item_variant(),
+            token: None,
         }
     }
 }
@@ -116,12 +116,12 @@ pub struct Item {
     pub size: i64,
     // 标记 Item 来自用户文件夹还是共享链接, 后者需要额外的授权 Token
     // 阅后即焚, 不参与通用请求的持久化处理
-    /// Item variant, indicating whether the item is from user's own directory or a share link,
+    /// Share token, indicating whether the item is from user's own directory or a share link,
     /// the latter requires an additional authorization token.
     /// This token is self-destructing after being viewed and will not be persisted.
     #[serde(skip_deserializing)]
-    #[serde(default = "default_item_variant")]
-    pub(crate) variant: ItemVariant,
+    #[serde(default)]
+    pub(crate) token: Option<String>,
 }
 
 fn default_datetime() -> DateTime {
@@ -135,17 +135,6 @@ where
     let i: i64 = Deserialize::deserialize(deserializer)?;
     // 纳秒级时间戳转换为秒级时间戳
     Ok(DateTime::from_timestamp(i / 1000000))
-}
-
-// 来自自己的 / 分享链接的 Item, 后者需要额外的授权 Token
-#[derive(Clone, Debug)]
-pub(crate) enum ItemVariant {
-    Owned,
-    Shared(String),
-}
-
-const fn default_item_variant() -> ItemVariant {
-    ItemVariant::Owned
 }
 
 impl Item {
@@ -218,7 +207,7 @@ impl Item {
             id: i.id,
             name: i.name,
             size: i.size,
-            variant: default_item_variant(),
+            token: None,
         })
     }
 }
