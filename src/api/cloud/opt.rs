@@ -309,14 +309,14 @@ impl super::CloudApi {
         // 首先提前看看是否需要密码
         let url = format!("https://bhpan.buaa.edu.cn/api/shared-link/v1/links/{}", id);
         let bytes = self.client.get(&url).send().await?.bytes().await?;
-        // 这是一个诡异的方案, 因为匹配时右端可能是 ',' 也可能是 '}', 干脆直接拿 true/false 的 'e'
-        let pwd_required = match utils::parse_by_tag(&bytes, "\"password_required\":", "e") {
-            Some("tru") => true,
-            Some("fals") => false,
-            _ => return Err(Error::server("Invalid share info").with_label("Cloud")),
-        };
+        // JSON 不保序, 每一次目标键值的位置都可能不同, 用 serde 解析更稳妥
+        let data: Value = serde_json::from_slice(&bytes)?;
+        let pwd_required = data["password_required"].as_bool()
+            .ok_or_else(|| Error::server("Invalid share info").with_label("Cloud"))?;
 
+        // 然后访问这个链接拿一个 cookie: 'INGRESSCOOKIE'
         if pwd_required {
+            // 需要密码的情况, 这里才能拿到 cookie: 'link_token:ID'
             let pwd = pwd.ok_or_else(|| {
                 Error::parameter("Password required for this share").with_label("Cloud")
             })?;
@@ -329,28 +329,13 @@ impl super::CloudApi {
                 // 我们不需要 'linkConfig' 这个 cookie, 不需要其他参数
             });
             self.client.post(url).json(&json).send().await?;
+        } else {
+            // 不需要密码的情况, 直接访问链接就能拿到 cookie: 'link_token:ID'
+            let url = format!("https://bhpan.buaa.edu.cn/link/{}", id);
+            self.client.get(&url).send().await?;
         }
 
-        // 需要密码的情况, 这里拿一个 cookie: 'link_token:ID'
-        if pwd_required {
-            let url = "https://bhpan.buaa.edu.cn/link";
-            let json = serde_json::json!({
-                "id": id,
-                "type": "anonymous",
-                "password_required": true,
-                "password": pwd,
-                // 我们不需要 'linkConfig' 这个 cookie, 不需要其他参数
-            });
-            self.client.post(url).json(&json).send().await?;
-        }
-
-        // 在原始流程中这次请求应该在上面那个之前, 不过似乎并不影响
-        // 然后访问这个链接拿一个 cookie: 'INGRESSCOOKIE'
-        // 无需密码的情况下这里也能拿到 cookie: 'link_token:ID'
-        let url = format!("https://bhpan.buaa.edu.cn/link/{}", id);
-        self.client.get(&url).send().await?;
-
-        // 用这个做临时凭据, 也许能让未登录情况也能下载
+        // 从 cookie 中拿到对应分享链接的的临时 token
         let link_cookie_name = format!("link_token:{}", id);
         let link_token = self
             .cookies
