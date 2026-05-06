@@ -468,7 +468,7 @@ impl super::CloudApi {
             "length": args.length
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
         let matched = utils::parse_by_tag(&bytes, "\"match\":", "}")
             .ok_or_else(|| parse_error("Can not check hash", &bytes, "No 'match' field"))?;
         Ok(matched == "true")

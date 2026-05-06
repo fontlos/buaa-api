@@ -461,6 +461,8 @@ pub struct UploadArgs {
     pub md5: String,
     /// Full CRC32
     pub crc32: String,
+    /// Upload token for share link
+    pub token: Option<String>,
 }
 
 impl UploadArgs {
@@ -473,6 +475,7 @@ impl UploadArgs {
             slice_md5: String::new(),
             md5: String::new(),
             crc32: String::new(),
+            token: dir.token.clone(),
         }
     }
 
