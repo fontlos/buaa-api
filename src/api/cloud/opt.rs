@@ -514,7 +514,7 @@ impl super::CloudApi {
             "ondup": 1,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
         let auth: UploadAuth = Res::parse(&bytes, "Can not get upload auth")?;
         let req = self.client.put(&auth.authrequest[1]);
         // 0 号是方法, 1 号是 URL, 剩余的是 Header
@@ -539,7 +539,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         // editor 等无用字段
-        let _bytes = self.unireq(Method::POST, url, &payload, None).await?;
+        let _bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
         Ok(())
     }
 
