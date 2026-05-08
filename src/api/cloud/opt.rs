@@ -461,6 +461,8 @@ impl super::CloudApi {
     /// # Check whether can upload fast
     ///
     /// - Input: Need call [UploadArgs::compute_mini]
+    ///
+    /// **Note**: When upload to share dir, this will always return false, so just upload directly
     pub async fn upload_fast_check(&self, args: &UploadArgs) -> crate::Result<bool> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/predupload";
         let json = serde_json::json!({
@@ -468,7 +470,7 @@ impl super::CloudApi {
             "length": args.length
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
         let matched = utils::parse_by_tag(&bytes, "\"match\":", "}")
             .ok_or_else(|| parse_error("Can not check hash", &bytes, "No 'match' field"))?;
         Ok(matched == "true")
