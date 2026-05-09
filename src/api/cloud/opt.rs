@@ -479,6 +479,8 @@ impl super::CloudApi {
     /// # Upload file fast
     ///
     /// - Input: Need call [UploadArgs::compute_full]
+    ///
+    /// **Note**: Not support upload to share dir, call `upload_small` or `upload_big` directly
     pub async fn upload_fast(&self, args: &UploadArgs) -> crate::Result<()> {
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/dupload";
         let json = serde_json::json!({
@@ -564,14 +566,14 @@ impl super::CloudApi {
             "ondup": 1,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
         let init = args.parse_init(&bytes)?;
 
         // 上传大文件的分块协议, 分块上传文件
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osuploadpart";
         let json = Payload::Json(&init);
         // 原始数据不保序, 但上传要求严格保序, 且只有最后一个分块大小可以不为 PART_SIZE
-        let bytes = self.unireq(Method::POST, url, &json, None).await?;
+        let bytes = self.unireq(Method::POST, url, &json, args.token.as_ref()).await?;
         // 我们在这里预排序
         let part = args.parse_part(&bytes)?;
 
@@ -619,7 +621,7 @@ impl super::CloudApi {
             "partinfo": part_info,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, None).await?;
+        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
         // HTTP 方法 POST, 上传链接, 授权 Token, Content-Type, 日期. 和一个 XML Body
         let (complete, body) = UploadArgs::parse_complete(&bytes)?;
 
@@ -650,7 +652,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         // editor 等无用字段
-        let _bytes = self.unireq(Method::POST, url, &payload, None).await?;
+        let _bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
 
         Ok(())
     }

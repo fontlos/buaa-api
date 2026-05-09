@@ -160,6 +160,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_share_parse() {
+        use buaa_api::api::cloud::UploadArgs;
+        use std::fs::File;
         init_log();
 
         // Share link not need login
@@ -168,12 +170,22 @@ mod tests {
         let cloud = context.cloud();
 
         let share_id = "";
-        let pwd = Some("");
 
-        let item = cloud.share_parse(share_id, pwd).await.unwrap();
+        let item = cloud.share_parse(share_id, None).await.unwrap();
         println!("Parsed Item: {item:#?}");
 
         if item.is_dir() {
+            let mut reader = File::open("./data/file.zip").unwrap();
+            let mut args = UploadArgs::new(&item, "file.zip");
+            println!("Upload Args: {args:#?}");
+            args.compute_mini(&mut reader).unwrap();
+
+            // let mut body = Vec::new();
+            // reader.read_to_end(&mut body).unwrap();
+            // cloud.upload_small(&args, body).await.unwrap();
+
+            cloud.upload_big(&args, reader).await.unwrap();
+
             let url = cloud.get_download_url(&item).await.unwrap();
             println!("Achieve Download URL: {url}");
             let list = cloud.list_dir(&item).await.unwrap();
