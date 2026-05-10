@@ -161,7 +161,7 @@ impl Item {
     }
 
     // 在解析分享链接时将响应解析到 Item
-    pub(crate) fn parse_from_share_link(bytes: &[u8]) -> crate::Result<Item> {
+    pub(crate) fn parse_from_share_link(bytes: &[u8], token: &str) -> crate::Result<Item> {
         #[derive(Deserialize)]
         struct I {
             // yyyy-mm-ddThh:mm:ssZ
@@ -207,7 +207,7 @@ impl Item {
             id: i.id,
             name: i.name,
             size: i.size,
-            token: None,
+            token: Some(token.to_string()),
         })
     }
 }

@@ -362,11 +362,7 @@ impl super::CloudApi {
             }
         });
 
-        let mut item = Item::parse_from_share_link(&bytes)?;
-        // 插入分享链接的授权 token, 后续浏览目录, 另存为, 下载需要这个
-        item.token = Some(link_token.to_string());
-
-        Ok(item)
+        Ok(Item::parse_from_share_link(&bytes, link_token)?)
     }
 
     // 下载相关的参数错误也会在上层触发 400 错误
