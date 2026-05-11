@@ -210,6 +210,11 @@ impl Item {
             token: Some(token.to_string()),
         })
     }
+
+    /// Get share link token
+    pub(crate) fn token(&self) -> Option<&str> {
+        self.token.as_deref()
+    }
 }
 
 /// Response for item size
@@ -634,6 +639,11 @@ impl UploadArgs {
         let complete: UploadComplete = serde_json::from_slice(&json_bytes)
             .map_err(|e| parse_error("Can not get complete upload auth", json_bytes, e))?;
         Ok((complete.authrequest, xml_bytes.to_vec()))
+    }
+
+    /// Get share link token
+    pub(crate) fn token(&self) -> Option<&str> {
+        self.token.as_deref()
     }
 }
 
