@@ -66,6 +66,7 @@ impl super::CloudApi {
                 store.remove("bhpan.buaa.edu.cn", "login_challenge");
             });
             // 来到回调地址证明登陆成功
+            // TODO: 这里有概率失败
             if res.url().path() != "/anyshare/oauth2/login/callback" {
                 return Err(Error::server("Login failed. Redirect failed").with_label("Cloud"));
             }
@@ -149,7 +150,7 @@ impl super::CloudApi {
         m: Method,
         url: &str,
         payload: &Payload<'a, P>,
-        token: Option<&String>,
+        token: Option<&str>,
     ) -> crate::Result<Bytes>
     where
         P: Serialize + ?Sized,

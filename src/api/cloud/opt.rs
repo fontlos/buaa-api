@@ -45,7 +45,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self
-            .unireq(Method::POST, url, &payload, item.token.as_ref())
+            .unireq(Method::POST, url, &payload, item.token())
             .await?;
         let mut res: Dir = Res::parse(&bytes, "Can not get dir list")?;
         // 插入分享链接的授权 token, 后续浏览目录, 另存为, 下载需要这个
@@ -70,7 +70,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self
-            .unireq(Method::POST, url, &payload, item.token.as_ref())
+            .unireq(Method::POST, url, &payload, item.token())
             .await?;
         let res: Size = Res::parse(&bytes, "Can not get item size")?;
         Ok(res)
@@ -311,7 +311,8 @@ impl super::CloudApi {
         let bytes = self.client.get(&url).send().await?.bytes().await?;
         // JSON 不保序, 每一次目标键值的位置都可能不同, 用 serde 解析更稳妥
         let data: Value = serde_json::from_slice(&bytes)?;
-        let pwd_required = data["password_required"].as_bool()
+        let pwd_required = data["password_required"]
+            .as_bool()
             .ok_or_else(|| Error::server("Invalid share info").with_label("Cloud"))?;
 
         // 然后访问这个链接拿一个 cookie: 'INGRESSCOOKIE'
@@ -378,7 +379,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self
-            .unireq(Method::POST, url, &payload, item.token.as_ref())
+            .unireq(Method::POST, url, &payload, item.token())
             .await?;
         // 下载链接是 authrequest 数组中的第二个元素
         let res = utils::parse_by_tag(&bytes, ",\"", "\"")
@@ -412,7 +413,7 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         let bytes = self
-            .unireq(Method::POST, url, &payload, items[0].token.as_ref())
+            .unireq(Method::POST, url, &payload, items[0].token())
             .await?;
         let mut res = utils::parse_by_tag(&bytes, "\"url\":\"", "\"")
             .ok_or_else(|| parse_error("Can not get download url", &bytes, "No 'url' field"))?
@@ -514,7 +515,9 @@ impl super::CloudApi {
             "ondup": 1,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
+        let bytes = self
+            .unireq(Method::POST, url, &payload, args.token())
+            .await?;
         let auth: UploadAuth = Res::parse(&bytes, "Can not get upload auth")?;
         let req = self.client.put(&auth.authrequest[1]);
         // 0 号是方法, 1 号是 URL, 剩余的是 Header
@@ -539,7 +542,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         // editor 等无用字段
-        let _bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
+        let _bytes = self
+            .unireq(Method::POST, url, &payload, args.token())
+            .await?;
         Ok(())
     }
 
@@ -562,14 +567,16 @@ impl super::CloudApi {
             "ondup": 1,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
+        let bytes = self
+            .unireq(Method::POST, url, &payload, args.token())
+            .await?;
         let init = args.parse_init(&bytes)?;
 
         // 上传大文件的分块协议, 分块上传文件
         let url = "https://bhpan.buaa.edu.cn/api/efast/v1/file/osuploadpart";
         let json = Payload::Json(&init);
         // 原始数据不保序, 但上传要求严格保序, 且只有最后一个分块大小可以不为 PART_SIZE
-        let bytes = self.unireq(Method::POST, url, &json, args.token.as_ref()).await?;
+        let bytes = self.unireq(Method::POST, url, &json, args.token()).await?;
         // 我们在这里预排序
         let part = args.parse_part(&bytes)?;
 
@@ -617,7 +624,9 @@ impl super::CloudApi {
             "partinfo": part_info,
         });
         let payload = Payload::Json(&json);
-        let bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
+        let bytes = self
+            .unireq(Method::POST, url, &payload, args.token())
+            .await?;
         // HTTP 方法 POST, 上传链接, 授权 Token, Content-Type, 日期. 和一个 XML Body
         let (complete, body) = UploadArgs::parse_complete(&bytes)?;
 
@@ -648,7 +657,9 @@ impl super::CloudApi {
         });
         let payload = Payload::Json(&json);
         // editor 等无用字段
-        let _bytes = self.unireq(Method::POST, url, &payload, args.token.as_ref()).await?;
+        let _bytes = self
+            .unireq(Method::POST, url, &payload, args.token())
+            .await?;
 
         Ok(())
     }
