@@ -175,11 +175,11 @@ pub enum Code {
     AuthNoToken,
 
     // Network errors
+    // 依靠网关判断是否是校园网环境
+    /// Not connected to `BUAA-WiFi` or `BUAA-Mobile`
+    NetworkNotCampus,
     /// No local IP address
     NetworkNoLocalIp,
-    // 只要网络连接正常就能断定这是因为没有连接到 BUAA-WiFi
-    /// DNS resolution failure. It almost cause by not connect to BUAA-WiFi.
-    NetworkDnsFailure,
 }
 
 impl From<reqwest::Error> for Error {

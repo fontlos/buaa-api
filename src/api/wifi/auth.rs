@@ -1,11 +1,10 @@
-use std::error::Error as StdError;
-
 use crate::crypto;
 use crate::error::{Code, Error};
 use crate::utils;
+use crate::utils::net;
 use crate::utils::time::DateTime;
 
-use super::info;
+// use super::info;
 
 static CHECK: &[u8] = b"\"error\":\"ok\"";
 
@@ -32,39 +31,27 @@ impl super::WifiApi {
         let cred = self.cred.load();
         let un = cred.username()?;
         let pw = cred.password()?;
-        // 先检测 WiFi 名称, 不符合就直接返回以节省时间
-        // 但是手机上不知道怎么获取, 所以如果无法获取到 SSID 那么也尝试连接
-        if let Some(s) = info::ssid() {
-            if s != "BUAA-WiFi" {
-                return Ok(());
-            }
+
+        // 检测网络环境, 不符合就直接返回以节省时间
+        if !net::is_on_campus_network() {
+            return Err(Error::network("Not connected to BUAA-WiFi or BUAA-Mobile")
+                .with_code(Code::NetworkNotCampus));
         }
 
         // 获取本机 IP
-        let ip =
-            info::ip().ok_or(Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
+        let ip = net::ip()
+            .ok_or_else(|| Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
 
         // 2025.04.11 更新
         // 这里会重定向到 index_1.html, 最终 url 在它的 html meta 标签里
         // 从那里获取接入点 AC ID
-        // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
+        // 2026.05.19 更新
+        // 现在我们不再需要检测 DNS 错误, 因为直接检测网关更稳定
         let bytes = self
             .client
             .get("http://gw.buaa.edu.cn")
             .send()
-            .await
-            .map_err(|e| {
-                let err = e
-                    .source()
-                    .and_then(|e1| e1.source())
-                    .map(|e2| e2)
-                    .unwrap_or_else(|| &e);
-                if err.to_string() == "dns error" {
-                    Error::network("DNS resolution failure").with_code(Code::NetworkDnsFailure)
-                } else {
-                    Error::network("From reqwest crate").with_source(e)
-                }
-            })?
+            .await?
             .bytes()
             .await?;
 
@@ -179,39 +166,27 @@ impl super::WifiApi {
     pub async fn logout(&self) -> crate::Result<()> {
         let cred = self.cred.load();
         let un = cred.username()?;
-        // 先检测 WiFi 名称, 不符合就直接返回以节省时间
-        // 为了避免一些不必要的错误, 如果无法获取到 SSID 那么也尝试连接
-        if let Some(s) = info::ssid() {
-            if s != "BUAA-WiFi" {
-                return Ok(());
-            }
+
+        // 检测网络环境, 不符合就直接返回以节省时间
+        if !net::is_on_campus_network() {
+            return Err(Error::network("Not connected to BUAA-WiFi or BUAA-Mobile")
+                .with_code(Code::NetworkNotCampus));
         }
 
         // 获取本机 IP
-        let ip =
-            info::ip().ok_or(Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
+        let ip = net::ip()
+            .ok_or_else(|| Error::network("No local IP").with_code(Code::NetworkNoLocalIp))?;
 
         // 2025.04.11 更新
         // 这里会重定向到 index_1.html, 最终 url 在它的 html meta 标签里
         // 从那里获取接入点 AC ID
-        // 这里检查一下有无 DNS 错误, 如果有那证明我们没有连接到目标网络
+        // 2026.05.19 更新
+        // 现在我们不再需要检测 DNS 错误, 因为直接检测网关更稳定
         let bytes = self
             .client
             .get("http://gw.buaa.edu.cn")
             .send()
-            .await
-            .map_err(|e| {
-                let err = e
-                    .source()
-                    .and_then(|e1| e1.source())
-                    .map(|e2| e2)
-                    .unwrap_or_else(|| &e);
-                if err.to_string() == "dns error" {
-                    Error::network("DNS resolution failure").with_code(Code::NetworkDnsFailure)
-                } else {
-                    Error::network("From reqwest crate").with_source(e)
-                }
-            })?
+            .await?
             .bytes()
             .await?;
 
