@@ -1,7 +1,6 @@
 //! # BUAA WiFi API
 
 mod auth;
-mod info;
 
 /// # BUAA WiFi API Group
 ///
