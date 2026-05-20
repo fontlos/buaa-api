@@ -6,7 +6,7 @@ use std::fs::OpenOptions;
 use std::path::Path;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::api::{Aas, App, Boya, Class, Cloud, Live, Spoc, Srs, Sso, Tes};
+use crate::api::{Aas, App, Boya, Class, Cloud, Live, Spoc, Srs, Sso, Tes, Vpn};
 use crate::error::{Code, Error, Result};
 use crate::utils::time::DateTime;
 
@@ -35,6 +35,8 @@ pub struct CredentialStore {
     pub sso: CredentialItem,
     /// Mark login expiration time of Tes API
     pub tes: CredentialItem,
+    /// Mark login expiration time of SSO(VPN)
+    pub vpn: CredentialItem,
 }
 
 pub(crate) trait Token {
@@ -83,6 +85,9 @@ impl_token!(Srs, srs_token, 1200);
 impl_token!(Sso, sso, 5400);
 // 测得 60 分钟以内有效
 impl_token!(Tes, tes, 3600);
+// SSO 在 VPN 模式下的有效期, 单独位标
+impl_token!(Vpn, vpn, 5400);
+
 
 impl CredentialStore {
     /// Load credential store from file, if file not exist or invalid, return default store

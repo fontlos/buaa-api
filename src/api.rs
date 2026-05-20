@@ -38,6 +38,8 @@ pub struct Sso;
 pub struct Tes;
 /// Marker type for BUAA User Center API Group
 pub struct User;
+/// Marker type for BUAA SSO(VPN). NO API GROUP.
+pub struct Vpn;
 /// Marker type for BUAA WiFi API Group
 pub struct Wifi;
 
