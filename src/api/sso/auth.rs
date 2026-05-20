@@ -1,17 +1,34 @@
 use log::trace;
 
-use crate::api::Sso;
+use crate::api::{Sso, Vpn};
 use crate::error::Error;
 use crate::utils;
 
 impl super::SsoApi {
     /// # Login to SSO
     pub async fn login(&self) -> crate::Result<()> {
-        // TODO: VPN 方法使用下面的 URL, 但我还没想好怎么分组
-        // "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
-        // "https://d.buaa.edu.cn/";
+        let cred = self.cred.load();
         let login_url = "https://sso.buaa.edu.cn/login";
         let verify_url = "https://uc.buaa.edu.cn/";
+        self.login_inner(login_url, verify_url).await?;
+        cred.refresh::<Sso>();
+        Ok(())
+    }
+
+    // 考虑到常用除了 class 都能直连, 那么 VPN 模式其实没那么重要, 让需要的情况自己调用
+    /// # Login to SSO via VPN
+    ///
+    /// **Note**: Currently only for ClassAPI
+    pub async fn login_vpn(&self) -> crate::Result<()> {
+        let cred = self.cred.load();
+        let login_url = "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/login?service=https%3A%2F%2Fd.buaa.edu.cn%2Flogin%3Fcas_login%3Dtrue";
+        let verify_url = "https://d.buaa.edu.cn/";
+        self.login_inner(login_url, verify_url).await?;
+        cred.refresh::<Vpn>();
+        Ok(())
+    }
+
+    async fn login_inner(&self, login_url: &str, verify_url: &str) -> crate::Result<()> {
         let cred = self.cred.load();
         let un = cred.username()?;
         let pw = cred.password()?;
@@ -41,7 +58,6 @@ impl super::SsoApi {
         // 只有状态码是有效信息
         let status = res.status();
         if status.is_success() {
-            cred.refresh::<Sso>();
             return Ok(());
         }
         // 当 "账号存在安全风险", "您的密码已过期或是已知的弱密码" 时尝试忽略风险继续登录
@@ -65,7 +81,6 @@ impl super::SsoApi {
             let form = [("execution", execution), ("_eventId", "ignoreAndContinue")];
             let res = self.client.post(login_url).form(&form).send().await?;
             if res.status().is_success() {
-                cred.refresh::<Sso>();
                 return Ok(());
             }
         }
