@@ -9,12 +9,12 @@ impl super::ClassApi {
     ///
     /// **Input:** DateTime
     pub async fn query_schedule(&self, date: &DateTime) -> crate::Result<Vec<Schedule>> {
-        let url = "https://iclass.buaa.edu.cn:8347/app/course/get_stu_course_sched.action";
+        let path = "app/course/get_stu_course_sched.action";
         let date = date.date();
         // YYYYMMDD
         let date_str = format!("{}{:02}{:02}", date.year(), date.month() as u8, date.day());
         let payload = [("dateStr", date_str)];
-        let bytes = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(8347, path, &payload).await?;
         let res: Vec<Schedule> = Res::parse(&bytes)?;
         Ok(res)
     }
@@ -36,9 +36,9 @@ impl super::ClassApi {
     /// Although they have different IDs, the queried `CourseSchedule` is the same.
     /// So you better check the status before signing in to avoid the timestamp being overwritten.
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<Course>> {
-        let url = "https://iclass.buaa.edu.cn:8347/app/choosecourse/get_myall_course.action";
+        let path = "app/choosecourse/get_myall_course.action";
         let payload = [("user_type", "1"), ("xq_code", id)];
-        let bytes = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(8347, path, &payload).await?;
         let res: Vec<Course> = Res::parse(&bytes)?;
         // 需要过滤掉 teacher 为空的字段, 那可能是错误的课程
         let filtered = res
@@ -54,9 +54,9 @@ impl super::ClassApi {
     /// from [Course::id] via [super::ClassApi::query_course()]
     /// or [Schedule::course_id] via [super::ClassApi::query_schedule()]
     pub async fn query_course_schedule(&self, id: &str) -> crate::Result<Vec<CourseSchedule>> {
-        let url = "https://iclass.buaa.edu.cn:8347/app/my/get_my_course_sign_detail.action";
+        let path = "app/my/get_my_course_sign_detail.action";
         let payload = [("courseId", id)];
-        let bytes = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(8347, path, &payload).await?;
         let res: Vec<CourseSchedule> = Res::parse(&bytes)?;
         Ok(res)
     }
@@ -70,9 +70,9 @@ impl super::ClassApi {
         // 2026.03.23. 签到时间现在基于服务器内部时间而非标准 UTC 了.
         // 你在干什么! 怎么敢另立标准的, 其心可诛!
         let timestamp = self.get_time().await?;
-        let url = "http://iclass.buaa.edu.cn:8081/app/course/stu_scan_sign.action";
+        let path = "app/course/stu_scan_sign.action";
         let payload = [("courseSchedId", id), ("timestamp", &timestamp)];
-        let bytes = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(8081, path, &payload).await?;
         let res: Checkin = Res::parse(&bytes)?;
         if res.status {
             Ok(())
@@ -83,9 +83,9 @@ impl super::ClassApi {
 
     /// Calibrate the internal time of the server
     async fn get_time(&self) -> crate::Result<String> {
-        let url = "http://iclass.buaa.edu.cn:8081/app/common/get_timestamp.action";
+        let path = "app/common/get_timestamp.action";
         let payload: [&str; 0] = [];
-        let bytes = self.universal_request(url, &payload).await?;
+        let bytes = self.universal_request(8081, path, &payload).await?;
         Res::check(&bytes)?;
         let timestamp = utils::parse_by_tag(&bytes, "\"timestamp\":", "}")
             .ok_or_else(|| Error::server("Failed to parse timestamp").with_label("Class"))?;
