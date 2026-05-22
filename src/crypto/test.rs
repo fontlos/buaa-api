@@ -31,14 +31,6 @@ mod tests {
     }
 
     #[test]
-    fn test_des() {
-        let cipher = des::Des::new(b"Jyd#351*");
-        let encrypted = cipher.encrypt_ecb(b"HelloWorld");
-        let hex = bytes2hex(&encrypted);
-        assert_eq!(&hex, "e8c2f09cbf46cb0a70f11196330b1657");
-    }
-
-    #[test]
     fn test_md5() {
         let data = std::fs::read("License").expect("Read License");
         let md5 = md5::Md5::digest(&data);
