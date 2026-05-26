@@ -88,7 +88,6 @@ impl_token!(Tes, tes, 3600);
 // SSO 在 VPN 模式下的有效期, 单独位标
 impl_token!(Vpn, vpn, 5400);
 
-
 impl CredentialStore {
     /// Load credential store from file, if file not exist or invalid, return default store
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
