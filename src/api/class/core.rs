@@ -5,17 +5,9 @@ use crate::api::{Class, Sso, Vpn};
 use crate::error::Error;
 use crate::utils;
 
-impl super::ClassApi {
-    fn url(is_vpn: bool, port: u16, path: &str) -> String {
-        if is_vpn {
-            format!(
-                "https://d.buaa.edu.cn/https-8347/77726476706e69737468656265737421f9f44d9d342326526b0988e29d51367ba018/{path}"
-            )
-        } else {
-            format!("https://iclass.buaa.edu.cn:{port}/{path}")
-        }
-    }
+use super::data::Url;
 
+impl super::ClassApi {
     /// # Login to ClassApi
     pub async fn login(&self) -> crate::Result<()> {
         // 注意, Class 登陆状态是可随意复写的, 调用一次复写一次
@@ -44,9 +36,13 @@ impl super::ClassApi {
         // 2025.12.28 学校后端 NGINX 改错了导致所有 /app/ 路径的 8346 端口被挂载到 /app/app/ 下了
         // 临时改成 8347 端口绕过, 如果以后不影响使用就保持这样, 包括 opt 模块的一些请求 URL 也是相同的处理
         // 很难想象能有这种错误发生
+        let url = Url::https()
+            .port("8347")
+            .path("app/user/login.action")
+            .build();
         let res = self
             .client
-            .get(Self::url(is_vpn, 8346, "app/user/login.action"))
+            .get(url)
             .query(&query)
             .send()
             .await?
@@ -74,12 +70,7 @@ impl super::ClassApi {
     /// Universal Request for ClassApi (Internal)
     ///
     /// **Note**: `token` parameter is already included
-    pub(crate) async fn universal_request<P>(
-        &self,
-        port: u16,
-        path: &str,
-        payload: &P,
-    ) -> crate::Result<Bytes>
+    pub(crate) async fn universal_request<P>(&self, url: Url, payload: &P) -> crate::Result<Bytes>
     where
         P: Serialize + ?Sized,
     {
@@ -91,13 +82,14 @@ impl super::ClassApi {
         }
         let token = cred.value::<Class>()?;
 
-        let is_vpn = !utils::net::is_on_campus_network();
-        let url = Self::url(is_vpn, port, path);
+        let mut url = url.build();
+        url.push_str("?id=");
+        url.push_str(token);
 
         // 在 URL 中硬编码 id
         let bytes = self
             .client
-            .post(format!("{url}?id={token}"))
+            .post(url)
             .query(&payload)
             .send()
             .await?

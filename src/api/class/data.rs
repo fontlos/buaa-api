@@ -4,6 +4,57 @@ use crate::error::Error;
 use crate::utils;
 use crate::utils::time::DateTime;
 
+/// 用于构造请求 URL
+pub(crate) struct Url {
+    inner: String,
+}
+
+impl Url {
+    /// 最长也就 128 上下, 避免重发重分配
+    fn new() -> Self {
+        Self {
+            inner: String::with_capacity(256),
+        }
+    }
+
+    /// 签到和获取服务器时间需要 http
+    pub fn http() -> Self {
+        let mut url = Self::new();
+        url.inner.push_str("http://");
+        url
+    }
+
+    /// 其他接口都是 https
+    pub fn https() -> Self {
+        let mut url = Self::new();
+        url.inner.push_str("https://");
+        url
+    }
+
+    /// port 只对非 VPN 模式有效
+    pub fn port(mut self, port: &str) -> Self {
+        let is_vpn = !utils::net::is_on_campus_network();
+        if is_vpn {
+            self.inner.push_str("d.buaa.edu.cn/https-8347/77726476706e69737468656265737421f9f44d9d342326526b0988e29d51367ba018");
+        } else {
+            self.inner.push_str("iclass.buaa.edu.cn:");
+            self.inner.push_str(port);
+        }
+        self
+    }
+
+    /// 反正给自己用, 默认路径前面加个 / 就行了, 也不检查了
+    pub fn path(mut self, path: &str) -> Self {
+        self.inner.push_str("/");
+        self.inner.push_str(path);
+        self
+    }
+
+    pub fn build(self) -> String {
+        self.inner
+    }
+}
+
 /// Respond handler
 pub(crate) struct Res;
 
