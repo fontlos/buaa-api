@@ -25,7 +25,17 @@ impl super::ClassApi {
             self.api::<Sso>().login().await?;
         }
 
-        let session = self.cred.load().username()?;
+        // 2026.06.01, 学校又把这一步 loginName 加回来了
+        // TODO: 这应该破坏了 VPN 模式
+        let query = [("type", "jumpMyCenter")];
+        let res = self.client.get(Url::https().port("8346").build())
+            .query(&query)
+            .send()
+            .await?;
+        let url = res.url().as_str();
+        let session = utils::parse_by_tag(url.as_bytes(), "loginName=", "&")
+            .ok_or_else(|| Error::server("No loginName found").with_label("Class"))?;
+
         let query = [
             ("phone", session),
             ("password", ""),
@@ -33,11 +43,12 @@ impl super::ClassApi {
             ("verificationUrl", ""),
             ("userLevel", "1"),
         ];
+        // 2026.06.01 很多路径都被加上了 eschool 前缀, 有病啊. 顺便重新用 8346 端口吧
         // 2025.12.28 学校后端 NGINX 改错了导致所有 /app/ 路径的 8346 端口被挂载到 /app/app/ 下了
         // 临时改成 8347 端口绕过, 如果以后不影响使用就保持这样, 包括 opt 模块的一些请求 URL 也是相同的处理
         // 很难想象能有这种错误发生
-        let path = "app/user/login.action";
-        let url = Url::https().port("8347").path(path).build();
+        let path = "eschool/app/user/login_buaa.do";
+        let url = Url::https().port("8346").path(path).build();
         let res = self
             .client
             .get(url)
@@ -47,6 +58,7 @@ impl super::ClassApi {
             .bytes()
             .await?;
 
+        // 2026.06.01 孩子们, SessionID 又回来了
         // 2026.05.20 所以根本不是双 Token, 而是原来的 Session 作废了直接用用户名代替了吗??
         // 之前需要从 https://iclass.buaa.edu.cn:8346 重定向 URL 得到 loginName 作为 Session
         // 使用 DES ECB (Key = Jyd#351*) 加密重定向的 URL 作为参数
@@ -57,11 +69,14 @@ impl super::ClassApi {
         match utils::parse_by_tag(&res, "\"id\":\"", "\"") {
             Some(id) => {
                 self.cred.update(|s| {
-                    s.update::<Class>(id.to_string());
+                    s.update::<Class>(format!("{session}@{id}"));
                 });
                 Ok(())
             }
-            None => Err(Error::server("Login failed. No token").with_label("Class")),
+            None => {
+                let source = utils::parse_by_tag(&res, "\"ERRMSG\":\"", "\"").unwrap_or("Unknown");
+                Err(Error::server("Login failed. No token").with_label("Class").with_source(source))
+            },
         }
     }
 
@@ -80,14 +95,19 @@ impl super::ClassApi {
         }
         let token = cred.value::<Class>()?;
 
+        let (session, id) = token
+            .split_once('@')
+            .ok_or(Error::auth("Cannot split 'session' and 'id' token").with_label("Class"))?;
+
         let mut url = url.build();
         url.push_str("?id=");
-        url.push_str(token);
+        url.push_str(id);
 
         // 在 URL 中硬编码 id
         let bytes = self
             .client
             .post(url)
+            .header("Sessionid", session)
             .query(&payload)
             .send()
             .await?
