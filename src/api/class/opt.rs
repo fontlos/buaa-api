@@ -70,7 +70,8 @@ impl super::ClassApi {
     /// from [Schedule::id] via [super::ClassApi::query_schedule()] (most recommended)
     /// or [CourseSchedule::id] via [super::ClassApi::query_course_schedule()]
     pub async fn checkin(&self, id: &str) -> crate::Result<()> {
-        let path = "app/course/stu_scan_sign.action";
+        // 2026.06.01 签到接口加上了 eschool 前缀, 何意味
+        let path = "eschool/app/course/stu_scan_sign.action";
         let url = Url::http().port("8081").path(path);
         // 2026.03.23. 签到时间现在基于服务器内部时间而非标准 UTC 了.
         // 你在干什么! 怎么敢另立标准的, 其心可诛!
