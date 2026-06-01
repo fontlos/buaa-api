@@ -28,7 +28,9 @@ impl super::ClassApi {
         // 2026.06.01, 学校又把这一步 loginName 加回来了
         // TODO: 这应该破坏了 VPN 模式
         let query = [("type", "jumpMyCenter")];
-        let res = self.client.get(Url::https().port("8346").build())
+        let res = self
+            .client
+            .get(Url::https().port("8346").build())
             .query(&query)
             .send()
             .await?;
@@ -75,8 +77,10 @@ impl super::ClassApi {
             }
             None => {
                 let source = utils::parse_by_tag(&res, "\"ERRMSG\":\"", "\"").unwrap_or("Unknown");
-                Err(Error::server("Login failed. No token").with_label("Class").with_source(source))
-            },
+                Err(Error::server("Login failed. No token")
+                    .with_label("Class")
+                    .with_source(source))
+            }
         }
     }
 
