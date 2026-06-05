@@ -7,6 +7,7 @@ use crate::utils::time::DateTime;
 /// 用于构造请求 URL
 pub(crate) struct Url {
     inner: String,
+    is_vpn: bool,
 }
 
 impl Url {
@@ -14,6 +15,7 @@ impl Url {
     fn new() -> Self {
         Self {
             inner: String::with_capacity(256),
+            is_vpn: !utils::net::is_on_campus_network(),
         }
     }
 
@@ -31,16 +33,38 @@ impl Url {
         url
     }
 
-    /// port 只对非 VPN 模式有效
-    pub fn port(mut self, port: &str) -> Self {
-        let is_vpn = !utils::net::is_on_campus_network();
-        if is_vpn {
-            self.inner.push_str("d.buaa.edu.cn/https-8347/77726476706e69737468656265737421f9f44d9d342326526b0988e29d51367ba018");
+    /// 这服务器就跟构石一样
+    /// 正常模式: 登录: 8346, 查询: 8347, 签到: 8081
+    /// VPN 模式: 登录: 8346, 查询, 签到: 8347
+    fn port(mut self, port: &str) -> Self {
+        if self.is_vpn {
+            self.inner.push_str("d.buaa.edu.cn/https-");
+            self.inner.push_str(port);
+            self.inner.push_str("/77726476706e69737468656265737421f9f44d9d342326526b0988e29d51367ba018");
         } else {
             self.inner.push_str("iclass.buaa.edu.cn:");
             self.inner.push_str(port);
         }
         self
+    }
+
+    /// 8346 端口
+    pub fn login_port(self) -> Self {
+        self.port("8346")
+    }
+
+    /// 8347 端口
+    pub fn query_port(self) -> Self {
+        self.port("8347")
+    }
+
+    /// 校园网环境 8081 端口, VPN 环境 8347 端口
+    pub fn checkin_port(self) -> Self {
+        if self.is_vpn {
+            self.port("8347")
+        } else {
+            self.port("8081")
+        }
     }
 
     /// 反正给自己用, 默认路径前面加个 / 就行了, 也不检查了
