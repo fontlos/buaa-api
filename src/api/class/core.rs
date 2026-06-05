@@ -26,11 +26,10 @@ impl super::ClassApi {
         }
 
         // 2026.06.01, 学校又把这一步 loginName 加回来了
-        // TODO: 这应该破坏了 VPN 模式
         let query = [("type", "jumpMyCenter")];
         let res = self
             .client
-            .get(Url::https().port("8346").build())
+            .get(Url::https().login_port().build())
             .query(&query)
             .send()
             .await?;
@@ -50,7 +49,7 @@ impl super::ClassApi {
         // 临时改成 8347 端口绕过, 如果以后不影响使用就保持这样, 包括 opt 模块的一些请求 URL 也是相同的处理
         // 很难想象能有这种错误发生
         let path = "eschool/app/user/login_buaa.do";
-        let url = Url::https().port("8346").path(path).build();
+        let url = Url::https().login_port().path(path).build();
         let res = self
             .client
             .get(url)
