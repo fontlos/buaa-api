@@ -58,12 +58,13 @@ impl Url {
         self.port("8347")
     }
 
-    /// 校园网环境 8081 端口, VPN 环境 8347 端口
+    /// 校园网环境 8081 端口, VPN 环境 8347 端口,
+    /// `eschool` path 现在只在校园网环境使用, 反正内部用就加在这了
     pub fn checkin_port(self) -> Self {
         if self.is_vpn {
             self.port("8347")
         } else {
-            self.port("8081")
+            self.port("8081").path("eschool")
         }
     }
 
