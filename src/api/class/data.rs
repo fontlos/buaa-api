@@ -7,28 +7,28 @@ use crate::utils::time::DateTime;
 /// 用于构造请求 URL
 pub(crate) struct Url {
     inner: String,
-    is_vpn: bool,
+    on_campus: bool,
 }
 
 impl Url {
     /// 最长也就 128 上下, 避免重发重分配
-    fn new() -> Self {
+    fn new(on_campus: bool) -> Self {
         Self {
             inner: String::with_capacity(256),
-            is_vpn: !utils::net::is_on_campus_network(),
+            on_campus,
         }
     }
 
     /// 签到和获取服务器时间需要 http
-    pub fn http() -> Self {
-        let mut url = Self::new();
+    pub fn http(on_campus: bool) -> Self {
+        let mut url = Self::new(on_campus);
         url.inner.push_str("http://");
         url
     }
 
     /// 其他接口都是 https
-    pub fn https() -> Self {
-        let mut url = Self::new();
+    pub fn https(on_campus: bool) -> Self {
+        let mut url = Self::new(on_campus);
         url.inner.push_str("https://");
         url
     }
@@ -37,13 +37,14 @@ impl Url {
     /// 正常模式: 登录: 8346, 查询: 8347, 签到: 8081
     /// VPN 模式: 登录: 8346, 查询, 签到: 8347
     fn port(mut self, port: &str) -> Self {
-        if self.is_vpn {
-            self.inner.push_str("d.buaa.edu.cn/https-");
-            self.inner.push_str(port);
-            self.inner.push_str("/77726476706e69737468656265737421f9f44d9d342326526b0988e29d51367ba018");
-        } else {
+        if self.on_campus {
             self.inner.push_str("iclass.buaa.edu.cn:");
             self.inner.push_str(port);
+        } else {
+            self.inner.push_str("d.buaa.edu.cn/https-");
+            self.inner.push_str(port);
+            self.inner
+                .push_str("/77726476706e69737468656265737421f9f44d9d342326526b0988e29d51367ba018");
         }
         self
     }
@@ -61,10 +62,10 @@ impl Url {
     /// 校园网环境 8081 端口, VPN 环境 8347 端口,
     /// `eschool` path 现在只在校园网环境使用, 反正内部用就加在这了
     pub fn checkin_port(self) -> Self {
-        if self.is_vpn {
-            self.port("8347")
-        } else {
+        if self.on_campus {
             self.port("8081").path("eschool")
+        } else {
+            self.port("8347")
         }
     }
 

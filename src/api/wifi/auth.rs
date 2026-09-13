@@ -33,7 +33,7 @@ impl super::WifiApi {
         let pw = cred.password()?;
 
         // 检测网络环境, 不符合就直接返回以节省时间
-        if !net::is_on_campus_network() {
+        if !net::is_campus_network_reachable() {
             return Err(Error::network("Not connected to BUAA-WiFi or BUAA-Mobile")
                 .with_code(Code::NetworkNotCampus));
         }
@@ -168,7 +168,7 @@ impl super::WifiApi {
         let un = cred.username()?;
 
         // 检测网络环境, 不符合就直接返回以节省时间
-        if !net::is_on_campus_network() {
+        if !net::is_campus_network_reachable() {
             return Err(Error::network("Not connected to BUAA-WiFi or BUAA-Mobile")
                 .with_code(Code::NetworkNotCampus));
         }

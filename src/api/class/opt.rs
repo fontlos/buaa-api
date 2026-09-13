@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::{api::Core, error::Error};
 use crate::utils;
 use crate::utils::time::DateTime;
 
@@ -10,7 +10,8 @@ impl super::ClassApi {
     /// **Input:** DateTime
     pub async fn query_schedule(&self, date: &DateTime) -> crate::Result<Vec<Schedule>> {
         let path = "app/course/get_stu_course_sched.action";
-        let url = Url::https().query_port().path(path);
+        let on_campus = self.api::<Core>().on_campus();
+        let url = Url::https(on_campus).query_port().path(path);
         let date = date.date();
         // YYYYMMDD
         let date_str = format!("{}{:02}{:02}", date.year(), date.month() as u8, date.day());
@@ -38,7 +39,8 @@ impl super::ClassApi {
     /// So you better check the status before signing in to avoid the timestamp being overwritten.
     pub async fn query_course(&self, id: &str) -> crate::Result<Vec<Course>> {
         let path = "app/choosecourse/get_myall_course.action";
-        let url = Url::https().query_port().path(path);
+        let on_campus = self.api::<Core>().on_campus();
+        let url = Url::https(on_campus).query_port().path(path);
         let payload = [("user_type", "1"), ("xq_code", id)];
         let bytes = self.universal_request(url, &payload).await?;
         let res: Vec<Course> = Res::parse(&bytes)?;
@@ -57,7 +59,8 @@ impl super::ClassApi {
     /// or [Schedule::course_id] via [super::ClassApi::query_schedule()]
     pub async fn query_course_schedule(&self, id: &str) -> crate::Result<Vec<CourseSchedule>> {
         let path = "app/my/get_my_course_sign_detail.action";
-        let url = Url::https().query_port().path(path);
+        let on_campus = self.api::<Core>().on_campus();
+        let url = Url::https(on_campus).query_port().path(path);
         let payload = [("courseId", id)];
         let bytes = self.universal_request(url, &payload).await?;
         let res: Vec<CourseSchedule> = Res::parse(&bytes)?;
@@ -73,7 +76,8 @@ impl super::ClassApi {
         // 2026.06.01 签到接口加上了 eschool 前缀, 何意味
         // 2026.09.09 `eschool` 前缀转移到校园网环境, 就在 checkin_port() 内部
         let path = "app/course/stu_scan_sign.action";
-        let url = Url::http().checkin_port().path(path);
+        let on_campus = self.api::<Core>().on_campus();
+        let url = Url::http(on_campus).checkin_port().path(path);
         // 2026.03.23. 签到时间现在基于服务器内部时间而非标准 UTC 了.
         // 你在干什么! 怎么敢另立标准的, 其心可诛!
         let timestamp = self.get_time().await?;
@@ -91,7 +95,8 @@ impl super::ClassApi {
     /// Calibrate the internal time of the server
     async fn get_time(&self) -> crate::Result<String> {
         let path = "app/common/get_timestamp.action";
-        let url = Url::http().checkin_port().path(path);
+        let on_campus = self.api::<Core>().on_campus();
+        let url = Url::http(on_campus).checkin_port().path(path);
         let payload: [&str; 0] = [];
         let bytes = self.universal_request(url, &payload).await?;
         Res::check(&bytes)?;

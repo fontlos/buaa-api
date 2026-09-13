@@ -1,7 +1,7 @@
 use bytes::Bytes;
 use serde::Serialize;
 
-use crate::api::{Class, Sso, Vpn};
+use crate::api::{Class, Core, Sso, Vpn};
 use crate::error::Error;
 use crate::utils;
 
@@ -15,21 +15,21 @@ impl super::ClassApi {
         // 也就是说唯一需要仔细处理的地方就是 SsoAPI::login_vpn
         // 确保在需要的时刻调用它以免 VPN 模式下 Class 登录流程失败
 
-        let is_vpn = !utils::net::is_on_campus_network();
-        // 只在需要时刷新 VPN 的 SSO
-        if is_vpn && self.cred.load().is_expired::<Vpn>() {
-            self.api::<Sso>().login_vpn().await?;
-        }
+        let on_campus = self.api::<Core>().on_campus();
         // 防止共同竞争触发 423 Locked 错误
-        if !is_vpn && self.cred.load().is_expired::<Sso>() {
+        if on_campus && self.cred.load().is_expired::<Sso>() {
             self.api::<Sso>().login().await?;
+        }
+        // 只在需要时刷新 VPN 的 SSO
+        if !on_campus && self.cred.load().is_expired::<Vpn>() {
+            self.api::<Sso>().login_vpn().await?;
         }
 
         // 2026.06.01, 学校又把这一步 loginName 加回来了
         let query = [("type", "jumpMyCenter")];
         let res = self
             .client
-            .get(Url::https().login_port().build())
+            .get(Url::https(on_campus).login_port().build())
             .query(&query)
             .send()
             .await?;
@@ -49,7 +49,7 @@ impl super::ClassApi {
         // 临时改成 8347 端口绕过, 如果以后不影响使用就保持这样, 包括 opt 模块的一些请求 URL 也是相同的处理
         // 很难想象能有这种错误发生
         let path = "eschool/app/user/login_buaa.do";
-        let url = Url::https().login_port().path(path).build();
+        let url = Url::https(on_campus).login_port().path(path).build();
         let res = self
             .client
             .get(url)

@@ -1,10 +1,12 @@
 use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::request::{Client, client};
 use crate::store::cookies::{AtomicCookieStore, CookieStore};
 use crate::store::cred::CredentialStore;
+use crate::utils;
 use crate::{api::Core, cell::AtomicCell};
 
 /// This is the core of this crate, it is used to store cookies and send requests
@@ -12,6 +14,7 @@ pub struct Context<G = Core> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<AtomicCookieStore>,
     pub(crate) cred: AtomicCell<CredentialStore>,
+    pub(crate) on_campus: AtomicBool,
     _marker: PhantomData<G>,
 }
 
@@ -188,6 +191,21 @@ impl Context {
         self.get_cred().to_file(cred_path)?;
         Ok(())
     }
+
+    /// Recheck the current network environment
+    /// whether it can reach `BUAA-WiFi` or `BUAA-Mobile` gateway
+    /// and update the cached campus
+    ///
+    /// This is a synchronous blocking operation (DNS TCP)
+    pub fn refresh_network(&self) {
+        let on_campus = utils::net::is_campus_network_reachable();
+        self.on_campus.store(on_campus, Ordering::Relaxed);
+    }
+
+    /// Check whether the current network can reach `BUAA-WiFi` or `BUAA-Mobile` gateway.
+    pub(crate) fn on_campus(&self) -> bool {
+        self.on_campus.load(Ordering::Relaxed)
+    }
 }
 
 impl<G> crate::Context<G> {
@@ -276,11 +294,13 @@ impl ContextBuilder {
             .cred
             .map(AtomicCell::new)
             .unwrap_or_else(|| AtomicCell::new(CredentialStore::default()));
+        let on_campus = AtomicBool::new(utils::net::is_campus_network_reachable());
 
         Context {
             client,
             cookies,
             cred,
+            on_campus,
             _marker: PhantomData,
         }
     }
