@@ -1,6 +1,6 @@
-use crate::{api::Core, error::Error};
 use crate::utils;
 use crate::utils::time::DateTime;
+use crate::{api::Core, error::Error};
 
 use super::data::{Checkin, Course, CourseSchedule, Res, Schedule, Url};
 

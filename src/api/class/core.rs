@@ -90,10 +90,13 @@ impl super::ClassApi {
     where
         P: Serialize + ?Sized,
     {
+        let on_campus = self.api::<Core>().on_campus();
         let cred = self.cred.load();
         // 注意, 这里无需特殊处理, VPN 模式和正常模式的 Cred 和 Cookie 是可以互相用的
         // 也就是说唯一需要仔细处理的地方就是 ClassAPI::login 函数自己
-        if cred.is_expired::<Class>() {
+        // 2026.09.14 VPN 下的 Class 凭据有效期差不多在两小时, 所以干脆借用 VPN 本身的时效算了
+        // TODO: 这让内部的时间约定变得混乱, 考虑一种办法彻底拆开 VPN 与普通情况
+        if on_campus && cred.is_expired::<Class>() || !on_campus && cred.is_expired::<Vpn>() {
             self.login().await?;
         }
         let token = cred.value::<Class>()?;
