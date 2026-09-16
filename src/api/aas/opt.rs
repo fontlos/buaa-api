@@ -41,4 +41,17 @@ impl super::AasApi {
         let res: Schedules = Res::parse(&bytes, "Failed to get term schedule")?;
         Ok(res)
     }
+
+    /// # Pre-confirm schedule
+    ///
+    /// - `term`: Term code, e.g. "2026-2027-1"
+    ///
+    /// **Note**: Call [super::AasApi::confirm_schedule] to confirm the schedule after this function.
+    pub async fn pre_confirm_schedule(&self, term: &str) -> crate::Result<Schedules> {
+        let url = "https://byxt.buaa.edu.cn/jwapp/sys/homeapp/api/home/confirmSchedule.do";
+        let query = [("XNXQDM", term)];
+        let bytes = self.universal_request(url, Method::POST, &query).await?;
+        let res: Schedules = Res::parse(&bytes, "Failed to preview confirm schedule")?;
+        Ok(res)
+    }
 }
