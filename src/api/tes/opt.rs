@@ -34,6 +34,10 @@ impl super::TesApi {
 
         let task_id = utils::parse_by_tag(&res, "\"rwid\":\"", "\"")
             .ok_or_else(|| Error::server("Empty task").with_label("Tes"))?;
+        // 2026.09.23 现在需要手动传入学年学期参数, 包括 fetch_task, 否则会返回空
+        // 以及 Task 结构体 (给 get_form), 否则默认会用最新的学年学期代码覆盖, 提示问卷未开放
+        let term_id = utils::parse_by_tag(&res, "\"rwxnxq\":\"", "\"")
+            .ok_or_else(|| Error::server("Empty term").with_label("Tes"))?;
         let task_count = utils::parse_by_tag(&res, "\"pjsl\":", ",")
             .and_then(|s| s.parse::<usize>().ok())
             // 一个课可能有很多老师, 需要评多次, 如果没找到这个数字就默认 32
@@ -67,7 +71,7 @@ impl super::TesApi {
         // 并发处理, 这节约了大概一半的时间
         let req: Vec<_> = form_ids
             .iter()
-            .map(|id| async move { self.fetch_task(id).await })
+            .map(|id| async move { self.fetch_task(id, &term_id).await })
             .collect();
 
         let res = future::join_all(req).await;
@@ -82,9 +86,9 @@ impl super::TesApi {
 
     // 用于并发获取任务
     // 注意我们没必要在这里刷新权限因为它的调用者已经刷新了
-    async fn fetch_task(&self, id: &str) -> crate::Result<Vec<Task>> {
+    async fn fetch_task(&self, id: &str, term: &str) -> crate::Result<Vec<Task>> {
         let url = "https://spoc.buaa.edu.cn/pjxt/evaluationMethodSix/getRequiredReviewsData";
-        let query = [("wjid", id)];
+        let query = [("wjid", id), ("xnxq", term)];
         let res = self
             .client
             .get(url)
