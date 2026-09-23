@@ -103,6 +103,9 @@ pub struct Task {
     // pub category: String,
     // 任务号
     rwh: String,
+    // 学年学期
+    // 用于传递给 get_form, 否则默认会用最新的学年学期代码覆盖, 提示问卷未开放
+    xnxq: String,
 }
 
 // ====================
