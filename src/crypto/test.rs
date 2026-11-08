@@ -23,6 +23,25 @@ mod tests {
     }
 
     #[test]
+    fn test_aes_cfb() {
+        let cipher = aes::Aes128::new(b"wrdvpnisthebest!");
+
+        // VPN 的 path, 前 16 字节是 IV, 实际上和 key 相同, 后 16 字节是真实密文, 这里是 sso.buaa.edu.cn
+        let cipher_hex = "77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d";
+        let cipher_bytes = hex2bytes(cipher_hex);
+        let (iv_bytes, cipher_bytes) = cipher_bytes.split_at(16);
+
+        assert_eq!(iv_bytes, b"wrdvpnisthebest!");
+
+        let decrypted = cipher.decrypt_cfb(cipher_bytes, iv_bytes);
+        assert_eq!(decrypted, b"sso.buaa.edu.cn");
+
+        let encrypted = cipher.encrypt_cfb(&decrypted, iv_bytes);
+        let encrypted_hex = format!("{}{}", bytes2hex(&iv_bytes), bytes2hex(&encrypted));
+        assert_eq!(encrypted_hex, cipher_hex);
+    }
+
+    #[test]
     fn test_crc() {
         let data = std::fs::read("License").expect("Read License");
         let crc32 = crc::Crc32::digest(&data);
