@@ -27,6 +27,14 @@ pub fn bytes2hex(bytes: &[u8]) -> String {
     unsafe { String::from_utf8_unchecked(hex_bytes) }
 }
 
+/// Converts a hexadecimal string to bytes
+pub fn hex2bytes(hex: &str) -> Vec<u8> {
+    (0..hex.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
+        .collect()
+}
+
 /// Encodes bytes to a Base64 string
 pub fn encode_base64<T>(bytes: T) -> String
 where

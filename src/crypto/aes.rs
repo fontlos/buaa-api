@@ -351,4 +351,64 @@ impl Aes128 {
 
         output
     }
+
+    /// AES decrypt, use CFB mode (128-bit block size)
+    pub fn decrypt_cfb(&self, data: &[u8], iv: &[u8]) -> Vec<u8> {
+        let mut output = Vec::with_capacity(data.len());
+        let mut feedback = [0u8; 16];
+        feedback.copy_from_slice(iv);
+
+        for chunk in data.chunks(16) {
+            // CFB 模式解密时是用 encrypt_block 来生成密钥流的
+            let keystream = self.encrypt_block(&feedback);
+
+            // 密文与密钥流异或, 得到明文
+            for i in 0..chunk.len() {
+                output.push(chunk[i] ^ keystream[i]);
+            }
+
+            // 更新反馈值
+            if chunk.len() == 16 {
+                feedback.copy_from_slice(chunk);
+            } else {
+                // 处理最后不足 16 字节的残余块
+                let mut new_feedback = [0u8; 16];
+                new_feedback[..16 - chunk.len()].copy_from_slice(&feedback[chunk.len()..]);
+                new_feedback[16 - chunk.len()..].copy_from_slice(chunk);
+                feedback = new_feedback;
+            }
+        }
+        output
+    }
+
+    /// AES encrypt, use CFB mode (128-bit block size)
+    pub fn encrypt_cfb(&self, data: &[u8], iv: &[u8]) -> Vec<u8> {
+        let mut output = Vec::with_capacity(data.len());
+        let mut feedback = [0u8; 16];
+        feedback.copy_from_slice(iv);
+
+        for chunk in data.chunks(16) {
+            // CFB 加密同样用 encrypt_block 生成密钥流
+            let keystream = self.encrypt_block(&feedback);
+
+            // 明文与密钥流异或, 得到密文
+            let mut cipher_chunk = [0u8; 16];
+            for i in 0..chunk.len() {
+                cipher_chunk[i] = chunk[i] ^ keystream[i];
+            }
+            output.extend_from_slice(&cipher_chunk[..chunk.len()]);
+
+            // 更新反馈值, 用密文推进移位寄存器
+            if chunk.len() == 16 {
+                feedback.copy_from_slice(&cipher_chunk);
+            } else {
+                // 处理最后不足 16 字节的残余块
+                let mut new_feedback = [0u8; 16];
+                new_feedback[..16 - chunk.len()].copy_from_slice(&feedback[chunk.len()..]);
+                new_feedback[16 - chunk.len()..].copy_from_slice(&cipher_chunk[..chunk.len()]);
+                feedback = new_feedback;
+            }
+        }
+        output
+    }
 }
