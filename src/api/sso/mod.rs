@@ -1,6 +1,7 @@
 //! # BUAA Single Sign On API
 
 mod auth;
+pub mod captcha;
 
 /// # BUAA SSO API
 ///
