@@ -3,17 +3,20 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::api::Core;
+use crate::api::sso::captcha::CaptchaSolver;
+use crate::cell::AtomicCell;
 use crate::request::{Client, client};
 use crate::store::cookies::{AtomicCookieStore, CookieStore};
 use crate::store::cred::CredentialStore;
 use crate::utils;
-use crate::{api::Core, cell::AtomicCell};
 
 /// This is the core of this crate, it is used to store cookies and send requests
 pub struct Context<G = Core> {
     pub(crate) client: Client,
     pub(crate) cookies: Arc<AtomicCookieStore>,
     pub(crate) cred: AtomicCell<CredentialStore>,
+    pub(crate) captcha: Option<Arc<dyn CaptchaSolver>>,
     pub(crate) on_campus: AtomicBool,
     _marker: PhantomData<G>,
 }
@@ -242,6 +245,7 @@ pub struct ContextBuilder {
     tls: bool,
     cookies: Option<CookieStore>,
     cred: Option<CredentialStore>,
+    captcha: Option<Arc<dyn CaptchaSolver>>,
 }
 
 impl ContextBuilder {
@@ -252,6 +256,7 @@ impl ContextBuilder {
             tls: true,
             cookies: None,
             cred: None,
+            captcha: None,
         }
     }
     /// Set the HTTP client
@@ -280,6 +285,11 @@ impl ContextBuilder {
         self.cred = Some(cred);
         self
     }
+    /// Set the captcha solver
+    pub fn captcha(mut self, solver: Arc<dyn CaptchaSolver>) -> Self {
+        self.captcha = Some(solver);
+        self
+    }
     /// Build the Context
     pub fn build(self) -> Context {
         let cookies = self
@@ -300,6 +310,7 @@ impl ContextBuilder {
             client,
             cookies,
             cred,
+            captcha: self.captcha,
             on_campus,
             _marker: PhantomData,
         }

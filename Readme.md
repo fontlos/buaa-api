@@ -174,6 +174,45 @@ async fn main() {
 }
 ```
 
+VPN mode may need `CaptchaSolver` to pass captcha
+
+```rust
+use buaa_api::ContextBuilder;
+use buaa_api::api::sso::captcha::{CaptchaError, CaptchaSolver};
+use buaa_api::time::DateTime;
+
+use std::sync::Arc;
+
+struct StdinSolver;
+
+impl CaptchaSolver for StdinSolver {
+    fn solve(&self, captcha: &[u8]) -> Result<String, CaptchaError> {
+        std::fs::write("./data/captcha.jpg", &captcha).unwrap();
+        println!("Captcha saved to ./data/captcha.jpg");
+        println!("Please input captcha: ");
+        let mut s = String::new();
+        std::io::stdin()
+            .read_line(&mut s)
+            .map_err(|_| CaptchaError::SolveFailed)?;
+        Ok(s.trim().to_string())
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let context = ContextBuilder::new().captcha(Arc::new(StdinSolver)).build();
+    context.set_account("account", "password");
+
+    let class = context.class();
+
+    let date = DateTime::now();
+    let res = class.query_schedule(&date).await.unwrap();
+    println!("{:#?}", res);
+
+    context.save_auth("./data").unwrap();
+}
+```
+
 BUAA WiFi is independent of other APIs and does not require cookies or `Context.login()`:
 
 ```rust
