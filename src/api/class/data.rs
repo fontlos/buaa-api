@@ -100,7 +100,7 @@ impl Res {
                     .with_label("Class")
                     .with_source(source));
             }
-            // 错误请求可能只返回 "\r\n"
+            // 错误请求可能只返回 "\r\n", 或者凭据过期重定向到其他页面
             None => Err(Error::server("Bad response").with_label("Class")),
         }
     }

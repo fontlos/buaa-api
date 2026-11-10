@@ -55,7 +55,6 @@ impl super::AasApi {
         Ok(res)
     }
 
-
     /// # Confirm schedule
     ///
     /// - `term`: Term code, e.g. "2026-2027-1"

@@ -95,6 +95,7 @@ impl super::ClassApi {
         // 注意, 这里无需特殊处理, VPN 模式和正常模式的 Cred 和 Cookie 是可以互相用的
         // 也就是说唯一需要仔细处理的地方就是 ClassAPI::login 函数自己
         // 2026.09.14 VPN 下的 Class 凭据有效期差不多在两小时, 所以干脆借用 VPN 本身的时效算了
+        // 表现为 [ServerInternalError]::[Class]: Bad response
         // TODO: 这让内部的时间约定变得混乱, 考虑一种办法彻底拆开 VPN 与普通情况
         if on_campus && cred.is_expired::<Class>() || !on_campus && cred.is_expired::<Vpn>() {
             self.login().await?;
