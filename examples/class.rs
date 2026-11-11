@@ -6,7 +6,7 @@ mod tests {
     #[tokio::test]
     async fn test_class_checkin() {
         use buaa_api::ContextBuilder;
-        use buaa_api::api::sso::captcha::{CaptchaError, CaptchaSolver};
+        use buaa_api::api::sso::captcha::{CaptchaAction, CaptchaSolver};
         use buaa_api::store::cookies::CookieStore;
         use buaa_api::store::cred::CredentialStore;
         use buaa_api::time::DateTime;
@@ -17,15 +17,16 @@ mod tests {
         struct StdinSolver;
 
         impl CaptchaSolver for StdinSolver {
-            fn solve(&self, captcha: &[u8]) -> Result<String, CaptchaError> {
-                std::fs::write("./data/captcha.jpg", &captcha).unwrap();
+            fn solve(&self, captcha: &[u8]) -> Result<CaptchaAction, String> {
+                std::fs::write("./data/captcha.jpg", &captcha)
+                    .map_err(|_| "Failed to write captcha image".to_string())?;
                 println!("Captcha saved to ./data/captcha.jpg");
                 println!("Please input captcha: ");
                 let mut s = String::new();
                 std::io::stdin()
                     .read_line(&mut s)
-                    .map_err(|_| CaptchaError::SolveFailed)?;
-                Ok(s.trim().to_string())
+                    .map_err(|_| "Failed to read captcha input".to_string())?;
+                Ok(CaptchaAction::Submit(s.trim().to_string()))
             }
         }
 

@@ -1,6 +1,7 @@
 use log::trace;
 
-use crate::api::{Sso, Vpn, sso::captcha::CaptchaError};
+use crate::api::sso::captcha::CaptchaAction;
+use crate::api::{Sso, Vpn};
 use crate::error::Error;
 use crate::utils;
 
@@ -69,15 +70,25 @@ impl super::SsoApi {
                 captcha_id,
                 utils::time::DateTime::millis()
             );
-            let img = self.client.get(&url).send().await?.bytes().await?;
-            captcha = solver.solve(&img).map_err(|e| match e {
-                CaptchaError::SolveFailed => {
-                    Error::parameter("Failed to solve captcha").with_label("Sso")
+            loop {
+                let img = self.client.get(&url).send().await?.bytes().await?;
+
+                match solver
+                    .solve(&img)
+                    .map_err(|e| Error::auth(e).with_label("Sso"))?
+                {
+                    CaptchaAction::Submit(value) => {
+                        captcha = value;
+                        break;
+                    }
+                    CaptchaAction::Refresh => {
+                        continue;
+                    }
+                    CaptchaAction::Cancel => {
+                        return Err(Error::auth("Captcha solving cancelled").with_label("Sso"));
+                    }
                 }
-                CaptchaError::Cancelled => {
-                    Error::parameter("Captcha solving cancelled").with_label("Sso")
-                }
-            })?;
+            }
         };
         let form = [
             ("username", un),

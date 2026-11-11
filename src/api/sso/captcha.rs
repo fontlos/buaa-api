@@ -1,16 +1,17 @@
 //! Captcha Solver
 
+/// # Captcha Action
+pub enum CaptchaAction {
+    /// Submit the captcha solution
+    Submit(String),
+    /// Refresh the captcha image
+    Refresh,
+    /// Cancel the captcha solving
+    Cancel,
+}
+
 /// # Captcha Solver
 pub trait CaptchaSolver: Send + Sync + 'static {
     /// # Solve Captcha
-    fn solve(&self, captcha: &[u8]) -> Result<String, CaptchaError>;
-}
-
-/// # Captcha Error
-#[derive(Debug)]
-pub enum CaptchaError {
-    /// Failed to solve captcha
-    SolveFailed,
-    /// User cancelled the captcha solving
-    Cancelled,
+    fn solve(&self, captcha: &[u8]) -> Result<CaptchaAction, String>;
 }
