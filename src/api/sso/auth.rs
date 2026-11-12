@@ -1,4 +1,7 @@
+use futures::channel::oneshot;
 use log::trace;
+
+use std::sync::Arc;
 
 use crate::api::sso::captcha::CaptchaAction;
 use crate::api::{Sso, Vpn};
@@ -54,7 +57,6 @@ impl super::SsoApi {
         //     id: 'xxx'
         // };
         // TODO: 目前只在验证码处理器存在时才处理验证码, 否则直接提交空字符串
-        // TODO: 它目前是阻塞的, 因为验证码本来就会卡住, 但是是否允许阻塞整个异步线程?
         let mut captcha = String::new();
         if let Some(solver) = &self.captcha
             && let Some(config) = utils::parse_by_tag(&bytes, "config.captcha =", ";")
@@ -70,20 +72,30 @@ impl super::SsoApi {
                 captcha_id,
                 utils::time::DateTime::millis()
             );
+            // 循环来做到刷新验证码, 每次收到刷新请求时重新执行
             loop {
                 let img = self.client.get(&url).send().await?.bytes().await?;
 
-                match solver
-                    .solve(&img)
-                    .map_err(|e| Error::auth(e).with_label("Sso"))?
-                {
+                // 为了减少不必要的麻烦, 对于验证码这种冷路径直接拉起一个线程应该比线程池更轻量
+                let solver = Arc::clone(solver);
+                let img_vec = img.to_vec();
+                let (tx, rx) = oneshot::channel();
+                std::thread::spawn(move || {
+                    let _ = tx.send(solver.solve(&img_vec));
+                });
+
+                // 异步等待, 让执行器线程让出异步线程
+                let action = rx
+                    .await
+                    .map_err(|_| Error::io("Captcha solver thread panicked").with_label("Sso"))?
+                    .map_err(|e| Error::auth(e).with_label("Sso"))?;
+
+                match action {
                     CaptchaAction::Submit(value) => {
                         captcha = value;
                         break;
                     }
-                    CaptchaAction::Refresh => {
-                        continue;
-                    }
+                    CaptchaAction::Refresh => continue,
                     CaptchaAction::Cancel => {
                         return Err(Error::auth("Captcha solving cancelled").with_label("Sso"));
                     }
