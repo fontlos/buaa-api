@@ -46,37 +46,23 @@ impl super::SsoApi {
 
         // 重新登录
         let req = self.prepare_login(res, login_url).await?;
-        // 如果返回 None, 说明此时在非校园网环境, 并且连接错误, 那么我们就只能认为登陆成功了
-        // 如果有返回响应体, 我们再根据响应体判断
-        let res = match self.finish_login(req).await? {
-            Some(r) => r,
-            None => return Ok(()),
-        };
-        // 只有状态码是有效信息, 如果成功就是成功, 如果 401, 那么除了账号密码错误还可能是账号有风险
-        let status = res.status();
-        if status.is_success() {
+        // 返回 None 代表正常或符合假设, 返回 Some 代表非 2xx 响应, 可能代表账号有风险, 需要尝试忽略风险登录
+        let Some(res) = self.finish_login(req).await? else {
             return Ok(());
-        }
+        };
+        let status = res.status();
 
         // 当 "账号存在安全风险", "您的密码已过期或是已知的弱密码" 时, 上面会返回 401, 此时尝试忽略风险继续登录
-        if let Some(req) = self.prepare_try_ignore_risk(res, login_url).await? {
-            warn!(
-                "SSO account has security risk, try to ignore and continue. Suggest change password."
-            );
-            let res = match self.finish_login(req).await? {
-                Some(r) => r,
-                None => return Ok(()),
-            };
-            // 只有状态码是有效信息, 如果成功就是成功, 如果 401, 那么除了账号密码错误还可能是账号有风险
-            let status = res.status();
-            if status.is_success() {
-                return Ok(());
-            }
-        }
-
-        // 其他情况直接返回错误
-        // TODO: 如果没注册验证码处理器但登录需要验证码可能也会触发这个错误
-        Err(login_failed(status))
+        let Some(req) = self.prepare_try_ignore_risk(res, login_url).await? else {
+            // 如果无法尝试, 即没有找到继续登录的选项, 那么就返回上一次的状态码作为错误
+            // WARN: 如果没注册验证码处理器但登录需要验证码可能也会触发这个错误
+            return Err(login_failed(status));
+        };
+        let Some(res) = self.finish_login(req).await? else {
+            return Ok(());
+        };
+        // 无视风险登录也失败那就直接返回错误, 同样的, 没有注册验证码处理器也可能触发这个错误
+        Err(login_failed(res.status()))
     }
 
     /// 准备尝试一次登录, 如果 401 有可能是因为账号有风险, 需要忽略风险继续登录
@@ -125,6 +111,7 @@ impl super::SsoApi {
             // 循环来做到刷新验证码, 每次收到刷新请求时重新执行
             loop {
                 // 时间戳参数 t(ms) 加不加都可以
+                // TODO: 目前只有 VPN 模式需要验证码, 暂时写死 URL
                 let url = format!(
                     "https://d.buaa.edu.cn/https/77726476706e69737468656265737421e3e44ed225256951300d8db9d6562d/captcha?vpn-1&captchaId={}&t={}",
                     captcha_id,
@@ -174,6 +161,9 @@ impl super::SsoApi {
             .windows(b"continueForm".len())
             .any(|w| w == b"continueForm")
         {
+            warn!(
+                "SSO account has security risk, try to ignore and continue. Suggest change password."
+            );
             let execution = parse_execution(&bytes)?;
             let form = [("execution", execution), ("_eventId", "ignoreAndContinue")];
             let req = self.client.post(login_url).form(&form);
@@ -184,10 +174,12 @@ impl super::SsoApi {
 
     /// 完成登录
     ///
-    /// 返回 Some 代表一切正常, 返回 None 代表在非校园网环境最后一步请求错误, 我们暂时认为登录成功
+    /// 返回 None 代表一切正常或者符合我们的假设,
+    /// 返回 Some 代表非 2xx 响应, 交还给外部处理
     async fn finish_login(&self, req: RequestBuilder) -> crate::Result<Option<Response>> {
-        match req.send().await {
-            Ok(r) => Ok(Some(r)),
+        let res = match req.send().await {
+            // 请求成功, 在下面检查请求体
+            Ok(r) => r,
             // 2026.11.12 目前在非校园网环境下 UC 会触发 ERR_HTTP2_PROTOCOL_ERROR
             // 如果此时 SSO 最后确实会转跳到 UC, 那么实际上凭据是有效的, 但是因为在协议层就发生了错误, 难以跟踪转跳
             // TODO: 因此我们在这里临时接受如果当前处于非校园网环境, 忽略由于请求连接导致的错误
@@ -195,12 +187,21 @@ impl super::SsoApi {
                 warn!(
                     "Not on campus network. SSO login may succeed, but connection error occurred."
                 );
-                Ok(None)
+                return Ok(None);
             }
-            Err(e) => Err(Error::server("Login failed.")
-                .with_label("Sso")
-                .with_source(e)),
+            Err(e) => {
+                return Err(Error::server("Login failed.")
+                    .with_label("Sso")
+                    .with_source(e));
+            }
+        };
+        // WARN: 也许这里还需要保留更多信息
+        // 只有状态码是有效信息, 如果响应也成功, 无需进一步检查
+        if res.status().is_success() {
+            return Ok(None);
         }
+        // 如果响应失败, 将响应交给外部处理, 一般是 401 错误
+        Ok(Some(res))
     }
 }
 
